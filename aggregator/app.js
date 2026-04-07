@@ -1034,9 +1034,148 @@
       });
     }
 
+    // PO auto-calculation
+    const poVolumeEl = document.getElementById('poVolume');
+    const poPriceEl = document.getElementById('poPricePerLitre');
+    const poTotalEl = document.getElementById('poTotalAmount');
+    function calcPOTotal() {
+      const vol = parseFloat(poVolumeEl?.value) || 0;
+      const price = parseFloat(poPriceEl?.value) || 0;
+      if (poTotalEl) poTotalEl.value = (vol * price).toFixed(2);
+    }
+    if (poVolumeEl) poVolumeEl.addEventListener('input', calcPOTotal);
+    if (poPriceEl) poPriceEl.addEventListener('input', calcPOTotal);
+
     // Check for existing session
     checkSession();
   }
+
+  // --- New Feature Functions ---
+
+  // Sample Collection
+  window.confirmSample = function() {
+    const size = document.getElementById('sampleSize')?.value;
+    const unit = document.getElementById('sampleUnit')?.value;
+    const testType = document.getElementById('sampleTestType')?.value;
+    const ref = document.getElementById('sampleReference')?.value;
+    const notes = document.getElementById('sampleNotes')?.value;
+    const msg = document.getElementById('sampleMessage');
+
+    if (!size || parseFloat(size) <= 0) {
+      if (msg) { msg.textContent = 'Please enter a valid sample size.'; msg.className = 'message error'; }
+      return;
+    }
+
+    const sampleData = { size: parseFloat(size), unit, testType, reference: ref, notes, timestamp: new Date().toISOString() };
+    console.log('Sample logged:', sampleData);
+    
+    if (msg) { msg.textContent = `Sample logged: ${size} ${unit} for ${testType} test. Ref: ${ref || 'N/A'}`; msg.className = 'message success'; }
+  };
+
+  // Test Results
+  window.saveTestResults = function() {
+    const ffa = document.getElementById('testFFA')?.value;
+    const mi = document.getElementById('testMI')?.value;
+    const density = document.getElementById('testDensity')?.value;
+    const temp = document.getElementById('testTemperature')?.value;
+    const ref = document.getElementById('testReference')?.value;
+    const notes = document.getElementById('testNotes')?.value;
+    const msg = document.getElementById('testResultsMessage');
+
+    if (!ffa && !mi && !density && !temp) {
+      if (msg) { msg.textContent = 'Please enter at least one test result.'; msg.className = 'message error'; }
+      return;
+    }
+
+    const testData = { ffa: parseFloat(ffa) || null, mi: parseFloat(mi) || null, density: parseFloat(density) || null, temperature: parseFloat(temp) || null, reference: ref, notes, timestamp: new Date().toISOString() };
+    console.log('Test results saved:', testData);
+
+    if (msg) { msg.textContent = `Test results saved. FFA: ${ffa || '-'}%, M&I: ${mi || '-'}%, Density: ${density || '-'} kg/L, Temp: ${temp || '-'}°C`; msg.className = 'message success'; }
+  };
+
+  // Purchase Order
+  window.savePurchaseOrder = function() {
+    const poNum = document.getElementById('poNumber')?.value;
+    const supplier = document.getElementById('poSupplier')?.value;
+    const vol = document.getElementById('poVolume')?.value;
+    const price = document.getElementById('poPricePerLitre')?.value;
+    const total = document.getElementById('poTotalAmount')?.value;
+    const date = document.getElementById('poDate')?.value;
+    const notes = document.getElementById('poNotes')?.value;
+    const msg = document.getElementById('poMessage');
+
+    if (!poNum) {
+      if (msg) { msg.textContent = 'Please enter a PO number.'; msg.className = 'message error'; }
+      return;
+    }
+
+    const poData = { poNumber: poNum, supplier, volume: parseFloat(vol) || 0, pricePerLitre: parseFloat(price) || 0, totalAmount: parseFloat(total) || 0, date, notes, timestamp: new Date().toISOString() };
+    console.log('PO saved:', poData);
+
+    if (msg) { msg.textContent = `PO ${poNum} saved. Total: R${total || '0.00'}`; msg.className = 'message success'; }
+  };
+
+  // Invoice Generation
+  window.generateInvoice = function() {
+    const poNum = document.getElementById('poNumber')?.value || 'N/A';
+    const supplier = document.getElementById('poSupplier')?.value || 'N/A';
+    const vol = document.getElementById('poVolume')?.value || '0';
+    const price = document.getElementById('poPricePerLitre')?.value || '0';
+    const total = document.getElementById('poTotalAmount')?.value || '0.00';
+    const date = document.getElementById('poDate')?.value || new Date().toISOString().split('T')[0];
+
+    // Get test results if available
+    const ffa = document.getElementById('testFFA')?.value || '-';
+    const mi = document.getElementById('testMI')?.value || '-';
+    const density = document.getElementById('testDensity')?.value || '-';
+    const temp = document.getElementById('testTemperature')?.value || '-';
+
+    const invoiceNum = 'INV-' + Date.now().toString().slice(-8);
+
+    const invoiceHTML = `
+      <html><head><title>Invoice ${invoiceNum}</title>
+      <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1a1a2e; }
+        h1 { color: #10b981; border-bottom: 3px solid #10b981; padding-bottom: 10px; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .details { margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f0fdf4; color: #065f46; font-weight: 600; }
+        .total { font-size: 1.5rem; font-weight: 700; color: #10b981; text-align: right; margin-top: 20px; }
+        .test-results { background: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0; }
+        .test-results h3 { margin-top: 0; color: #475569; }
+        .footer { margin-top: 40px; font-size: 0.85rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+        @media print { body { padding: 20px; } }
+      </style></head><body>
+      <h1>INVOICE</h1>
+      <div class="header">
+        <div><strong>Invoice #:</strong> ${invoiceNum}<br><strong>Date:</strong> ${date}<br><strong>PO Reference:</strong> ${poNum}</div>
+        <div style="text-align:right"><strong>APEX CHEM (PTY) LTD</strong><br>Depot Workflow System</div>
+      </div>
+      <div class="details"><strong>Supplier:</strong> ${supplier}</div>
+      <table>
+        <thead><tr><th>Description</th><th>Volume (L)</th><th>Price/L (ZAR)</th><th>Total (ZAR)</th></tr></thead>
+        <tbody><tr><td>Used Cooking Oil Collection</td><td>${vol}</td><td>R${price}</td><td>R${total}</td></tr></tbody>
+      </table>
+      <div class="test-results">
+        <h3>Lab Test Results</h3>
+        <p><strong>FFA:</strong> ${ffa}% | <strong>M&I:</strong> ${mi}% | <strong>Density:</strong> ${density} kg/L | <strong>Temperature:</strong> ${temp}°C</p>
+      </div>
+      <div class="total">Total: R${total}</div>
+      <div class="footer"><p>This invoice was generated by the Apex Chem Depot Workflow system.</p></div>
+      </body></html>`;
+
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(invoiceHTML);
+      w.document.close();
+      w.print();
+    }
+
+    const msg = document.getElementById('poMessage');
+    if (msg) { msg.textContent = `Invoice ${invoiceNum} generated and opened for printing.`; msg.className = 'message success'; }
+  };
 
   document.addEventListener('DOMContentLoaded', bootstrap);
 })();

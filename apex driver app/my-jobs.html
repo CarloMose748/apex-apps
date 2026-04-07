@@ -1105,7 +1105,17 @@
             }
 
             if (filteredCollections.length === 0) {
-                document.getElementById('emptyState').style.display = 'block';
+                const emptyEl = document.getElementById('emptyState');
+                const filterMessages = {
+                    'all': { title: 'No Collections Yet', msg: 'You haven\'t completed any oil collections yet. Complete some jobs to see your collection records here.' },
+                    'completed': { title: 'No Completed Collections', msg: 'Collections that have been completed will appear here.' },
+                    'pending_verification': { title: 'No Pending Verifications', msg: 'Collections waiting for verification will appear here.' },
+                    'verified': { title: 'No Verified Collections', msg: 'Collections that have been verified will appear here.' }
+                };
+                const msgData = filterMessages[currentFilter] || filterMessages['all'];
+                emptyEl.querySelector('h3').textContent = msgData.title;
+                emptyEl.querySelector('p').textContent = msgData.msg;
+                emptyEl.style.display = 'block';
                 container.innerHTML = '';
                 return;
             }

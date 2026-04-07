@@ -13,6 +13,8 @@ import { Certificates } from '../pages/Certificates';
 import { Requests } from '../pages/Requests';
 import { Account } from '../pages/Account';
 import { RequestPickup } from '../pages/RequestPickup';
+import { SarsForm } from '../pages/SarsForm';
+import { IsccForm } from '../pages/IsccForm';
 
 export function Router() {
   return (
@@ -36,6 +38,8 @@ export function Router() {
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/certificates" element={<Certificates />} />
                   <Route path="/requests" element={<Requests />} />
+                  <Route path="/sars-form" element={<SarsForm />} />
+                  <Route path="/iscc-form" element={<IsccForm />} />
                   <Route path="/account" element={<Account />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

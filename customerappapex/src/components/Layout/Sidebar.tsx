@@ -4,7 +4,9 @@ import {
   FiArchive, 
   FiShield, 
   FiTruck,
-  FiSettings
+  FiSettings,
+  FiFileText,
+  FiGlobe
 } from 'react-icons/fi';
 
 const navigationItems = [
@@ -12,6 +14,8 @@ const navigationItems = [
   { to: '/collections', icon: FiArchive, label: 'Collection History' },
   { to: '/certificates', icon: FiShield, label: 'Certificates' },
   { to: '/requests', icon: FiTruck, label: 'Request Pickup' },
+  { to: '/sars-form', icon: FiFileText, label: 'SARS Form' },
+  { to: '/iscc-form', icon: FiGlobe, label: 'ISCC Form' },
   { to: '/account', icon: FiSettings, label: 'Account' },
 ];
 

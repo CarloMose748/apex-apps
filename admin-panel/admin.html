@@ -88,44 +88,58 @@
             display: flex; gap: 8px; flex-wrap: wrap;
         }
         .nav-btn {
-            padding: 8px 16px;
+            padding: 10px 18px;
             background: var(--bg-secondary);
             color: var(--text-secondary);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer; font-size: 13px; font-weight: 600;
-            transition: all 0.2s; white-space: nowrap;
+            transition: all 0.25s; white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 6px;
+            border-left: 3px solid transparent;
         }
         .nav-btn:hover, .nav-btn.active {
             background: var(--accent-glow);
             color: var(--accent-light);
             border-color: var(--accent);
+            border-left-color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16,185,129,0.15);
         }
-        /* Remove per-tab color schemes — unified dark nav */
-        .nav-btn.tab-dashboard, .nav-btn.tab-pending, .nav-btn.tab-drivers,
-        .nav-btn.tab-smartbins, .nav-btn.tab-collections, .nav-btn.tab-search,
-        .nav-btn.tab-bins, .nav-btn.tab-highaggregators, .nav-btn.tab-qrcodes,
-        .nav-btn.tab-other {
-            background: var(--bg-secondary);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-            box-shadow: none;
-        }
-        .nav-btn.tab-dashboard:hover, .nav-btn.tab-dashboard.active,
-        .nav-btn.tab-pending:hover, .nav-btn.tab-pending.active,
-        .nav-btn.tab-drivers:hover, .nav-btn.tab-drivers.active,
-        .nav-btn.tab-smartbins:hover, .nav-btn.tab-smartbins.active,
-        .nav-btn.tab-collections:hover, .nav-btn.tab-collections.active,
-        .nav-btn.tab-search:hover, .nav-btn.tab-search.active,
-        .nav-btn.tab-bins:hover, .nav-btn.tab-bins.active,
-        .nav-btn.tab-highaggregators:hover, .nav-btn.tab-highaggregators.active,
-        .nav-btn.tab-qrcodes:hover, .nav-btn.tab-qrcodes.active,
-        .nav-btn.tab-other:hover, .nav-btn.tab-other.active {
+        .nav-btn i { font-size: 14px; }
+        .nav-btn.tab-pending { border-left-color: #f59e0b; }
+        .nav-btn.tab-pending.active, .nav-btn.tab-pending:hover { border-left-color: #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,0.2); }
+        .nav-btn.tab-collections { border-left-color: #3b82f6; }
+        .nav-btn.tab-collections.active, .nav-btn.tab-collections:hover { border-left-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.2); }
+        .nav-btn.tab-highaggregators { border-left-color: #8b5cf6; }
+        .nav-btn.tab-highaggregators.active, .nav-btn.tab-highaggregators:hover { border-left-color: #8b5cf6; box-shadow: 0 4px 12px rgba(139,92,246,0.2); }
+        /* Per-tab active styles */
+        .nav-btn.tab-dashboard.active,
+        .nav-btn.tab-drivers.active,
+        .nav-btn.tab-smartbins.active,
+        .nav-btn.tab-search.active,
+        .nav-btn.tab-bins.active,
+        .nav-btn.tab-qrcodes.active,
+        .nav-btn.tab-other.active {
             background: var(--accent-glow);
             color: var(--accent-light);
             border-color: var(--accent);
             box-shadow: 0 0 12px var(--accent-glow);
-            transform: none;
+        }
+        .nav-btn.tab-pending.active {
+            background: rgba(245,158,11,0.08);
+            color: #fbbf24;
+            border-color: rgba(245,158,11,0.4);
+        }
+        .nav-btn.tab-collections.active {
+            background: rgba(59,130,246,0.08);
+            color: #60a5fa;
+            border-color: rgba(59,130,246,0.4);
+        }
+        .nav-btn.tab-highaggregators.active {
+            background: rgba(139,92,246,0.08);
+            color: #a78bfa;
+            border-color: rgba(139,92,246,0.4);
         }
         .nav-btn.secondary {
             background: rgba(255,255,255,0.04);
@@ -634,20 +648,20 @@
                 
                 <!-- Collections Summary Stats -->
                 <div class="stats-grid" style="margin-bottom: 30px;">
-                    <div class="stat-card">
-                        <div class="stat-value" id="collectionsToday">0</div>
+                    <div class="stat-card" style="border-left: 3px solid #10b981;">
+                        <div class="stat-value" style="color: #34d399;" id="collectionsToday">0</div>
                         <div class="stat-label">Collections Today</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="collectionsWeek">0</div>
+                    <div class="stat-card" style="border-left: 3px solid #3b82f6;">
+                        <div class="stat-value" style="color: #60a5fa;" id="collectionsWeek">0</div>
                         <div class="stat-label">This Week</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="collectionsMonth">0</div>
+                    <div class="stat-card" style="border-left: 3px solid #8b5cf6;">
+                        <div class="stat-value" style="color: #a78bfa;" id="collectionsMonth">0</div>
                         <div class="stat-label">This Month</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="pendingCollections">0</div>
+                    <div class="stat-card" style="border-left: 3px solid #f59e0b;">
+                        <div class="stat-value" style="color: #fbbf24;" id="pendingCollections">0</div>
                         <div class="stat-label">Pending Collections</div>
                     </div>
                 </div>
@@ -786,6 +800,22 @@
                 <div id="pendingCustomers" style="margin-top: 30px;">
                     <h4><i class="fa-solid fa-user-clock"></i> Pending Customers (<span id="pendingCustomerCount">0</span>)</h4>
                     <div id="pendingCustomersList" class="loading">Loading customers...</div>
+                </div>
+
+                <!-- Verification History -->
+                <div style="margin-top: 36px; border-top: 1px solid var(--border-color); padding-top: 24px;">
+                    <h4 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Verification History
+                    </h4>
+                    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                        <button class="nav-btn" onclick="loadVerificationHistory('approved')" id="btnHistoryApproved" style="background: rgba(16,185,129,0.1); color: #34d399; border-color: rgba(16,185,129,0.3);">
+                            <i class="fa-solid fa-circle-check"></i> Approved
+                        </button>
+                        <button class="nav-btn" onclick="loadVerificationHistory('rejected')" id="btnHistoryRejected" style="background: rgba(239,68,68,0.1); color: #fca5a5; border-color: rgba(239,68,68,0.3);">
+                            <i class="fa-solid fa-circle-xmark"></i> Rejected
+                        </button>
+                    </div>
+                    <div id="verificationHistoryList" style="color: var(--text-muted); font-size: 14px;">Click a button above to view verification history.</div>
                 </div>
             </div>
         </div>
@@ -1007,21 +1037,29 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div class="form-group">
                             <label>Bin Type</label>
-                            <select id="binType">
+                            <select id="binType" onchange="toggleCustomBinType(this, 'customBinType')">
                                 <option value="standard">Standard (120L)</option>
                                 <option value="large">Large (240L)</option>
                                 <option value="small">Small (80L)</option>
                                 <option value="commercial">Commercial (660L)</option>
+                                <option value="industrial">Industrial (1000L IBC)</option>
+                                <option value="drum">Drum (210L)</option>
+                                <option value="tank">Storage Tank</option>
+                                <option value="other">Other (Manual Entry)</option>
                             </select>
+                            <input type="text" id="customBinType" placeholder="Enter custom bin type" style="display:none; margin-top:8px;">
                         </div>
                         
                         <div class="form-group">
                             <label>Collection Frequency</label>
                             <select id="collectionFrequency">
+                                <option value="daily">Daily</option>
+                                <option value="twice-weekly">Twice Weekly</option>
                                 <option value="weekly">Weekly</option>
                                 <option value="bi-weekly">Bi-Weekly</option>
-                                <option value="daily">Daily</option>
                                 <option value="monthly">Monthly</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="on-demand">On Demand</option>
                             </select>
                         </div>
                     </div>
@@ -1074,21 +1112,29 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div class="form-group">
                         <label>Bin Type</label>
-                        <select id="addBinType">
+                        <select id="addBinType" onchange="toggleCustomBinType(this, 'addCustomBinType')">
                             <option value="standard">Standard (120L)</option>
                             <option value="large">Large (240L)</option>
                             <option value="small">Small (80L)</option>
                             <option value="commercial">Commercial (660L)</option>
+                            <option value="industrial">Industrial (1000L IBC)</option>
+                            <option value="drum">Drum (210L)</option>
+                            <option value="tank">Storage Tank</option>
+                            <option value="other">Other (Manual Entry)</option>
                         </select>
+                        <input type="text" id="addCustomBinType" placeholder="Enter custom bin type" style="display:none; margin-top:8px;">
                     </div>
 
                     <div class="form-group">
                         <label>Collection Frequency</label>
                         <select id="addBinFrequency">
+                            <option value="daily">Daily</option>
+                            <option value="twice-weekly">Twice Weekly</option>
                             <option value="weekly">Weekly</option>
                             <option value="bi-weekly">Bi-Weekly</option>
-                            <option value="daily">Daily</option>
                             <option value="monthly">Monthly</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="on-demand">On Demand</option>
                         </select>
                     </div>
                 </div>
@@ -3588,6 +3634,76 @@
         document.getElementById('detailsModal').addEventListener('click', function(e) {
             if (e.target === this) closeDetailsModal();
         });
+
+        // Toggle custom bin type input when "Other" is selected
+        function toggleCustomBinType(selectEl, customInputId) {
+            const customInput = document.getElementById(customInputId);
+            if (selectEl.value === 'other') {
+                customInput.style.display = 'block';
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+                customInput.value = '';
+            }
+        }
+
+        // Load verification history (approved/rejected)
+        async function loadVerificationHistory(status) {
+            const container = document.getElementById('verificationHistoryList');
+            container.innerHTML = '<div class="loading">Loading...</div>';
+
+            // Update button styles
+            document.getElementById('btnHistoryApproved').style.opacity = status === 'approved' ? '1' : '0.6';
+            document.getElementById('btnHistoryRejected').style.opacity = status === 'rejected' ? '1' : '0.6';
+
+            try {
+                const client = window.supabaseClient || window.supabase;
+                if (!client) { container.innerHTML = 'Supabase not available'; return; }
+
+                // Query drivers with this status
+                const { data: drivers, error: dErr } = await client
+                    .from('drivers')
+                    .select('id, full_name, email, phone, status, updated_at')
+                    .eq('status', status)
+                    .order('updated_at', { ascending: false })
+                    .limit(50);
+
+                // Query customers with this status
+                const { data: customers, error: cErr } = await client
+                    .from('customers')
+                    .select('id, full_name, email, phone, status, updated_at')
+                    .eq('status', status)
+                    .order('updated_at', { ascending: false })
+                    .limit(50);
+
+                const allRecords = [
+                    ...(drivers || []).map(d => ({ ...d, userType: 'Driver' })),
+                    ...(customers || []).map(c => ({ ...c, userType: 'Customer' }))
+                ].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+                if (allRecords.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-muted); padding: 16px;">No ' + status + ' records found.</p>';
+                    return;
+                }
+
+                const statusColor = status === 'approved' ? '#34d399' : '#fca5a5';
+                const statusIcon = status === 'approved' ? 'fa-circle-check' : 'fa-circle-xmark';
+
+                container.innerHTML = '<div style="overflow-x:auto;"><table class="user-table" style="width:100%;"><thead><tr>' +
+                    '<th>Name</th><th>Email</th><th>Type</th><th>Status</th><th>Date</th></tr></thead><tbody>' +
+                    allRecords.map(r => 
+                        '<tr><td>' + (r.full_name || 'N/A') + '</td>' +
+                        '<td>' + (r.email || 'N/A') + '</td>' +
+                        '<td>' + r.userType + '</td>' +
+                        '<td style="color:' + statusColor + '"><i class="fa-solid ' + statusIcon + '"></i> ' + status.charAt(0).toUpperCase() + status.slice(1) + '</td>' +
+                        '<td>' + (r.updated_at ? new Date(r.updated_at).toLocaleDateString() : 'N/A') + '</td></tr>'
+                    ).join('') +
+                    '</tbody></table></div>';
+            } catch (err) {
+                console.error('Error loading verification history:', err);
+                container.innerHTML = '<p style="color: #fca5a5;">Error loading history. Check console for details.</p>';
+            }
+        }
     </script>
 
     <!-- Lab Results & Purchase Order Modal -->

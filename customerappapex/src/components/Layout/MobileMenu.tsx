@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { FiX, FiHome, FiArchive, FiShield, FiTruck, FiSettings } from 'react-icons/fi';
+import { FiX, FiHome, FiArchive, FiShield, FiTruck, FiSettings, FiFileText, FiGlobe } from 'react-icons/fi';
 import { NavLink } from 'react-router-dom';
 
 interface MobileMenuProps {
@@ -12,6 +12,8 @@ const mobileNavigationItems = [
   { to: '/collections', icon: FiArchive, label: 'Collection History' },
   { to: '/certificates', icon: FiShield, label: 'Certificates' },
   { to: '/requests', icon: FiTruck, label: 'Request Pickup' },
+  { to: '/sars-form', icon: FiFileText, label: 'SARS Form' },
+  { to: '/iscc-form', icon: FiGlobe, label: 'ISCC Form' },
   { to: '/account', icon: FiSettings, label: 'Account' },
 ];
 

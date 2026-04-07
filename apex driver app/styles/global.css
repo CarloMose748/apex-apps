@@ -1058,10 +1058,16 @@ body {
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
 }
 
-/* Hide bottom nav on desktop */
+/* Bottom nav on desktop - show as horizontal bar */
 @media (min-width: 768px) {
   .bottom-nav {
-    display: none;
+    display: flex;
+    max-width: 600px;
+    margin: 0 auto;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
   }
 }
 

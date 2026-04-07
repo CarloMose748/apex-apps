@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/UI/Card';
 import { Button } from '../components/UI/Button';
-import { FiPackage, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiPackage, FiCheckCircle, FiAlertCircle, FiPlus } from 'react-icons/fi';
 import { supabase } from '../lib/supabase';
 
 interface Bin {
@@ -27,6 +27,13 @@ export function RequestPickup() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string>('');
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualBin, setManualBin] = useState({
+    serial: '',
+    type: 'Standard (120L)',
+    notes: '',
+    urgency: 'normal'
+  });
 
   useEffect(() => {
     fetchUserBins();
@@ -88,8 +95,8 @@ export function RequestPickup() {
   };
 
   const handleSubmit = async () => {
-    if (selectedBins.size === 0) {
-      setError('Please select at least one bin for pickup');
+    if (selectedBins.size === 0 && !manualBin.serial.trim()) {
+      setError('Please select at least one bin or enter a bin manually');
       return;
     }
 
@@ -123,11 +130,11 @@ export function RequestPickup() {
         customer_phone: customerData.phone_number || '',
         customer_email: customerData.email || '',
         pickup_address: customerData.address || '',
-        dropoff_address: 'Apex Oil Collection Center', // Default dropoff location
+        dropoff_address: 'Apex Oil Collection Center',
         job_type: 'oil_collection',
-        description: `Oil collection for ${selectedBins.size} bin(s)`,
+        description: `Oil collection for ${selectedBins.size} bin(s)${manualBin.serial ? ` + manual bin: ${manualBin.serial} (${manualBin.type})` : ''}`,
         status: 'pending',
-        notes: `Customer ID: ${userId}\nBin Serial Numbers: ${selectedBinsList.map(b => b.bin_serial_number).join(', ')}\nBin IDs: ${Array.from(selectedBins).join(', ')}`
+        notes: `Customer ID: ${userId}\nBin Serial Numbers: ${selectedBinsList.map(b => b.bin_serial_number).join(', ')}${manualBin.serial ? `\nManual Bin: ${manualBin.serial} (${manualBin.type})` : ''}\nBin IDs: ${Array.from(selectedBins).join(', ')}\nUrgency: ${manualBin.urgency}${manualBin.notes ? `\nAdditional Notes: ${manualBin.notes}` : ''}`
       };
 
       const { error: jobError } = await supabase
@@ -290,6 +297,84 @@ export function RequestPickup() {
             })}
             </div>
 
+            {/* Manual Bin Entry */}
+            <Card style={{ marginBottom: '24px' }}>
+              <div style={{ padding: '20px' }}>
+                <div 
+                  onClick={() => setShowManualEntry(!showManualEntry)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: showManualEntry ? '16px' : 0 }}
+                >
+                  <FiPlus size={20} style={{ color: 'var(--primary)' }} />
+                  <span style={{ fontWeight: 600, color: 'var(--primary)' }}>
+                    {showManualEntry ? 'Hide' : 'Add'} Manual Bin Entry
+                  </span>
+                </div>
+                {showManualEntry && (
+                  <div style={{ display: 'grid', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                        Bin Serial Number
+                      </label>
+                      <input
+                        type="text"
+                        value={manualBin.serial}
+                        onChange={e => setManualBin(prev => ({ ...prev, serial: e.target.value }))}
+                        placeholder="e.g., BIN-001 or IBC-A23"
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', background: 'var(--bg)' }}
+                      />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                          Bin Type
+                        </label>
+                        <select
+                          value={manualBin.type}
+                          onChange={e => setManualBin(prev => ({ ...prev, type: e.target.value }))}
+                          style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', background: 'var(--bg)' }}
+                        >
+                          <option>Standard (120L)</option>
+                          <option>Large (240L)</option>
+                          <option>Small (80L)</option>
+                          <option>Commercial (660L)</option>
+                          <option>Industrial (1000L IBC)</option>
+                          <option>Drum (210L)</option>
+                          <option>Storage Tank</option>
+                          <option>Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                          Urgency
+                        </label>
+                        <select
+                          value={manualBin.urgency}
+                          onChange={e => setManualBin(prev => ({ ...prev, urgency: e.target.value }))}
+                          style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', background: 'var(--bg)' }}
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="urgent">Urgent</option>
+                          <option value="scheduled">Scheduled</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                        Additional Notes
+                      </label>
+                      <textarea
+                        value={manualBin.notes}
+                        onChange={e => setManualBin(prev => ({ ...prev, notes: e.target.value }))}
+                        placeholder="Location details, special instructions, etc."
+                        rows={3}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', resize: 'vertical', background: 'var(--bg)' }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+
             <div style={{ 
               position: 'sticky', 
               bottom: '20px', 
@@ -320,7 +405,7 @@ export function RequestPickup() {
 
               <Button 
                 onClick={handleSubmit}
-                disabled={selectedBins.size === 0 || submitting}
+                disabled={(selectedBins.size === 0 && !manualBin.serial.trim()) || submitting}
               >
                 {submitting ? 'Submitting...' : 'Request Pickup'}
               </Button>

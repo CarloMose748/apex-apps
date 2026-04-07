@@ -1408,6 +1408,35 @@
             </div>
           </div>
 
+          <div class="form-section">
+            <h2 class="section-title">
+              <span class="icon icon-md" aria-hidden="true">📄</span>
+              Supporting Documents (Optional)
+            </h2>
+            
+            <div class="photo-upload-section">
+              <div class="upload-area" id="docsUploadArea" onclick="triggerFileInput('docsFileInput')">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">
+                  <strong>Click to upload documents</strong><br>
+                  or drag and drop files here<br>
+                  <small>PDF, Word, images, or any supporting documents</small>
+                </div>
+              </div>
+              
+              <input 
+                type="file" 
+                class="file-input" 
+                id="docsFileInput" 
+                multiple 
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" 
+                onchange="handleFileSelect(event, 'docs')"
+              >
+              
+              <div class="photo-preview" id="docsPhotoPreview"></div>
+            </div>
+          </div>
+
           <!-- Submit Section -->
           <div class="submit-section">
             <div class="submit-actions">
@@ -1527,6 +1556,7 @@
     let currentJob = null;
     let oilPhotos = [];
     let paymentPhotos = [];
+    let docsPhotos = [];
     
     // QR Scanner variables
     let html5QrCode = null;
@@ -2122,6 +2152,14 @@
         paymentUploadArea.addEventListener('dragleave', (e) => handleDragLeave(e, 'payment'));
         paymentUploadArea.addEventListener('drop', (e) => handleDrop(e, 'payment'));
       }
+
+      // Drag and drop for supporting documents upload
+      const docsUploadArea = document.getElementById('docsUploadArea');
+      if (docsUploadArea) {
+        docsUploadArea.addEventListener('dragover', (e) => handleDragOver(e, 'docs'));
+        docsUploadArea.addEventListener('dragleave', (e) => handleDragLeave(e, 'docs'));
+        docsUploadArea.addEventListener('drop', (e) => handleDrop(e, 'docs'));
+      }
     }
 
     // Quantity adjustment functions
@@ -2157,20 +2195,26 @@
       processFiles(files, type);
     }
 
+    function getUploadArea(type) {
+      if (type === 'oil') return document.getElementById('oilUploadArea');
+      if (type === 'payment') return document.getElementById('paymentUploadArea');
+      return document.getElementById('docsUploadArea');
+    }
+
     function handleDragOver(event, type) {
       event.preventDefault();
-      const uploadArea = type === 'oil' ? document.getElementById('oilUploadArea') : document.getElementById('paymentUploadArea');
+      const uploadArea = getUploadArea(type);
       uploadArea.classList.add('dragover');
     }
 
     function handleDragLeave(event, type) {
-      const uploadArea = type === 'oil' ? document.getElementById('oilUploadArea') : document.getElementById('paymentUploadArea');
+      const uploadArea = getUploadArea(type);
       uploadArea.classList.remove('dragover');
     }
 
     function handleDrop(event, type) {
       event.preventDefault();
-      const uploadArea = type === 'oil' ? document.getElementById('oilUploadArea') : document.getElementById('paymentUploadArea');
+      const uploadArea = getUploadArea(type);
       uploadArea.classList.remove('dragover');
       
       const files = Array.from(event.dataTransfer.files);
@@ -2178,8 +2222,11 @@
     }
 
     function processFiles(files, type) {
-      const imageFiles = files.filter(file => file.type.startsWith('image/'));
-      const photoArray = type === 'oil' ? oilPhotos : paymentPhotos;
+      const allowedFiles = type === 'docs' 
+        ? files.filter(file => file.type.startsWith('image/') || file.type === 'application/pdf' || file.type.includes('word') || file.type.includes('spreadsheet') || file.type.includes('excel') || file.type === 'text/plain' || file.type === 'text/csv')
+        : files.filter(file => file.type.startsWith('image/'));
+      const imageFiles = allowedFiles;
+      const photoArray = type === 'oil' ? oilPhotos : type === 'payment' ? paymentPhotos : docsPhotos;
       
       imageFiles.forEach(file => {
         if (photoArray.length < 6) { // Limit to 6 photos per section
@@ -2200,23 +2247,31 @@
     }
 
     function updatePhotoPreview(type) {
-      const previewId = type === 'oil' ? 'oilPhotoPreview' : 'paymentPhotoPreview';
-      const photoArray = type === 'oil' ? oilPhotos : paymentPhotos;
+      const previewId = type === 'oil' ? 'oilPhotoPreview' : type === 'payment' ? 'paymentPhotoPreview' : 'docsPhotoPreview';
+      const photoArray = type === 'oil' ? oilPhotos : type === 'payment' ? paymentPhotos : docsPhotos;
       const preview = document.getElementById(previewId);
       
-      preview.innerHTML = photoArray.map((photo, index) => `
+      preview.innerHTML = photoArray.map((photo, index) => {
+        const isImage = photo.file && photo.file.type.startsWith('image/');
+        const content = isImage 
+          ? `<img src="${photo.dataUrl}" alt="${photo.name}">`
+          : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80px;font-size:2rem;">📄<small style="font-size:0.65rem;color:#94a3b8;margin-top:4px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${photo.name}</small></div>`;
+        return `
         <div class="photo-item">
-          <img src="${photo.dataUrl}" alt="${photo.name}">
+          ${content}
           <button type="button" class="photo-remove" onclick="removePhoto(${index}, '${type}')">×</button>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function removePhoto(index, type) {
       if (type === 'oil') {
         oilPhotos.splice(index, 1);
-      } else {
+      } else if (type === 'payment') {
         paymentPhotos.splice(index, 1);
+      } else {
+        docsPhotos.splice(index, 1);
       }
       updatePhotoPreview(type);
     }
