@@ -178,12 +178,12 @@ export function Home() {
               <div style={{ 
                 width: '48px', 
                 height: '48px', 
-                borderRadius: '12px', 
+                borderRadius: '16px', 
                 backgroundColor: 'var(--primary-light)', 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center' 
-              }}>
+              }>
                 <FiArchive size={24} style={{ color: 'var(--primary)' }} />
               </div>
               <div style={{ textAlign: 'left' }}>
@@ -198,7 +198,7 @@ export function Home() {
               <div style={{ 
                 width: '48px', 
                 height: '48px', 
-                borderRadius: '12px', 
+                borderRadius: '16px', 
                 backgroundColor: 'var(--warning-bg)', 
                 display: 'flex', 
                 alignItems: 'center', 

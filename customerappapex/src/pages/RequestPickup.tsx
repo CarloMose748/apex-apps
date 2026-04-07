@@ -204,10 +204,10 @@ export function RequestPickup() {
                   onClick={() => toggleBinSelection(bin.id)}
                   style={{ 
                     cursor: 'pointer',
-                    borderRadius: 'var(--radius-md)',
-                    border: selectedBins.has(bin.id) ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius)',
+                    border: selectedBins.has(bin.id) ? '2px solid var(--primary)' : '1px solid var(--border)',
                     transition: 'all 0.2s ease',
-                    background: 'var(--background-light)',
+                    background: 'var(--bg)',
                     padding: '20px'
                   }}
                 >
@@ -218,7 +218,7 @@ export function RequestPickup() {
                         height: '24px',
                         borderRadius: '50%',
                         border: '2px solid',
-                        borderColor: selectedBins.has(bin.id) ? 'var(--primary-color)' : 'var(--border-color)',
+                        borderColor: selectedBins.has(bin.id) ? 'var(--primary)' : 'var(--border)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -226,7 +226,7 @@ export function RequestPickup() {
                       }}
                     >
                       {selectedBins.has(bin.id) && (
-                        <FiCheckCircle size={20} style={{ color: 'var(--primary-color)' }} />
+                        <FiCheckCircle size={20} style={{ color: 'var(--primary)' }} />
                       )}
                     </div>
 
@@ -293,9 +293,9 @@ export function RequestPickup() {
             <div style={{ 
               position: 'sticky', 
               bottom: '20px', 
-              background: 'var(--background-light)',
+              background: 'var(--bg)',
               padding: '20px',
-              borderRadius: 'var(--radius-md)',
+              borderRadius: 'var(--border-radius)',
               boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
               display: 'flex',
               gap: '12px',
