@@ -183,7 +183,7 @@ export function Home() {
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center' 
-              }>
+              }}>
                 <FiArchive size={24} style={{ color: 'var(--primary)' }} />
               </div>
               <div style={{ textAlign: 'left' }}>
