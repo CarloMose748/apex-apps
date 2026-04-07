@@ -1,0 +1,11 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build deployment bundle",
+			"type": "shell",
+			"command": "mkdir -p dist && cp index.html services.html about.html contact.html gallery.html style.css dist/ && echo \"Deployment bundle ready in dist/\"",
+			"group": "build"
+		}
+	]
+}

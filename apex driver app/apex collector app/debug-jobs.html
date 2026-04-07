@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobs Debug</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .job-card { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Jobs Page Debug</h1>
+    <button onclick="loadJobs()">Load Jobs from Database</button>
+    <div id="debug"></div>
+    <div id="jobs"></div>
+    
+    <script>
+        const debugDiv = document.getElementById('debug');
+        const jobsDiv = document.getElementById('jobs');
+        
+        function log(message, type = 'info') {
+            console.log(message);
+            const timestamp = new Date().toISOString();
+            const className = type === 'error' ? 'error' : (type === 'success' ? 'success' : '');
+            debugDiv.innerHTML += `<div class="debug ${className}"><strong>${timestamp}:</strong> ${JSON.stringify(message)}</div>`;
+        }
+        
+        async function loadJobs() {
+            log('Starting job loading process...');
+            
+            try {
+                // Initialize Supabase
+                log('Creating Supabase client...');
+                const supabase = window.supabase.createClient(
+                    'https://ishhgfitddfeqaatimwl.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzaGhnZml0ZGRmZXFhYXRpbXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1Nzk1MDAsImV4cCI6MjA3MzE1NTUwMH0.VcBhmUFJu6Yi8Kkn8ihn3rNJsgyKsyVD7qpWh_XjRQ8'
+                );
+                log('Supabase client created', 'success');
+                
+                // Query available_jobs table
+                log('Querying available_jobs table...');
+                const { data, error } = await supabase
+                    .from('available_jobs')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    log('Database query error: ' + error.message, 'error');
+                    log('Error details: ' + JSON.stringify(error), 'error');
+                    return;
+                }
+                
+                log(`Database query successful! Found ${data.length} jobs`, 'success');
+                log('Raw data: ' + JSON.stringify(data, null, 2));
+                
+                // Display jobs
+                if (data.length === 0) {
+                    jobsDiv.innerHTML = '<p>No jobs found in database</p>';
+                } else {
+                    jobsDiv.innerHTML = '<h2>Jobs from Database:</h2>';
+                    data.forEach(job => {
+                        jobsDiv.innerHTML += `
+                            <div class="job-card">
+                                <h3>${job.description || job.customer_name || 'Unnamed Job'}</h3>
+                                <p><strong>Customer:</strong> ${job.customer_name}</p>
+                                <p><strong>Type:</strong> ${job.job_type}</p>
+                                <p><strong>Payment:</strong> ${job.payment}</p>
+                                <p><strong>Time:</strong> ${job.estimated_time}</p>
+                                <p><strong>Pickup:</strong> ${job.pickup_address}</p>
+                                <p><strong>Priority:</strong> ${job.priority ? 'High' : 'Normal'}</p>
+                                <p><strong>Created:</strong> ${job.created_at}</p>
+                            </div>
+                        `;
+                    });
+                }
+                
+            } catch (err) {
+                log('Exception: ' + err.message, 'error');
+            }
+        }
+        
+        // Auto-load on page load
+        document.addEventListener('DOMContentLoaded', loadJobs);
+    </script>
+</body>
+</html>

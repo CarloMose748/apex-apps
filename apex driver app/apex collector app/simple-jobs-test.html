@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Jobs Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Simple Jobs Test</h1>
+    <div id="status">Loading...</div>
+    <div id="jobs"></div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const statusDiv = document.getElementById('status');
+            const jobsDiv = document.getElementById('jobs');
+            
+            try {
+                statusDiv.innerHTML = 'Creating Supabase client...';
+                
+                const supabase = window.supabase.createClient(
+                    'https://ishhgfitddfeqaatimwl.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzaGhnZml0ZGRmZXFhYXRpbXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1Nzk1MDAsImV4cCI6MjA3MzE1NTUwMH0.VcBhmUFJu6Yi8Kkn8ihn3rNJsgyKsyVD7qpWh_XjRQ8'
+                );
+                
+                statusDiv.innerHTML = 'Querying available_jobs table...';
+                
+                const { data, error } = await supabase
+                    .from('available_jobs')
+                    .select('*');
+                
+                if (error) {
+                    statusDiv.innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
+                    console.error('Supabase error:', error);
+                } else {
+                    statusDiv.innerHTML = `<span style="color: green;">Success! Found ${data.length} jobs</span>`;
+                    
+                    if (data.length > 0) {
+                        jobsDiv.innerHTML = '<h2>Jobs:</h2>';
+                        data.forEach(job => {
+                            jobsDiv.innerHTML += `
+                                <div style="border: 1px solid #ccc; padding: 10px; margin: 5px;">
+                                    <h3>${job.description || job.customer_name}</h3>
+                                    <p>Type: ${job.job_type}</p>
+                                    <p>Payment: ${job.payment}</p>
+                                    <p>Address: ${job.pickup_address}</p>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        jobsDiv.innerHTML = '<p>No jobs found in table</p>';
+                    }
+                }
+                
+            } catch (err) {
+                statusDiv.innerHTML = `<span style="color: red;">Exception: ${err.message}</span>`;
+                console.error('Exception:', err);
+            }
+        });
+    </script>
+</body>
+</html>

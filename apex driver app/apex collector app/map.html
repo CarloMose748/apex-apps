@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apex Driver - Find Jobs</title>
+  <link rel="stylesheet" href="styles/global.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300d174'><path d='M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z'/></svg>">
+  
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Supabase Configuration -->
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth-service.js"></script>
+  <script src="js/apex-driver-service.js"></script>
+  
+  <style>
+    /* Page specific styles */
+    :root {
+      --primary-color: #00d174;
+    }
+    
+    .gm-style .infowin { 
+      max-width: 280px; 
+    }
+    
+    /* Full-screen map container */
+    .map-container-full {
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+    }
+    
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+    
+    /* Override some map-specific button styles if needed */
+    .map-btn-override {
+      background: var(--primary-color) !important;
+      border: none !important;
+    }
+
+    /* User location marker pulse animation */
+    .user-location-pulse {
+      animation: pulse-blue 2s infinite;
+    }
+
+    @keyframes pulse-blue {
+      0% {
+        box-shadow: 0 0 0 0 rgba(30, 136, 229, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 20px rgba(30, 136, 229, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(30, 136, 229, 0);
+      }
+    }
+  </style>
+</head>
+<body>
+<main class="map-container-full">
+  <div id="map"></div>
+  
+  <!-- Directions Panel -->
+  <div id="directions-panel" class="directions-panel" role="region" aria-labelledby="directionsHeading">
+    <div class="directions-header">
+      <span id="directionsHeading"><span class="icon icon-location icon-sm" aria-hidden="true"></span> Route to Job</span>
+      <button class="close-directions" type="button" onclick="hideDirections()" aria-label="Close directions">×</button>
+    </div>
+    <div class="voice-controls">
+      <button class="voice-btn" type="button" id="playAllBtn" onclick="playAllDirections()">
+        <span class="icon icon-volume icon-sm" aria-hidden="true"></span> Play All
+      </button>
+      <button class="voice-btn" type="button" id="stopVoiceBtn" onclick="stopVoice()" disabled>
+        ⏹️ Stop
+      </button>
+      <button class="voice-btn" type="button" id="liveNavBtn" onclick="toggleLiveNavigation()">
+        <span class="icon icon-compass icon-sm" aria-hidden="true"></span> Start Live Navigation
+      </button>
+      <span class="voice-status" id="voiceStatus" aria-live="polite"></span>
+    </div>
+    <div id="directions-content"></div>
+  </div>
+</main>
+
+<aside class="legend" aria-live="polite">Click any job marker → "Route here" to get directions and start driving!</aside>
+
+<script>
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 1) MOCK "DATABASE" – Available Jobs/Deliveries
+  //    Each item includes: { id, name, address, lat, lng, jobType, payment, distance }
+  // ─────────────────────────────────────────────────────────────────────────────
+  const DB_LOCATIONS = [
+    { 
+      id: 1, 
+      name: "KFC Delivery", 
+      address: "380 Anton Lembede St, Durban Central, Durban", 
+      lat: -29.8587, 
+      lng: 31.0218,
+      jobType: "Food Delivery",
+      payment: "R85",
+      distance: "2.5 km",
+      iconUrl: null 
+    },
+    { 
+      id: 2, 
+      name: "McDonald's Pickup", 
+      address: "Gateway Theatre of Shopping, Umhlanga", 
+      lat: -29.7282, 
+      lng: 31.0621,
+      jobType: "Food Delivery",
+      payment: "R120",
+      distance: "8.2 km",
+      iconUrl: null 
+    },
+    { 
+      id: 3, 
+      name: "Grocery Delivery - Pick n Pay", 
+      address: "115 Musgrave Rd, Berea, Durban", 
+      lat: -29.8386, 
+      lng: 30.9967,
+      jobType: "Grocery Delivery",
+      payment: "R95",
+      distance: "4.1 km",
+      iconUrl: null 
+    },
+    { 
+      id: 4, 
+      name: "Uber Eats - Steers", 
+      address: "1 Chartwell Dr, Umhlanga", 
+      lat: -29.7192, 
+      lng: 31.0421,
+      jobType: "Food Delivery",
+      payment: "R110",
+      distance: "9.5 km",
+      iconUrl: null 
+    },
+    { 
+      id: 5, 
+      name: "Pharmacy Run - Clicks", 
+      address: "Pavilion Shopping Centre, Westville", 
+      lat: -29.8276, 
+      lng: 30.9285,
+      jobType: "Pharmacy Delivery",
+      payment: "R75",
+      distance: "6.8 km",
+      iconUrl: null 
+    },
+    { 
+      id: 6, 
+      name: "Document Delivery", 
+      address: "45 Sydney Rd, Durban CBD", 
+      lat: -29.8642, 
+      lng: 31.0219,
+      jobType: "Document Delivery",
+      payment: "R60",
+      distance: "1.8 km",
+      iconUrl: null 
+    }
+  ];
+
+  // Your custom marker icon (optional). Provide a 32x32 PNG/SVG.
+  const DEFAULT_ICON_URL = null; // e.g. "https://yourcdn.com/markers/apex-pin.svg"
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 2) MAP / SERVICES
+  // ─────────────────────────────────────────────────────────────────────────────
+  let map, geocoder, infoWindow, directionsService, directionsRenderer;
+  let userOriginLatLng = null; // set by geolocation or by geocoding the origin input
+  let userLocationMarker = null; // marker for user's current location
+  
+  // Voice navigation variables
+  let speechSynthesis = window.speechSynthesis;
+  let currentDirections = [];
+  let isPlaying = false;
+  let currentStepIndex = 0;
+  
+  // Live navigation variables
+  let isLiveNavigation = false;
+  let watchPositionId = null;
+  let currentRoute = null;
+  let currentStepInRoute = 0;
+  let lastAnnouncedStep = -1;
+  let userCurrentPosition = null;
+
+  async function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: -29.8587, lng: 31.0218 }, // Durban
+      zoom: 12,
+      mapId: undefined, // you can set a custom MapID style here
+    });
+
+    geocoder = new google.maps.Geocoder();
+    infoWindow = new google.maps.InfoWindow();
+
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({
+      map,
+      suppressMarkers: false,
+      preserveViewport: false,
+    });
+
+    // Automatically request user location on load
+    requestUserLocationOnLoad();
+
+    // Check if there's a selected job from the jobs page
+    handleSelectedJob();
+
+    // Load locations → add markers (geocode if needed)
+    await addLocationsFromDB(DB_LOCATIONS);
+    
+    // Automatically start routing to nearest job
+    setTimeout(autoStartRouting, 2000);
+  }
+
+  // Helper function to get icon for job types
+  function getJobTypeEmoji(jobType) {
+    switch(jobType) {
+      case 'Food Delivery': return '<span class="icon icon-food icon-md" aria-hidden="true"></span>';
+      case 'Grocery Delivery': return '<span class="icon icon-grocery icon-md" aria-hidden="true"></span>';
+      case 'Pharmacy Delivery': return '<span class="icon icon-pharmacy icon-md" aria-hidden="true"></span>';
+      case 'Document Delivery': return '<span class="icon icon-document icon-md" aria-hidden="true"></span>';
+      case 'Package Delivery': return '<span class="icon icon-package icon-md" aria-hidden="true"></span>';
+      default: return '<span class="icon icon-car icon-md" aria-hidden="true"></span>';
+    }
+  }
+
+  // Add many locations: prefer lat/lng; otherwise geocode addresses (rate-limited)
+  async function addLocationsFromDB(items) {
+    for (const loc of items) {
+      try {
+        let position;
+        if (isFinite(loc.lat) && isFinite(loc.lng)) {
+          position = { lat: Number(loc.lat), lng: Number(loc.lng) };
+        } else if (loc.address) {
+          position = await geocodeAddress(loc.address);
+        }
+        if (!position) continue;
+
+        const marker = new google.maps.Marker({
+          position,
+          map,
+          title: loc.name || loc.address,
+          icon: loc.iconUrl || DEFAULT_ICON_URL || undefined,
+        });
+
+        marker.addListener("click", () => {
+          const gmapsLink = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(position.lat + "," + position.lng)}&destination_place_id=&travelmode=driving`;
+          const jobTypeEmoji = getJobTypeEmoji(loc.jobType);
+          const content = `
+            <div class="infowin">
+              <h3>${jobTypeEmoji} ${escapeHtml(loc.name || "Job Available")}</h3>
+              ${loc.address ? `<p><span class="icon icon-location icon-sm" aria-hidden="true"></span> ${escapeHtml(loc.address)}</p>` : ""}
+              <div style="display: flex; justify-content: space-between; margin: 8px 0; font-size: 13px; color: #666;">
+                <span><span class="icon icon-money icon-sm" aria-hidden="true"></span> ${loc.payment || 'TBD'}</span>
+                <span><span class="icon icon-distance icon-sm" aria-hidden="true"></span> ${loc.distance || 'N/A'}</span>
+              </div>
+              ${loc.jobType ? `<p style="background: #e8f5e8; padding: 4px 8px; border-radius: 6px; font-size: 12px; margin: 8px 0; color: #2d5a2d;"><strong>${loc.jobType}</strong></p>` : ""}
+              <div class="actions">
+                <button class="btn btn-primary" type="button" id="routeHereBtn" style="flex: 1;"><span class="icon icon-car icon-sm" aria-hidden="true"></span> Get Directions</button>
+                <a class="btn btn-outline" href="${gmapsLink}" target="_blank" rel="noopener" style="flex: 1;"><span class="icon icon-external icon-sm" aria-hidden="true"></span> Open Maps</a>
+              </div>
+            </div>`;
+          infoWindow.setContent(content);
+          infoWindow.open({ anchor: marker, map });
+
+          // Attach handler after content is set
+          google.maps.event.addListenerOnce(infoWindow, "domready", () => {
+            const btn = document.getElementById("routeHereBtn");
+            if (!btn) return;
+            btn.addEventListener("click", async () => {
+              let origin = userOriginLatLng;
+              if (!origin) {
+                // Try to get current location
+                if (navigator.geolocation) {
+                  try {
+                    const position = await new Promise((resolve, reject) => {
+                      navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000
+                      });
+                    });
+                    origin = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    userOriginLatLng = origin;
+                  } catch (error) {
+                    alert("Unable to get your location. Please allow location access.");
+                    return;
+                  }
+                } else {
+                  alert("Geolocation is not supported by your browser.");
+                  return;
+                }
+              }
+              routeTo(origin, position);
+            });
+          });
+        });
+      } catch (e) {
+        console.warn("Failed to add location", loc, e);
+      }
+    }
+  }
+
+  function routeTo(originLatLng, destLatLng) {
+    const request = {
+      origin: originLatLng,
+      destination: destLatLng,
+      travelMode: google.maps.TravelMode.DRIVING,
+      provideRouteAlternatives: true,
+    };
+    directionsService.route(request, (result, status) => {
+      if (status === "OK") {
+        directionsRenderer.setDirections(result);
+        
+        // Display turn-by-turn instructions in our custom panel
+        displayDirections(result);
+      } else {
+        alert("Directions request failed: " + status);
+      }
+    });
+  }
+
+  function displayDirections(result) {
+    const route = result.routes[0];
+    const leg = route.legs[0];
+    const directionsPanel = document.getElementById('directions-panel');
+    const directionsContent = document.getElementById('directions-content');
+    
+    // Store directions for voice navigation
+    currentDirections = [];
+    currentRoute = result; // Store full route for live navigation
+    currentStepInRoute = 0;
+    lastAnnouncedStep = -1;
+    
+    let html = '';
+    
+    // Add route summary
+    const summaryText = `Route summary: ${leg.distance.text}, estimated time ${leg.duration.text}`;
+    html += `<div class="directions-step">
+      <div class="step-instruction"><strong>Route Summary</strong></div>
+      <div class="step-distance">Distance: ${leg.distance.text} • Duration: ${leg.duration.text}</div>
+    </div>`;
+    currentDirections.push(summaryText);
+    
+    // Add each step
+    leg.steps.forEach((step, index) => {
+      // Remove HTML tags from instructions and clean up for voice
+      const instruction = step.instructions.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+      const voiceInstruction = `Step ${index + 1}: ${instruction}. Distance: ${step.distance.text}`;
+      
+      html += `<div class="directions-step" data-step="${index}" id="step-${index}">
+        <div class="step-instruction">
+          ${index + 1}. ${instruction}
+          <button class="voice-btn" type="button" style="margin-left: 8px; padding: 2px 6px;" onclick="speakStep(${index + 1})"><span class="icon icon-volume icon-sm" aria-hidden="true"></span></button>
+        </div>
+        <div class="step-distance">${step.distance.text} • ${step.duration.text}</div>
+      </div>`;
+      
+      currentDirections.push(voiceInstruction);
+    });
+    
+    directionsContent.innerHTML = html;
+    directionsPanel.classList.add('show');
+    
+    // Reset voice controls
+    updateVoiceControls();
+  }
+
+  // Voice Navigation Functions
+  function playAllDirections() {
+    if (!speechSynthesis) {
+      alert('Speech synthesis not supported in this browser.');
+      return;
+    }
+    
+    stopVoice(); // Stop any current speech
+    isPlaying = true;
+    currentStepIndex = 0;
+    updateVoiceControls();
+    
+    playNextStep();
+  }
+
+  function playNextStep() {
+    if (!isPlaying || currentStepIndex >= currentDirections.length) {
+      isPlaying = false;
+      updateVoiceControls();
+      return;
+    }
+    
+    const utterance = new SpeechSynthesisUtterance(currentDirections[currentStepIndex]);
+    utterance.rate = 0.9; // Slightly slower for clarity
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    
+    // Highlight current step
+    highlightStep(currentStepIndex);
+    
+    utterance.onend = () => {
+      currentStepIndex++;
+      setTimeout(() => {
+        playNextStep();
+      }, 1000); // 1 second pause between steps
+    };
+    
+    utterance.onerror = () => {
+      isPlaying = false;
+      updateVoiceControls();
+    };
+    
+    speechSynthesis.speak(utterance);
+  }
+
+  function speakStep(stepNumber) {
+    if (!speechSynthesis) {
+      alert('Speech synthesis not supported in this browser.');
+      return;
+    }
+    
+    stopVoice();
+    
+    if (stepNumber <= currentDirections.length) {
+      const utterance = new SpeechSynthesisUtterance(currentDirections[stepNumber]);
+      utterance.rate = 0.9;
+      speechSynthesis.speak(utterance);
+      
+      highlightStep(stepNumber);
+      
+      utterance.onend = () => {
+        removeHighlight();
+      };
+    }
+  }
+
+  function stopVoice() {
+    if (speechSynthesis) {
+      speechSynthesis.cancel();
+    }
+    isPlaying = false;
+    removeHighlight();
+    updateVoiceControls();
+  }
+
+  function highlightStep(stepIndex) {
+    removeHighlight();
+    const steps = document.querySelectorAll('.directions-step');
+    if (steps[stepIndex]) {
+      steps[stepIndex].style.backgroundColor = '#e3f2fd';
+      steps[stepIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  function removeHighlight() {
+    const steps = document.querySelectorAll('.directions-step');
+    steps.forEach(step => {
+      step.style.backgroundColor = '';
+    });
+  }
+
+  function updateVoiceControls() {
+    const playBtn = document.getElementById('playAllBtn');
+    const stopBtn = document.getElementById('stopVoiceBtn');
+    const liveBtn = document.getElementById('liveNavBtn');
+    const status = document.getElementById('voiceStatus');
+    
+    if (isPlaying) {
+      playBtn.disabled = true;
+      stopBtn.disabled = false;
+      playBtn.classList.add('speaking');
+      status.textContent = `Playing step ${currentStepIndex + 1} of ${currentDirections.length}`;
+    } else {
+      playBtn.disabled = false;
+      stopBtn.disabled = true;
+      playBtn.classList.remove('speaking');
+      
+      if (isLiveNavigation) {
+        status.textContent = `Live navigation active - Step ${currentStepInRoute + 1}`;
+        liveBtn.innerHTML = '<span class="icon icon-stop icon-sm" aria-hidden="true"></span> Stop Live Navigation';
+        liveBtn.classList.add('live-active');
+      } else {
+        status.textContent = '';
+        liveBtn.innerHTML = '<span class="icon icon-compass icon-sm" aria-hidden="true"></span> Start Live Navigation';
+        liveBtn.classList.remove('live-active');
+      }
+    }
+  }
+
+  // Live Navigation Functions
+  function toggleLiveNavigation() {
+    if (isLiveNavigation) {
+      stopLiveNavigation();
+    } else {
+      startLiveNavigation();
+    }
+  }
+
+  function startLiveNavigation() {
+    if (!navigator.geolocation) {
+      alert('Geolocation is required for live navigation.');
+      return;
+    }
+
+    if (!currentRoute) {
+      alert('Please get directions first before starting live navigation.');
+      return;
+    }
+
+    isLiveNavigation = true;
+    currentStepInRoute = 0;
+    lastAnnouncedStep = -1;
+    
+    // Start watching user's position
+    watchPositionId = navigator.geolocation.watchPosition(
+      onPositionUpdate,
+      onPositionError,
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000
+      }
+    );
+
+    updateVoiceControls();
+    
+    // Announce start of navigation
+    speakLiveInstruction("Live navigation started. Proceeding to route.");
+  }
+
+  function stopLiveNavigation() {
+    isLiveNavigation = false;
+    
+    if (watchPositionId) {
+      navigator.geolocation.clearWatch(watchPositionId);
+      watchPositionId = null;
+    }
+    
+    removeHighlight();
+    updateVoiceControls();
+    
+    speakLiveInstruction("Live navigation stopped.");
+  }
+
+  function onPositionUpdate(position) {
+    userCurrentPosition = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude
+    };
+
+    if (!isLiveNavigation || !currentRoute) return;
+
+    const route = currentRoute.routes[0];
+    const steps = route.legs[0].steps;
+    
+    if (currentStepInRoute >= steps.length) {
+      // Route completed
+      stopLiveNavigation();
+      speakLiveInstruction("You have arrived at your destination!");
+      return;
+    }
+
+    const currentStep = steps[currentStepInRoute];
+    const stepStart = currentStep.start_location;
+    const stepEnd = currentStep.end_location;
+    
+    // Calculate distance to current step start and end
+    const distanceToStepStart = calculateDistance(userCurrentPosition, stepStart);
+    const distanceToStepEnd = calculateDistance(userCurrentPosition, stepEnd);
+    
+    // If user is close to the end of current step, move to next step
+    if (distanceToStepEnd < 50) { // 50 meters threshold
+      currentStepInRoute++;
+      
+      if (currentStepInRoute < steps.length) {
+        announceNextStep();
+      }
+    }
+    // If user is approaching current step and hasn't been announced yet
+    else if (distanceToStepStart < 100 && lastAnnouncedStep < currentStepInRoute) { // 100 meters threshold
+      announceCurrentStep();
+    }
+
+    // Highlight current step in UI
+    highlightLiveStep(currentStepInRoute);
+  }
+
+  function onPositionError(error) {
+    console.warn('Live navigation position error:', error);
+    if (isLiveNavigation) {
+      speakLiveInstruction("GPS signal lost. Trying to reconnect.");
+    }
+  }
+
+  function announceCurrentStep() {
+    if (!currentRoute || currentStepInRoute >= currentRoute.routes[0].legs[0].steps.length) return;
+    
+    const step = currentRoute.routes[0].legs[0].steps[currentStepInRoute];
+    const instruction = step.instructions.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+    
+    lastAnnouncedStep = currentStepInRoute;
+    speakLiveInstruction(`In 100 meters, ${instruction}`);
+  }
+
+  function announceNextStep() {
+    if (!currentRoute || currentStepInRoute >= currentRoute.routes[0].legs[0].steps.length) return;
+    
+    const step = currentRoute.routes[0].legs[0].steps[currentStepInRoute];
+    const instruction = step.instructions.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+    
+    speakLiveInstruction(instruction);
+  }
+
+  function speakLiveInstruction(text) {
+    if (!speechSynthesis) return;
+    
+    // Stop any current speech for immediate instruction
+    speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0; // Normal speed for live navigation
+    utterance.pitch = 1.1; // Slightly higher pitch for attention
+    utterance.volume = 1;
+    
+    speechSynthesis.speak(utterance);
+  }
+
+  function highlightLiveStep(stepIndex) {
+    removeHighlight();
+    const stepElement = document.getElementById(`step-${stepIndex}`);
+    if (stepElement) {
+      stepElement.style.backgroundColor = '#fff3cd';
+      stepElement.style.borderLeft = '4px solid #ff6b35';
+      stepElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  function calculateDistance(pos1, pos2) {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = pos1.lat * Math.PI/180;
+    const φ2 = pos2.lat * Math.PI/180;
+    const Δφ = (pos2.lat-pos1.lat) * Math.PI/180;
+    const Δλ = (pos2.lng-pos1.lng) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // Distance in meters
+  }
+
+  function hideDirections() {
+    document.getElementById('directions-panel').classList.remove('show');
+    stopVoice(); // Stop any playing voice when hiding directions
+    stopLiveNavigation(); // Stop live navigation when hiding directions
+  }
+
+  // Handle selected job from jobs page
+  function handleSelectedJob() {
+    const selectedJob = localStorage.getItem('selectedJob');
+    const acceptedJob = localStorage.getItem('acceptedJob');
+    const storedUserLocation = localStorage.getItem('userLocation');
+    
+    if (selectedJob || acceptedJob) {
+      if (acceptedJob) {
+        const job = JSON.parse(acceptedJob);
+        
+        // Auto-route to accepted job if user location is available
+        if (storedUserLocation) {
+          const userLoc = JSON.parse(storedUserLocation);
+          userOriginLatLng = userLoc;
+          
+          // Small delay to ensure map is loaded
+          setTimeout(() => {
+            const jobPosition = { lat: job.lat, lng: job.lng };
+            routeTo(userLoc, jobPosition);
+          }, 1000);
+        }
+      } else {
+        const job = JSON.parse(selectedJob);
+        
+        // Focus on selected job
+        setTimeout(() => {
+          const jobPosition = { lat: job.lat, lng: job.lng };
+          map.panTo(jobPosition);
+          map.setZoom(15);
+        }, 500);
+      }
+      
+      // Clear the stored job after handling
+      localStorage.removeItem('selectedJob');
+      localStorage.removeItem('acceptedJob');
+    }
+    
+    // Set user location from storage if available
+    if (storedUserLocation && !userOriginLatLng) {
+      userOriginLatLng = JSON.parse(storedUserLocation);
+      document.getElementById("origin").value = `${userOriginLatLng.lat.toFixed(5)}, ${userOriginLatLng.lng.toFixed(5)}`;
+    }
+  }
+
+  // Automatically request user location when map loads
+  function requestUserLocationOnLoad() {
+    if (!navigator.geolocation) {
+      console.log("Geolocation isn't supported in this browser.");
+      return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        userOriginLatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        
+        // Create a distinct blue lollipop marker for user location
+        createUserLocationMarker(userOriginLatLng);
+        
+        // Update the origin input with user's location
+        document.getElementById("origin").value = `${userOriginLatLng.lat.toFixed(5)}, ${userOriginLatLng.lng.toFixed(5)}`;
+        
+        // Center map on user location
+        map.panTo(userOriginLatLng);
+        map.setZoom(14);
+      },
+      (err) => {
+        console.log("Could not get your location automatically: " + err.message);
+        // Silently fail for automatic location request
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+    );
+  }
+
+  // Create a distinct blue lollipop marker for user location
+  function createUserLocationMarker(position) {
+    // Remove existing user location marker if it exists
+    if (userLocationMarker) {
+      userLocationMarker.setMap(null);
+    }
+
+    // Create custom blue lollipop icon
+    const userLocationIcon = {
+      path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+      fillColor: "#1E88E5", // Material Blue 600
+      fillOpacity: 1,
+      strokeColor: "#FFFFFF",
+      strokeWeight: 2,
+      scale: 2,
+      anchor: new google.maps.Point(12, 24)
+    };
+
+    // Create the marker
+    userLocationMarker = new google.maps.Marker({
+      position: position,
+      map: map,
+      title: "Your Current Location",
+      icon: userLocationIcon,
+      zIndex: 1000 // Higher z-index to appear above other markers
+    });
+
+    // Add info window for user location
+    userLocationMarker.addListener("click", () => {
+      const content = `
+        <div class="infowin">
+          <h3><span class="icon icon-location icon-md" aria-hidden="true"></span> Your Location</h3>
+          <p>This is your current position</p>
+          <div style="margin-top: 12px;">
+            <button class="btn btn-primary" type="button" onclick="recenterOnUser()" style="width: 100%;"><span class="icon icon-target icon-sm" aria-hidden="true"></span> Center Map Here</button>
+          </div>
+        </div>`;
+      infoWindow.setContent(content);
+      infoWindow.open({ anchor: userLocationMarker, map });
+    });
+  }
+
+  // Function to recenter map on user location
+  window.recenterOnUser = function() {
+    if (userOriginLatLng) {
+      map.panTo(userOriginLatLng);
+      map.setZoom(14);
+      infoWindow.close();
+    }
+  };
+
+  // If the origin input is filled, geocode it; else use previous geolocation
+  async function resolveOrigin(originText) {
+    if (userOriginLatLng && (!originText || /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/.test(originText) === false)) {
+      return userOriginLatLng; // already captured via geolocation
+    }
+    if (!originText) return null;
+
+    // If user pasted lat,lng
+    const m = originText.match(/^-?\d+\.?\d*,\s*-?\d+\.?\d*$/);
+    if (m) {
+      const [lat, lng] = originText.split(",").map(Number);
+      return { lat, lng };
+    }
+
+    // Otherwise geocode the address text
+    const latLng = await geocodeAddress(originText);
+    return latLng;
+  }
+
+  function geocodeAddress(address) {
+    return new Promise((resolve, reject) => {
+      geocoder.geocode({ address }, (results, status) => {
+        if (status === "OK" && results[0]) {
+          resolve(results[0].geometry.location);
+        } else if (status === "OVER_QUERY_LIMIT") {
+          alert("Geocoding rate limit hit. Please store lat/lng in your DB.");
+          reject(new Error(status));
+        } else {
+          reject(new Error(status || "Geocoding failed"));
+        }
+      });
+    });
+  }
+
+  // Automatically start routing to the nearest available job
+  async function autoStartRouting() {
+    console.log('AutoStartRouting: Starting automatic routing...');
+    
+    // Check if user location is available
+    if (!userOriginLatLng) {
+      console.log('AutoStartRouting: User location not available, requesting location...');
+      
+      // Try to get user location
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000
+            });
+          });
+          
+          userOriginLatLng = { 
+            lat: position.coords.latitude, 
+            lng: position.coords.longitude 
+          };
+          
+          // Create user location marker
+          createUserLocationMarker(userOriginLatLng);
+          
+          console.log('AutoStartRouting: User location obtained:', userOriginLatLng);
+          
+        } catch (error) {
+          console.error('AutoStartRouting: Could not get user location:', error);
+          
+          // Use default Durban location as fallback
+          userOriginLatLng = { lat: -29.8587, lng: 31.0218 };
+          console.log('AutoStartRouting: Using default Durban location as fallback');
+        }
+      } else {
+        // Use default location if geolocation not supported
+        userOriginLatLng = { lat: -29.8587, lng: 31.0218 };
+        console.log('AutoStartRouting: Geolocation not supported, using default location');
+      }
+    }
+
+    // Find the nearest available job
+    const nearestJob = findNearestJob(userOriginLatLng);
+    
+    if (nearestJob) {
+      console.log('AutoStartRouting: Found nearest job:', nearestJob);
+      
+      // Focus map on the route
+      map.panTo(nearestJob.position);
+      map.setZoom(14);
+      
+      // Start routing to the nearest job
+      routeTo(userOriginLatLng, nearestJob.position);
+      
+      // Show notification about auto-routing
+      showAutoRoutingNotification(nearestJob);
+      
+      // Start live navigation immediately
+      setTimeout(() => {
+        toggleLiveNavigation();
+      }, 2000);
+      
+    } else {
+      console.log('AutoStartRouting: No jobs available');
+    }
+  }
+
+  // Find the nearest job to the user's location
+  function findNearestJob(userLocation) {
+    let nearestJob = null;
+    let shortestDistance = Infinity;
+
+    DB_LOCATIONS.forEach(job => {
+      if (job.lat && job.lng) {
+        const jobLocation = { lat: job.lat, lng: job.lng };
+        const distance = calculateDistance(userLocation, jobLocation);
+        
+        if (distance < shortestDistance) {
+          shortestDistance = distance;
+          nearestJob = {
+            ...job,
+            position: jobLocation,
+            distance: distance
+          };
+        }
+      }
+    });
+
+    return nearestJob;
+  }
+
+  // Show notification about automatic routing
+  function showAutoRoutingNotification(job) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--primary-color);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      font-size: 14px;
+      font-weight: 500;
+      max-width: 90vw;
+      text-align: center;
+      animation: slideDown 0.5s ease-out;
+    `;
+    
+    notification.innerHTML = `
+      <span class="icon icon-car icon-sm" style="display: inline-block; vertical-align: middle; margin-right: 6px; filter: brightness(0) invert(1);"></span> Auto-routing to nearest job: <strong>${job.name}</strong><br>
+      <small><span class="icon icon-money icon-sm" style="display: inline-block; vertical-align: middle; filter: brightness(0) invert(1);"></span> ${job.payment} &bull; <span class="icon icon-location icon-sm" style="display: inline-block; vertical-align: middle; filter: brightness(0) invert(1);"></span> ${(job.distance / 1000).toFixed(1)} km away</small>
+    `;
+    
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideDown {
+        from { top: -100px; opacity: 0; }
+        to { top: 20px; opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(notification);
+    
+    // Remove notification after 5 seconds
+    setTimeout(() => {
+      notification.style.transition = 'all 0.5s ease-out';
+      notification.style.opacity = '0';
+      notification.style.transform = 'translateX(-50%) translateY(-20px)';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 500);
+    }, 5000);
+  }
+
+  // Small helper to avoid XSS in InfoWindow
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"]+/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[s]));
+  }
+</script>
+
+<!-- Replace YOUR_API_KEY with your Maps JavaScript API key. Ensure Billing is enabled and the Geocoding & Directions APIs are also enabled. -->
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBvYq6yNASqpfBkXWuUUliHe5dJmg5mlJs&libraries=places&callback=initMap"></script>
+</body>
+</html>

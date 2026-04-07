@@ -1,0 +1,57 @@
+
+# Environment variables - NEVER commit these files
+.env
+.env.local
+.env.development
+.env.production
+
+# Supabase local development
+.supabase/
+
+# Logs
+*.log
+logs/
+
+# Node modules (if you add Node.js later)
+node_modules/
+
+# IDE files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build outputs (if you add build tools later)
+dist/
+build/
+public/build/
+
+# Database dumps
+*.sql.backup
+*.dump
+
+# AI Rules (existing)
+.clinerules/byterover-rules.md
+.kilocode/rules/byterover-rules.md
+.roo/rules/byterover-rules.md
+.windsurf/rules/byterover-rules.md
+.cursor/rules/byterover-rules.mdc
+.kiro/steering/byterover-rules.md
+.qoder/rules/byterover-rules.md
+.augment/rules/byterover-rules.md
+
+# Ignore kluster.ai Verify Code rules
+.github/instructions/kluster-code-verify.instructions.md

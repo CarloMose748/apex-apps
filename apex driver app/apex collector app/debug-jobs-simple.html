@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Jobs</title>
+</head>
+<body>
+    <h1>Debug Jobs</h1>
+    <button onclick="testDatabaseConnection()">Test Database</button>
+    <div id="output"></div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const supabaseUrl = 'https://gwifqztaegzpcwgvezuy.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3aWZxenRhZWd6cGN3Z3ZlenV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjc3NzA1NzksImV4cCI6MjA0MzM0NjU3OX0.NTaR2vWZXJhVhK6fEqvRnAkU9xP2kDgFY8I-HYvVWqI';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        window.testDatabaseConnection = async function() {
+            const output = document.getElementById('output');
+            
+            try {
+                console.log('Testing database connection...');
+                output.innerHTML = '<p>Testing database connection...</p>';
+                
+                const { data, error } = await supabase
+                    .from('available_jobs')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.error('Database error:', error);
+                    output.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                    return;
+                }
+                
+                console.log('Raw database data:', data);
+                output.innerHTML = `
+                    <h2>Database Results:</h2>
+                    <p><strong>Records found:</strong> ${data?.length || 0}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                    
+                    <h2>Formatted Jobs:</h2>
+                `;
+                
+                // Test formatting
+                const formattedJobs = data?.map(job => {
+                    console.log('Formatting job:', job);
+                    return {
+                        id: job.id,
+                        name: job.description || job.customer_name || job.title || 'Delivery Job',
+                        address: job.address || job.pickup_address || 'Address not specified',
+                        jobType: job.job_type || job.type || 'Food Delivery',
+                        payment: job.payment || job.amount || 'R50',
+                        estimatedTime: job.estimated_time || job.duration || '30 min'
+                    };
+                }) || [];
+                
+                console.log('Formatted jobs:', formattedJobs);
+                output.innerHTML += `<pre>${JSON.stringify(formattedJobs, null, 2)}</pre>`;
+                
+            } catch (err) {
+                console.error('Connection error:', err);
+                output.innerHTML = `<p style="color: red;">Connection error: ${err.message}</p>`;
+            }
+        };
+    </script>
+</body>
+</html>

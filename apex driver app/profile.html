@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Apex Driver</title>
+    <link rel="stylesheet" href="styles/global.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300d174'><path d='M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z'/></svg>">
+    
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Supabase Configuration -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/auth-service.js"></script>
+    <script src="js/apex-driver-service.js"></script>
+    
+    <style>
+        body {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            min-height: 100vh;
+        }
+
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px 20px;
+            min-height: 100vh;
+        }
+
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 40px 32px;
+            border-radius: 24px;
+            text-align: center;
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(37, 99, 235, 0.25);
+        }
+
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 20px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .profile-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+            position: relative;
+        }
+
+        .profile-header #profileEmail {
+            opacity: 0.85;
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .profile-section {
+            background: white;
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+            border: 1px solid rgba(226, 232, 240, 0.6);
+        }
+
+        .profile-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 24px;
+            border-bottom: 2px solid #eff6ff;
+            padding-bottom: 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 16px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 15px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+            color: var(--text-primary);
+            background: white;
+        }
+
+        .form-group input:hover, .form-group select:hover, .form-group textarea:hover {
+            border-color: #cbd5e1;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-group input:disabled {
+            background: #f8fafc;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #475569;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            position: relative;
+        }
+
+        .status-active { 
+            background: #ecfdf5; 
+            color: #059669;
+            box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
+        }
+        .status-busy { 
+            background: #fff7ed; 
+            color: #ea580c;
+            box-shadow: 0 2px 8px rgba(234, 88, 12, 0.15);
+        }
+        .status-offline { 
+            background: #fef2f2; 
+            color: #dc2626;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 24px 20px;
+            border-radius: 18px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.2);
+            transition: all 0.25s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.3);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.85;
+            font-weight: 500;
+        }
+
+        .back-nav {
+            margin-bottom: 24px;
+        }
+
+        .back-nav a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s;
+        }
+
+        .back-nav a:hover {
+            color: var(--primary-dark);
+        }
+
+        .success-message, .error-message {
+            padding: 16px 20px;
+            border-radius: 14px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .success-message {
+            background: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        @media (max-width: 768px) {
+            .profile-container {
+                padding: 16px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-header {
+                padding: 32px 24px;
+                border-radius: 20px;
+            }
+
+            .profile-section {
+                padding: 24px 20px;
+                border-radius: 16px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger Menu -->
+    <div id="hamburger-menu"></div>
+    
+    <div class="profile-container">
+        <!-- Navigation -->
+        <div class="back-nav">
+            <a href="main.html">← Back to Dashboard</a>
+        </div>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="profile-avatar" id="profileAvatar">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+            </div>
+            <h1 id="profileName">Loading...</h1>
+            <p id="profileEmail">Loading...</p>
+            <span id="profileStatus" class="status-badge">Loading...</span>
+        </div>
+
+        <!-- Messages -->
+        <div id="successMessage" class="success-message" style="display: none;"></div>
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <!-- Basic Information -->
+        <div class="profile-section">
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                Basic Information
+            </h3>
+            <form id="basicInfoForm" onsubmit="updateBasicInfo(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="fullName">Full Name</label>
+                        <input type="text" id="fullName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" disabled>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phoneNumber">Phone Number</label>
+                        <input type="tel" id="phoneNumber" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userType">User Type</label>
+                        <input type="text" id="userType" disabled>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="basicInfoBtn">
+                    Update Basic Information
+                </button>
+            </form>
+        </div>
+
+        <!-- Driver Information (shown only for drivers) -->
+        <div id="driverSection" class="profile-section" style="display: none;">
+            <h3>🚗 Driver Information</h3>
+            <form id="driverInfoForm" onsubmit="updateDriverInfo(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="vehicleType">Vehicle Type</label>
+                        <select id="vehicleType">
+                            <option value="car">Car</option>
+                            <option value="motorcycle">Motorcycle</option>
+                            <option value="bicycle">Bicycle</option>
+                            <option value="van">Van</option>
+                            <option value="truck">Truck</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="licenseNumber">License Number</label>
+                        <input type="text" id="licenseNumber">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="vehicleMake">Vehicle Make</label>
+                        <input type="text" id="vehicleMake" placeholder="e.g., Toyota">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="vehicleModel">Vehicle Model</label>
+                        <input type="text" id="vehicleModel" placeholder="e.g., Corolla">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="vehicleYear">Vehicle Year</label>
+                        <input type="number" id="vehicleYear" min="1990" max="2030">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="vehiclePlate">License Plate</label>
+                        <input type="text" id="vehiclePlate" placeholder="e.g., CA123GP">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="driverInfoBtn">
+                    Update Driver Information
+                </button>
+            </form>
+        </div>
+
+        <!-- Statistics (for drivers) -->
+        <div id="statsSection" class="profile-section" style="display: none;">
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                </svg>
+                Statistics
+            </h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalJobs">-</div>
+                    <div class="stat-label">Total Jobs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalEarnings">-</div>
+                    <div class="stat-label">Total Earnings</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgJobValue">-</div>
+                    <div class="stat-label">Avg Job Value</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="driverRating">-</div>
+                    <div class="stat-label">Rating</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Settings -->
+        <div class="profile-section">
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;">
+                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                </svg>
+                Security Settings
+            </h3>
+            <form id="passwordForm" onsubmit="updatePassword(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" minlength="6" placeholder="Leave blank to keep current password">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" placeholder="Confirm new password">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-secondary" id="passwordBtn">
+                    Update Password
+                </button>
+            </form>
+        </div>
+
+        <!-- Account Actions -->
+        <div class="profile-section">
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;">
+                    <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                </svg>
+                Account Actions
+            </h3>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="refreshProfile()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                    </svg>
+                    Refresh Profile
+                </button>
+                
+                <button class="btn btn-danger" onclick="confirmLogout()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                    </svg>
+                    Logout
+                </button>
+                
+                <a href="test.html" class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7 2v2H4v2h3v2l3-3-3-3zm10 0l-3 3 3 3V6h3V4h-3V2zm-2 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm-8 2l-3 3 3 3v-2h3v-2H4v-2z"/>
+                    </svg>
+                    Test Suite
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let driverRecord = null;
+
+        // Wait for Supabase to be ready and check auth
+        document.addEventListener('supabaseReady', async function() {
+            console.log('Profile page: Supabase ready');
+            
+            // Check authentication
+            const isAuthed = await checkAuth();
+            if (!isAuthed) return; // Will redirect to auth page
+            
+            // Load user profile
+            await loadUserProfile();
+        });
+
+        async function loadUserProfile() {
+            try {
+                // Get current user
+                currentUser = authService.getCurrentUser();
+                const userInfo = await authService.formatUserInfo(); // Now async
+                
+                if (!currentUser || !userInfo) {
+                    showError('Unable to load user information');
+                    return;
+                }
+
+                // Display user info in header
+                document.getElementById('profileName').textContent = userInfo.name;
+                document.getElementById('profileEmail').textContent = userInfo.email;
+                
+                // Set avatar
+                const avatar = document.getElementById('profileAvatar');
+                if (userInfo.userType === 'driver') {
+                    avatar.textContent = '🚗';
+                } else if (userInfo.userType === 'admin') {
+                    avatar.textContent = '🛡️';
+                } else {
+                    avatar.textContent = '📦';
+                }
+
+                // Fill form fields
+                document.getElementById('fullName').value = userInfo.name || '';
+                document.getElementById('email').value = userInfo.email || '';
+                document.getElementById('phoneNumber').value = userInfo.phoneNumber || '';
+                document.getElementById('userType').value = userInfo.userType?.toUpperCase() || '';
+
+                // Show driver section if user is a driver
+                if (userInfo.userType === 'driver') {
+                    document.getElementById('driverSection').style.display = 'block';
+                    document.getElementById('statsSection').style.display = 'block';
+                    await loadDriverInfo();
+                    await loadDriverStats();
+                }
+
+                // Set status badge
+                const statusBadge = document.getElementById('profileStatus');
+                if (userInfo.userType === 'driver' && driverRecord) {
+                    statusBadge.textContent = driverRecord.status || 'active';
+                    statusBadge.className = `status-badge status-${driverRecord.status || 'active'}`;
+                } else {
+                    statusBadge.textContent = 'active';
+                    statusBadge.className = 'status-badge status-active';
+                }
+
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showError('Failed to load profile information');
+            }
+        }
+
+        async function loadDriverInfo() {
+            try {
+                // Get driver record from database
+                const { data, error } = await SupabaseUtils.selectRecords('drivers', { 
+                    email: currentUser.email 
+                }, { limit: 1 });
+
+                if (error) {
+                    console.error('Error loading driver info:', error);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    driverRecord = data[0];
+                    
+                    // Fill driver form fields
+                    document.getElementById('vehicleType').value = driverRecord.vehicle_type || '';
+                    document.getElementById('licenseNumber').value = driverRecord.license_number || '';
+                    document.getElementById('vehicleMake').value = driverRecord.vehicle_make || '';
+                    document.getElementById('vehicleModel').value = driverRecord.vehicle_model || '';
+                    document.getElementById('vehicleYear').value = driverRecord.vehicle_year || '';
+                    document.getElementById('vehiclePlate').value = driverRecord.vehicle_plate || '';
+                }
+            } catch (error) {
+                console.error('Error loading driver info:', error);
+            }
+        }
+
+        async function loadDriverStats() {
+            try {
+                if (!driverRecord) return;
+
+                const { data, error } = await ApexDriverService.getDriverStats(driverRecord.id);
+
+                if (error) {
+                    console.error('Error loading driver stats:', error);
+                    return;
+                }
+
+                if (data) {
+                    document.getElementById('totalJobs').textContent = data.totalJobs || 0;
+                    document.getElementById('totalEarnings').textContent = `R${data.totalEarnings?.toFixed(2) || '0.00'}`;
+                    document.getElementById('avgJobValue').textContent = `R${data.averageJobValue?.toFixed(2) || '0.00'}`;
+                    document.getElementById('driverRating').textContent = (driverRecord.rating || 5.0).toFixed(1);
+                }
+            } catch (error) {
+                console.error('Error loading driver stats:', error);
+            }
+        }
+
+        async function updateBasicInfo(event) {
+            event.preventDefault();
+            
+            const fullName = document.getElementById('fullName').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+
+            try {
+                setLoading('basicInfoBtn', true);
+                clearMessages();
+
+                // Update Supabase user metadata
+                const { error } = await authService.updateProfile({
+                    full_name: fullName,
+                    phone_number: phoneNumber
+                });
+
+                if (error) {
+                    showError('Failed to update profile: ' + error.message);
+                } else {
+                    showSuccess('Basic information updated successfully!');
+                    
+                    // Update driver record if applicable
+                    if (driverRecord) {
+                        await SupabaseUtils.updateRecord('drivers', driverRecord.id, {
+                            full_name: fullName,
+                            phone_number: phoneNumber
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating basic info:', error);
+                showError('An unexpected error occurred');
+            } finally {
+                setLoading('basicInfoBtn', false);
+            }
+        }
+
+        async function updateDriverInfo(event) {
+            event.preventDefault();
+            
+            if (!driverRecord) {
+                showError('Driver record not found');
+                return;
+            }
+
+            const vehicleType = document.getElementById('vehicleType').value;
+            const licenseNumber = document.getElementById('licenseNumber').value;
+            const vehicleMake = document.getElementById('vehicleMake').value;
+            const vehicleModel = document.getElementById('vehicleModel').value;
+            const vehicleYear = document.getElementById('vehicleYear').value;
+            const vehiclePlate = document.getElementById('vehiclePlate').value;
+
+            try {
+                setLoading('driverInfoBtn', true);
+                clearMessages();
+
+                const updates = {
+                    vehicle_type: vehicleType,
+                    license_number: licenseNumber,
+                    vehicle_make: vehicleMake,
+                    vehicle_model: vehicleModel,
+                    vehicle_year: vehicleYear ? parseInt(vehicleYear) : null,
+                    vehicle_plate: vehiclePlate
+                };
+
+                const { error } = await SupabaseUtils.updateRecord('drivers', driverRecord.id, updates);
+
+                if (error) {
+                    showError('Failed to update driver information: ' + error.message);
+                } else {
+                    showSuccess('Driver information updated successfully!');
+                    driverRecord = { ...driverRecord, ...updates };
+                }
+            } catch (error) {
+                console.error('Error updating driver info:', error);
+                showError('An unexpected error occurred');
+            } finally {
+                setLoading('driverInfoBtn', false);
+            }
+        }
+
+        async function updatePassword(event) {
+            event.preventDefault();
+            
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!newPassword) {
+                return; // No password change requested
+            }
+
+            if (newPassword !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+
+            try {
+                setLoading('passwordBtn', true);
+                clearMessages();
+
+                const { error } = await authService.updatePassword(newPassword);
+
+                if (error) {
+                    showError('Failed to update password: ' + error.message);
+                } else {
+                    showSuccess('Password updated successfully!');
+                    document.getElementById('passwordForm').reset();
+                }
+            } catch (error) {
+                console.error('Error updating password:', error);
+                showError('An unexpected error occurred');
+            } finally {
+                setLoading('passwordBtn', false);
+            }
+        }
+
+        async function refreshProfile() {
+            clearMessages();
+            showSuccess('Refreshing profile...');
+            await loadUserProfile();
+            showSuccess('Profile refreshed successfully!');
+        }
+
+        async function confirmLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    await authService.signOut();
+                    window.location.href = 'auth.html';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    window.location.href = 'auth.html';
+                }
+            }
+        }
+
+        // Utility functions
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function clearMessages() {
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const originalText = button.textContent;
+            
+            if (isLoading) {
+                button.disabled = true;
+                button.textContent = 'Updating...';
+            } else {
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        }
+
+    </script>
+
+<!-- Bottom Navigation Bar -->
+<nav class="bottom-nav" id="bottomNav">
+  <a href="main.html" class="bottom-nav-item" data-page="main">
+    <svg class="bottom-nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+    </svg>
+    <span class="bottom-nav-label">Home</span>
+  </a>
+  <a href="jobs.html" class="bottom-nav-item" data-page="jobs">
+    <svg class="bottom-nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+    </svg>
+    <span class="bottom-nav-label">Jobs</span>
+  </a>
+  <a href="my-jobs.html" class="bottom-nav-item" data-page="my-jobs">
+    <svg class="bottom-nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+    </svg>
+    <span class="bottom-nav-label">My Jobs</span>
+  </a>
+  <a href="profile.html" class="bottom-nav-item active" data-page="profile">
+    <svg class="bottom-nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+    </svg>
+    <span class="bottom-nav-label">Profile</span>
+  </a>
+</nav>
+
+</body>
+</html>

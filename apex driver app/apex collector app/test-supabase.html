@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Connection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Supabase Connection Test</h1>
+    <button onclick="testConnection()">Test Connection</button>
+    <button onclick="clearResults()">Clear Results</button>
+    <div id="results"></div>
+    
+    <script>
+        const SUPABASE_CONFIG = {
+            url: 'https://ishhgfitddfeqaatimwl.supabase.co',
+            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzaGhnZml0ZGRmZXFhYXRpbXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1Nzk1MDAsImV4cCI6MjA3MzE1NTUwMH0.VcBhmUFJu6Yi8Kkn8ihn3rNJsgyKsyVD7qpWh_XjRQ8'
+        };
+        
+        const resultsDiv = document.getElementById('results');
+        
+        function log(message) {
+            console.log(message);
+            const timestamp = new Date().toISOString();
+            resultsDiv.innerHTML += '<p><strong>' + timestamp + ':</strong> ' + JSON.stringify(message) + '</p>';
+        }
+        
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+        
+        async function testConnection() {
+            try {
+                log('Creating Supabase client...');
+                const supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+                log('Supabase client created successfully');
+                
+                log('Testing connection to available_jobs table...');
+                const { data, error } = await supabase
+                    .from('available_jobs')
+                    .select('*');
+                    
+                if (error) {
+                    log('Error: ' + error.message);
+                    log('Error details: ' + JSON.stringify(error));
+                } else {
+                    log('Success! Found ' + data.length + ' jobs');
+                    log('Jobs: ' + JSON.stringify(data, null, 2));
+                }
+            } catch (err) {
+                log('Exception: ' + err.message);
+            }
+        }
+        
+        // Test when page loads
+        document.addEventListener('DOMContentLoaded', testConnection);
+    </script>
+</body>
+</html>

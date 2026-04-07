@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apex Driver - Find Jobs</title>
+  <link rel="stylesheet" href="styles/global.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300d174'><path d='M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z'/></svg>">
+  
+  <!-- Hamburger Menu -->
+  <script src="js/hamburger-menu.js"></script>
+  
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Supabase Configuration -->
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth-service.js"></script>
+  <script src="js/apex-driver-service.js"></script>
+  
+  <style>
+    /* Page specific styles */
+    :root {
+      --primary-color: #2563eb;
+      --primary-dark: #1d4ed8;
+    }
+    
+    body {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    
+    .gm-style .infowin { 
+      max-width: 280px; 
+    }
+    
+    /* Full-screen map container */
+    .map-container-full {
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+    }
+    
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+    
+    /* Override some map-specific button styles if needed */
+    .map-btn-override {
+      background: var(--primary-color) !important;
+      border: none !important;
+    }
+
+    /* User location marker pulse animation */
+    .user-location-pulse {
+      animation: pulse-blue 2s infinite;
+    }
+
+    @keyframes pulse-blue {
+      0% {
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 20px rgba(37, 99, 235, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+      }
+    }
+
+    /* Oil Collection Controls */
+    .oil-collection-controls {
+      padding: 16px 20px;
+      border-top: 1px solid rgba(226, 232, 240, 0.6);
+      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      flex-shrink: 0;
+      /* Prevent map interaction */
+      pointer-events: auto;
+      touch-action: none;
+    }
+
+    /* Navigation Choice Dialog */
+    .navigation-choice-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .navigation-choice-modal.show {
+      display: flex;
+    }
+
+    .navigation-choice-dialog {
+      background: white;
+      border-radius: 24px;
+      padding: 32px;
+      max-width: 420px;
+      width: 90%;
+      margin: 20px;
+      text-align: center;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    }
+
+    .navigation-choice-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .navigation-choice-message {
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+      line-height: 1.5;
+      font-size: 1rem;
+    }
+
+    .navigation-choice-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .nav-choice-btn {
+      padding: 16px 24px;
+      border: none;
+      border-radius: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 0.95rem;
+    }
+
+    .nav-choice-btn-google {
+      background: linear-gradient(135deg, #4285f4 0%, #3367d6 100%);
+      color: white;
+      box-shadow: 0 4px 14px rgba(66, 133, 244, 0.25);
+    }
+
+    .nav-choice-btn-google:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(66, 133, 244, 0.35);
+    }
+
+    .nav-choice-btn-builtin {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      color: white;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    }
+
+    .nav-choice-btn-builtin:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+    }
+
+    @media (min-width: 768px) {
+      .navigation-choice-buttons {
+        flex-direction: row;
+      }
+    }
+
+    .oil-collection-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      color: white;
+      border: none;
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 52px;
+      /* Ensure button events work */
+      pointer-events: auto;
+      touch-action: manipulation;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+      letter-spacing: -0.01em;
+    }
+
+    .oil-collection-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+    }
+
+    .oil-collection-btn:active {
+      transform: translateY(-1px);
+    }
+
+    /* Directions Panel - Prevent map interaction */
+    .directions-panel {
+      pointer-events: auto;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      /* Add subtle animation to indicate interactivity */
+      transition: box-shadow 0.3s ease;
+      background: white;
+      border-radius: 24px 24px 0 0;
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+    }
+
+    .directions-panel:hover {
+      box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .directions-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .close-directions {
+      background: #f1f5f9;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .close-directions:hover {
+      background: #e2e8f0;
+    }
+
+    .voice-controls {
+      padding: 16px 24px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+    }
+
+    .voice-btn {
+      padding: 10px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      pointer-events: auto;
+      touch-action: manipulation;
+    }
+
+    .voice-btn:hover:not(:disabled) {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .voice-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .directions-content {
+      /* Allow scrolling but prevent map interaction */
+      pointer-events: auto;
+      touch-action: pan-y;
+      overscroll-behavior: contain;
+      /* Enhanced scrollbar for mobile visibility */
+      scrollbar-width: thin;
+      scrollbar-color: var(--primary-color) rgba(0, 0, 0, 0.1);
+      padding: 20px 24px;
+    }
+
+    /* Custom scrollbar for WebKit browsers */
+    .directions-content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .directions-content::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 3px;
+    }
+
+    .directions-content::-webkit-scrollbar-thumb {
+      background: var(--primary-color);
+      border-radius: 3px;
+      opacity: 0.8;
+    }
+
+    .directions-content::-webkit-scrollbar-thumb:hover {
+      background: var(--primary-dark);
+      opacity: 1;
+    }
+
+    /* Legend styling */
+    .legend {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 14px 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      z-index: 100;
+    }
+
+    /* Mobile-specific improvements */
+    @media (max-width: 768px) {
+      .oil-collection-controls {
+        padding: 18px 20px;
+        border-top: 1px solid rgba(226, 232, 240, 0.6);
+      }
+
+      .oil-collection-btn {
+        font-size: 1rem;
+        padding: 18px 20px;
+        min-height: 56px;
+      }
+
+      .directions-panel {
+        /* Completely isolate from map on mobile */
+        touch-action: none;
+        overscroll-behavior: contain;
+        border-radius: 20px 20px 0 0;
+      }
+
+      .directions-content {
+        /* Only allow vertical scrolling on mobile */
+        touch-action: pan-y;
+        overscroll-behavior-y: contain;
+        overscroll-behavior-x: none;
+      }
+
+      .legend {
+        padding: 12px 20px;
+        font-size: 0.85rem;
+        bottom: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+<!-- Hamburger Menu -->
+<div id="hamburger-menu"></div>
+
+<!-- Navigation Choice Modal -->
+<div id="navigationChoiceModal" class="navigation-choice-modal">
+  <div class="navigation-choice-dialog">
+    <div class="navigation-choice-title">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;">
+        <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
+      </svg>
+      Choose Navigation
+    </div>
+    <div class="navigation-choice-message">
+      How would you like to navigate to your destination?
+    </div>
+    <div class="navigation-choice-buttons">
+      <button class="nav-choice-btn nav-choice-btn-google" onclick="useGoogleMapsNavigation()" disabled style="opacity: 0.5; cursor: not-allowed;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 6px;">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg>
+        Use Google Maps (Coming Soon)
+      </button>
+      <button class="nav-choice-btn nav-choice-btn-builtin" onclick="useBuiltinNavigation()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 6px;">
+          <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
+        </svg>
+        Use Built-in Navigation
+      </button>
+    </div>
+    <div style="margin-top: 16px;">
+      <button style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;" onclick="cancelNavigation()">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<main class="map-container-full">
+  <div id="map"></div>
+  
+  <!-- Hidden origin input for tracking user location -->
+  <input type="hidden" id="origin" value="">
+  
+  <!-- Directions Panel -->
+  <div id="directions-panel" class="directions-panel" role="region" aria-labelledby="directionsHeading">
+    <div class="directions-header">
+      <span id="directionsHeading"><span class="icon icon-location icon-sm" aria-hidden="true"></span> Route to Job</span>
+      <button class="close-directions" type="button" onclick="hideDirections()" aria-label="Close directions">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="voice-controls">
+      <button class="voice-btn" type="button" id="playAllBtn" onclick="playAllDirections()">
+        <span class="icon icon-volume icon-sm" aria-hidden="true"></span> Play All
+      </button>
+      <button class="voice-btn" type="button" id="stopVoiceBtn" onclick="stopVoice()" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 6h12v12H6z"/>
+        </svg>
+        Stop
+      </button>
+      <button class="voice-btn" type="button" id="liveNavBtn" onclick="toggleLiveNavigation()">
+        <span class="icon icon-compass icon-sm" aria-hidden="true"></span> Start Live Navigation
+      </button>
+      <span class="voice-status" id="voiceStatus" aria-live="polite"></span>
+    </div>
+    
+    <!-- Oil Collection Button - Only shown when navigating to accepted job -->
+    <div class="oil-collection-controls" id="oilCollectionControls" style="display: none;">
+      <button class="btn btn-primary oil-collection-btn" type="button" onclick="goToOilCollection()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18 10V6c0-3.31-2.69-6-6-6S6 2.69 6 6v4H3v14h18V10h-3zm-5 7.5h-2v-3h2v3zm3-7.5H8V6c0-2.21 1.79-4 4-4s4 1.79 4 4v4z"/>
+        </svg>
+        Receive Oil
+      </button>
+    </div>
+    <div id="directions-content"></div>
+  </div>
+</main>
+
+<aside class="legend" aria-live="polite">Click any job marker → "Route here" to get directions and start driving!</aside>
+
+<script>
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 1) MOCK "DATABASE" – Available Jobs/Deliveries
+  //    Each item includes: { id, name, address, lat, lng, jobType, payment, distance }
+  // ─────────────────────────────────────────────────────────────────────────────
+  const DB_LOCATIONS = [
+    { 
+      id: 1, 
+      name: "KFC Delivery", 
+      address: "380 Anton Lembede St, Durban Central, Durban", 
+      lat: -29.8587, 
+      lng: 31.0218,
+      jobType: "Food Delivery",
+      payment: "R85",
+      distance: "2.5 km",
+      iconUrl: null 
+    },
+    { 
+      id: 2, 
+      name: "McDonald's Pickup", 
+      address: "Gateway Theatre of Shopping, Umhlanga", 
+      lat: -29.7282, 
+      lng: 31.0621,
+      jobType: "Food Delivery",
+      payment: "R120",
+      distance: "8.2 km",
+      iconUrl: null 
+    },
+    { 
+      id: 3, 
+      name: "Grocery Delivery - Pick n Pay", 
+      address: "115 Musgrave Rd, Berea, Durban", 
+      lat: -29.8386, 
+      lng: 30.9967,
+      jobType: "Grocery Delivery",
+      payment: "R95",
+      distance: "4.1 km",
+      iconUrl: null 
+    },
+    { 
+      id: 4, 
+      name: "Uber Eats - Steers", 
+      address: "1 Chartwell Dr, Umhlanga", 
+      lat: -29.7192, 
+      lng: 31.0421,
+      jobType: "Food Delivery",
+      payment: "R110",
+      distance: "9.5 km",
+      iconUrl: null 
+    },
+    { 
+      id: 5, 
+      name: "Pharmacy Run - Clicks", 
+      address: "Pavilion Shopping Centre, Westville", 
+      lat: -29.8276, 
+      lng: 30.9285,
+      jobType: "Pharmacy Delivery",
+      payment: "R75",
+      distance: "6.8 km",
+      iconUrl: null 
+    },
+    { 
+      id: 6, 
+      name: "Document Delivery", 
+      address: "45 Sydney Rd, Durban CBD", 
+      lat: -29.8642, 
+      lng: 31.0219,
+      jobType: "Document Delivery",
+      payment: "R60",
+      distance: "1.8 km",
+      iconUrl: null 
+    },
+    { 
+      id: 7, 
+      name: "Restaurant Oil Collection - Nando's", 
+      address: "Shop 2, Gateway Theatre of Shopping, Umhlanga", 
+      lat: -29.7285, 
+      lng: 31.0625,
+      jobType: "Oil Collection",
+      payment: "R150",
+      distance: "8.5 km",
+      iconUrl: null 
+    },
+    { 
+      id: 8, 
+      name: "Hotel Oil Pickup - Southern Sun", 
+      address: "54 O R Tambo Parade, Durban", 
+      lat: -29.8579, 
+      lng: 31.0292,
+      jobType: "Oil Collection",
+      payment: "R200",
+      distance: "3.2 km",
+      iconUrl: null 
+    },
+    { 
+      id: 9, 
+      name: "Fast Food Oil Collection - KFC", 
+      address: "Shop 15, Pavilion Shopping Centre, Westville", 
+      lat: -29.8280, 
+      lng: 30.9290,
+      jobType: "Oil Collection",
+      payment: "R120",
+      distance: "6.5 km",
+      iconUrl: null 
+    }
+  ];
+
+  // Your custom marker icon (optional). Provide a 32x32 PNG/SVG.
+  const DEFAULT_ICON_URL = null; // e.g. "https://yourcdn.com/markers/apex-pin.svg"
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 2) MAP / SERVICES
+  // ─────────────────────────────────────────────────────────────────────────────
+  let map, geocoder, infoWindow, directionsService, directionsRenderer;
+  let userOriginLatLng = null; // set by geolocation or by geocoding the origin input
+  let userLocationMarker = null; // marker for user's current location
+  
+  // Voice navigation variables
+  let speechSynthesis = window.speechSynthesis;
+  let currentDirections = [];
+  let isPlaying = false;
+  let currentStepIndex = 0;
+  
+  // Live navigation variables
+  let isLiveNavigation = false;
+  let watchPositionId = null;
+  let currentRoute = null;
+  let currentStepInRoute = 0;
+  let lastAnnouncedStep = -1;
+  let userCurrentPosition = null;
+
+  async function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: -29.8587, lng: 31.0218 }, // Durban
+      zoom: 12,
+      mapId: undefined, // you can set a custom MapID style here
+    });
+
+    geocoder = new google.maps.Geocoder();
+    infoWindow = new google.maps.InfoWindow();
+
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({
+      map,
+      suppressMarkers: false,
+      preserveViewport: false,
+    });
+
+    // Automatically request user location on load
+    requestUserLocationOnLoad();
+
+    // Check if there's a selected job from the jobs page
+    handleSelectedJob();
+
+    // Load locations → add markers (geocode if needed)
+    await addLocationsFromDB(DB_LOCATIONS);
+    
+    // Setup scroll event handlers for any existing directions panel
+    setupScrollEventHandlers();
+    
+    // Automatically start routing to nearest job
+    setTimeout(autoStartRouting, 2000);
+  }
+
+  // Helper function to get icon for job types
+  function getJobTypeEmoji(jobType) {
+    switch(jobType) {
+      case 'Food Delivery': return '<span class="icon icon-food icon-md" aria-hidden="true"></span>';
+      case 'Grocery Delivery': return '<span class="icon icon-grocery icon-md" aria-hidden="true"></span>';
+      case 'Pharmacy Delivery': return '<span class="icon icon-pharmacy icon-md" aria-hidden="true"></span>';
+      case 'Document Delivery': return '<span class="icon icon-document icon-md" aria-hidden="true"></span>';
+      case 'Package Delivery': return '<span class="icon icon-package icon-md" aria-hidden="true"></span>';
+      case 'Oil Collection': return '<span class="icon icon-oil icon-md" aria-hidden="true">🛢️</span>';
+      default: return '<span class="icon icon-car icon-md" aria-hidden="true"></span>';
+    }
+  }
+
+  // Add many locations: prefer lat/lng; otherwise geocode addresses (rate-limited)
+  async function addLocationsFromDB(items) {
+    for (const loc of items) {
+      try {
+        let position;
+        if (isFinite(loc.lat) && isFinite(loc.lng)) {
+          position = { lat: Number(loc.lat), lng: Number(loc.lng) };
+        } else if (loc.address) {
+          position = await geocodeAddress(loc.address);
+        }
+        if (!position) continue;
+
+        const marker = new google.maps.Marker({
+          position,
+          map,
+          title: loc.name || loc.address,
+          icon: loc.iconUrl || DEFAULT_ICON_URL || undefined,
+        });
+
+        marker.addListener("click", () => {
+          const gmapsLink = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(position.lat + "," + position.lng)}&destination_place_id=&travelmode=driving`;
+          const jobTypeEmoji = getJobTypeEmoji(loc.jobType);
+          const content = `
+            <div class="infowin">
+              <h3>${jobTypeEmoji} ${escapeHtml(loc.name || "Job Available")}</h3>
+              ${loc.address ? `<p><span class="icon icon-location icon-sm" aria-hidden="true"></span> ${escapeHtml(loc.address)}</p>` : ""}
+              <div style="display: flex; justify-content: space-between; margin: 8px 0; font-size: 13px; color: #666;">
+                <span><span class="icon icon-money icon-sm" aria-hidden="true"></span> ${loc.payment || 'TBD'}</span>
+                <span><span class="icon icon-distance icon-sm" aria-hidden="true"></span> ${loc.distance || 'N/A'}</span>
+              </div>
+              ${loc.jobType ? `<p style="background: #e8f5e8; padding: 4px 8px; border-radius: 6px; font-size: 12px; margin: 8px 0; color: #2d5a2d;"><strong>${loc.jobType}</strong></p>` : ""}
+              <div class="actions">
+                <button class="btn btn-primary" type="button" id="routeHereBtn" style="flex: 1;"><span class="icon icon-car icon-sm" aria-hidden="true"></span> Get Directions</button>
+                <a class="btn btn-outline" href="${gmapsLink}" target="_blank" rel="noopener" style="flex: 1;"><span class="icon icon-external icon-sm" aria-hidden="true"></span> Open Maps</a>
+              </div>
+            </div>`;
+          infoWindow.setContent(content);
+          infoWindow.open({ anchor: marker, map });
+
+          // Attach handler after content is set
+          google.maps.event.addListenerOnce(infoWindow, "domready", () => {
+            const btn = document.getElementById("routeHereBtn");
+            if (!btn) return;
+            btn.addEventListener("click", async () => {
+              let origin = userOriginLatLng;
+              if (!origin) {
+                // Try to get current location
+                if (navigator.geolocation) {
+                  try {
+                    const position = await new Promise((resolve, reject) => {
+                      navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000
+                      });
+                    });
+                    origin = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    userOriginLatLng = origin;
+                  } catch (error) {
+                    alert("Unable to get your location. Please allow location access.");
+                    return;
+                  }
+                } else {
+                  alert("Geolocation is not supported by your browser.");
+                  return;
+                }
+              }
+              routeTo(origin, position);
+            });
+          });
+        });
+      } catch (e) {
+        console.warn("Failed to add location", loc, e);
+      }
+    }
+  }
+
+  let pendingRouteRequest = null;
+  let currentJobAddress = null;
+
+  function routeTo(originLatLng, destLatLng) {
+    // Store the route request for later use
+    pendingRouteRequest = {
+      origin: originLatLng,
+      destination: destLatLng,
+      jobAddress: currentJobAddress // Store the address with the request
+    };
+    
+    console.log('🗺️ RouteTo called with:', {
+      origin: originLatLng,
+      destination: destLatLng,
+      storedAddress: currentJobAddress
+    });
+    
+    // Show navigation choice dialog
+    showNavigationChoiceDialog();
+  }
+
+  function showNavigationChoiceDialog() {
+    const modal = document.getElementById('navigationChoiceModal');
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function hideNavigationChoiceDialog() {
+    const modal = document.getElementById('navigationChoiceModal');
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  function useGoogleMapsNavigation() {
+    if (!pendingRouteRequest) return;
+    
+    hideNavigationChoiceDialog();
+    
+    // Try to get the job address for Google Maps - check stored address first
+    let destination = pendingRouteRequest.jobAddress || currentJobAddress;
+    
+    // If no address stored, try to get fresh job data from localStorage
+    if (!destination) {
+      console.log('⚠️ No address stored, checking localStorage for fresh job data...');
+      
+      const acceptedJob = localStorage.getItem('acceptedJob');
+      const selectedJob = localStorage.getItem('selectedJob');
+      
+      if (acceptedJob) {
+        try {
+          const job = JSON.parse(acceptedJob);
+          destination = job.pickup_address || job.address;
+          console.log('  Found fresh job data from acceptedJob:', {
+            pickup_address: job.pickup_address,
+            address: job.address,
+            selected: destination
+          });
+        } catch (error) {
+          console.error('  Error parsing acceptedJob:', error);
+        }
+      } else if (selectedJob) {
+        try {
+          const job = JSON.parse(selectedJob);
+          destination = job.pickup_address || job.address;
+          console.log('  Found fresh job data from selectedJob:', {
+            pickup_address: job.pickup_address,
+            address: job.address,
+            selected: destination
+          });
+        } catch (error) {
+          console.error('  Error parsing selectedJob:', error);
+        }
+      }
+    }
+    
+    // Debug logging
+    console.log('🌍 Google Maps Navigation Debug:');
+    console.log('  pendingRouteRequest.jobAddress:', pendingRouteRequest.jobAddress);
+    console.log('  currentJobAddress:', currentJobAddress);
+    console.log('  final destination:', destination);
+    console.log('  pendingRouteRequest:', pendingRouteRequest);
+    
+    if (!destination) {
+      // Fallback: use coordinates
+      const dest = pendingRouteRequest.destination;
+      destination = `${dest.lat},${dest.lng}`;
+      console.log('  Using coordinates fallback:', destination);
+    } else {
+      console.log('  Using address:', destination);
+    }
+    
+    // Create Google Maps navigation URL
+    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+    console.log('  Google Maps URL:', googleMapsUrl);
+    
+    // Open Google Maps
+    window.open(googleMapsUrl, '_blank');
+    
+    // Clear pending request
+    pendingRouteRequest = null;
+    currentJobAddress = null;
+  }
+
+  function useBuiltinNavigation() {
+    if (!pendingRouteRequest) {
+      console.error('❌ No pendingRouteRequest available');
+      return;
+    }
+    
+    console.log('🗺️ Built-in Navigation Debug:');
+    console.log('  pendingRouteRequest:', pendingRouteRequest);
+    
+    // Validate that we have a valid origin
+    if (!pendingRouteRequest.origin || !pendingRouteRequest.origin.lat || !pendingRouteRequest.origin.lng) {
+      console.error('❌ Invalid origin in pendingRouteRequest:', pendingRouteRequest.origin);
+      console.log('  Attempting to use current user location as fallback...');
+      
+      // Try to use the stored user location as fallback
+      if (userOriginLatLng && userOriginLatLng.lat && userOriginLatLng.lng) {
+        console.log('  Using userOriginLatLng as origin:', userOriginLatLng);
+        pendingRouteRequest.origin = userOriginLatLng;
+      } else {
+        // Try to get user location from localStorage
+        const storedUserLocation = localStorage.getItem('userLocation');
+        if (storedUserLocation) {
+          try {
+            const userLoc = JSON.parse(storedUserLocation);
+            if (userLoc && userLoc.lat && userLoc.lng) {
+              console.log('  Using stored user location as origin:', userLoc);
+              pendingRouteRequest.origin = userLoc;
+            } else {
+              throw new Error('Invalid stored user location');
+            }
+          } catch (error) {
+            console.error('❌ Could not parse stored user location:', error);
+            alert('Unable to start navigation: your location is not available. Please enable location services and refresh the page.');
+            hideNavigationChoiceDialog();
+            return;
+          }
+        } else {
+          alert('Unable to start navigation: your location is not available. Please enable location services and refresh the page.');
+          hideNavigationChoiceDialog();
+          return;
+        }
+      }
+    }
+    
+    hideNavigationChoiceDialog();
+    
+    // Get the correct job address
+    let jobAddress = pendingRouteRequest.jobAddress || currentJobAddress;
+    
+    // If no address stored, try to get fresh job data from localStorage
+    if (!jobAddress) {
+      console.log('⚠️ No address stored, checking localStorage for fresh job data...');
+      
+      const acceptedJob = localStorage.getItem('acceptedJob');
+      const selectedJob = localStorage.getItem('selectedJob');
+      
+      if (acceptedJob) {
+        try {
+          const job = JSON.parse(acceptedJob);
+          jobAddress = job.pickup_address || job.address;
+          console.log('  Found fresh job data from acceptedJob:', {
+            pickup_address: job.pickup_address,
+            address: job.address,
+            selected: jobAddress
+          });
+        } catch (error) {
+          console.error('  Error parsing acceptedJob:', error);
+        }
+      } else if (selectedJob) {
+        try {
+          const job = JSON.parse(selectedJob);
+          jobAddress = job.pickup_address || job.address;
+          console.log('  Found fresh job data from selectedJob:', {
+            pickup_address: job.pickup_address,
+            address: job.address,
+            selected: jobAddress
+          });
+        } catch (error) {
+          console.error('  Error parsing selectedJob:', error);
+        }
+      }
+    }
+    
+    console.log('  Final jobAddress for built-in navigation:', jobAddress);
+    
+    // Capture the origin before async operations to prevent it from being lost
+    const originLocation = pendingRouteRequest.origin;
+    console.log('  Captured origin location:', originLocation);
+    
+    // If we have a job address, re-geocode it to ensure correct coordinates
+    if (jobAddress) {
+      console.log('  Re-geocoding address for built-in navigation:', jobAddress);
+      
+      geocodeAddress(jobAddress).then(geocodedPosition => {
+        console.log('  Geocoded position:', geocodedPosition);
+        
+        // Validate geocoded position
+        if (!geocodedPosition || typeof geocodedPosition.lat !== 'number' || typeof geocodedPosition.lng !== 'number') {
+          console.error('❌ Invalid geocoded position:', geocodedPosition);
+          throw new Error('Invalid geocoded coordinates');
+        }
+        
+        // Use captured origin instead of checking pendingRouteRequest again
+        if (!originLocation || !originLocation.lat || !originLocation.lng) {
+          console.error('❌ Invalid captured origin location:', originLocation);
+          throw new Error('Invalid origin location');
+        }
+        
+        // Proceed with built-in navigation using fresh geocoded coordinates
+        const request = {
+          origin: originLocation,  // Use captured origin
+          destination: geocodedPosition,
+          travelMode: google.maps.TravelMode.DRIVING,
+          provideRouteAlternatives: true,
+        };
+        
+        console.log('  Final directions request:', request);
+        console.log('  Origin validation:', {
+          hasOrigin: !!request.origin,
+          originLat: request.origin?.lat,
+          originLng: request.origin?.lng
+        });
+        console.log('  Destination validation:', {
+          hasDestination: !!request.destination,
+          destLat: request.destination?.lat,
+          destLng: request.destination?.lng
+        });
+        
+        directionsService.route(request, (result, status) => {
+          if (status === "OK") {
+            directionsRenderer.setDirections(result);
+            
+            // Display turn-by-turn instructions in our custom panel
+            displayDirections(result);
+            console.log('✅ Built-in navigation started successfully');
+          } else {
+            alert("Directions request failed: " + status);
+            console.error('❌ Directions request failed:', status);
+          }
+        });
+      }).catch(error => {
+        console.error('❌ Geocoding failed for built-in navigation:', error);
+        
+        // Fallback to stored coordinates if geocoding fails
+        console.log('  Falling back to stored coordinates');
+        const request = {
+          origin: originLocation,  // Use captured origin
+          destination: pendingRouteRequest.destination,
+          travelMode: google.maps.TravelMode.DRIVING,
+          provideRouteAlternatives: true,
+        };
+        
+        directionsService.route(request, (result, status) => {
+          if (status === "OK") {
+            directionsRenderer.setDirections(result);
+            displayDirections(result);
+          } else {
+            alert("Directions request failed: " + status);
+          }
+        });
+      });
+    } else {
+      // No address available, use stored coordinates
+      console.log('  No address available, using stored coordinates');
+      const request = {
+        origin: originLocation,  // Use captured origin
+        destination: pendingRouteRequest.destination,
+        travelMode: google.maps.TravelMode.DRIVING,
+        provideRouteAlternatives: true,
+      };
+      
+      directionsService.route(request, (result, status) => {
+        if (status === "OK") {
+          directionsRenderer.setDirections(result);
+          displayDirections(result);
+        } else {
+          alert("Directions request failed: " + status);
+        }
+      });
+    }
+    
+    // Clear pending request
+    pendingRouteRequest = null;
+    currentJobAddress = null;
+  }
+
+  function cancelNavigation() {
+    hideNavigationChoiceDialog();
+    
+    // Clear pending request
+    pendingRouteRequest = null;
+    currentJobAddress = null;
+  }
+
+  function displayDirections(result) {
+    const route = result.routes[0];
+    const leg = route.legs[0];
+    const directionsPanel = document.getElementById('directions-panel');
+    const directionsContent = document.getElementById('directions-content');
+    
+    // Store directions for voice navigation
+    currentDirections = [];
+    currentRoute = result; // Store full route for live navigation
+    currentStepInRoute = 0;
+    lastAnnouncedStep = -1;
+    
+    let html = '';
+    
+    // Add route summary
+    const summaryText = `Route summary: ${leg.distance.text}, estimated time ${leg.duration.text}`;
+    html += `<div class="directions-step">
+      <div class="step-instruction"><strong>Route Summary</strong></div>
+      <div class="step-distance">Distance: ${leg.distance.text} • Duration: ${leg.duration.text}</div>
+    </div>`;
+    currentDirections.push(summaryText);
+    
+    // Add each step
+    leg.steps.forEach((step, index) => {
+      // Remove HTML tags from instructions and clean up for voice
+      const instruction = step.instructions.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+      const voiceInstruction = `Step ${index + 1}: ${instruction}. Distance: ${step.distance.text}`;
+      
+      html += `<div class="directions-step" data-step="${index}" id="step-${index}">
+        <div class="step-instruction">
+          ${index + 1}. ${instruction}
+          <button class="voice-btn" type="button" style="margin-left: 8px; padding: 2px 6px;" onclick="speakStep(${index + 1})"><span class="icon icon-volume icon-sm" aria-hidden="true"></span></button>
+        </div>
+        <div class="step-distance">${step.distance.text} • ${step.duration.text}</div>
+      </div>`;
+      
+      currentDirections.push(voiceInstruction);
+    });
+    
+    directionsContent.innerHTML = html;
+    directionsPanel.classList.add('show');
+    
+    // Force scroll functionality
+    forceScrollFunctionality();
+    
+    // Prevent scroll events from bubbling to the map
+    setupScrollEventHandlers();
+    
+    // Show oil collection controls if there's an accepted job
+    const acceptedJob = localStorage.getItem('acceptedJob');
+    if (acceptedJob) {
+      showOilCollectionControls();
+    }
+    
+    // Reset voice controls
+    updateVoiceControls();
+  }
+
+  // Force scroll functionality for directions content
+  function forceScrollFunctionality() {
+    const directionsContent = document.getElementById('directions-content');
+    const directionsPanel = document.getElementById('directions-panel');
+    
+    // Disable map interactions when directions panel is open
+    if (map) {
+      map.setOptions({ 
+        draggable: false, 
+        scrollwheel: false, 
+        disableDoubleClickZoom: true,
+        gestureHandling: 'none'
+      });
+    }
+    
+    if (directionsContent && directionsPanel) {
+      // Remove any conflicting styles
+      directionsContent.style.removeProperty('height');
+      directionsContent.style.removeProperty('max-height');
+      
+      // Force scrollable properties
+      directionsContent.style.overflowY = 'scroll';
+      directionsContent.style.WebkitOverflowScrolling = 'touch';
+      directionsContent.style.touchAction = 'pan-y';
+      directionsContent.style.overscrollBehavior = 'contain';
+      directionsContent.style.position = 'relative';
+      directionsContent.style.flex = '1 1 auto';
+      
+      // Calculate and set proper height
+      setTimeout(() => {
+        const panelRect = directionsPanel.getBoundingClientRect();
+        const header = directionsPanel.querySelector('.directions-header');
+        const controls = directionsPanel.querySelector('.voice-controls');
+        const oilControls = directionsPanel.querySelector('.oil-collection-controls');
+        
+        let reservedHeight = 0;
+        if (header) reservedHeight += header.offsetHeight;
+        if (controls) reservedHeight += controls.offsetHeight;
+        if (oilControls) reservedHeight += oilControls.offsetHeight;
+        
+        const availableHeight = panelRect.height - reservedHeight - 20; // 20px padding
+        directionsContent.style.minHeight = Math.max(200, availableHeight) + 'px';
+        directionsContent.style.maxHeight = Math.max(200, availableHeight) + 'px';
+        
+        // Force a scroll event to test
+        directionsContent.scrollTop = 1;
+        directionsContent.scrollTop = 0;
+      }, 100);
+    }
+  }
+
+  // Voice Navigation Functions
+  function playAllDirections() {
+    if (!speechSynthesis) {
+      alert('Speech synthesis not supported in this browser.');
+      return;
+    }
+    
+    stopVoice(); // Stop any current speech
+    isPlaying = true;
+    currentStepIndex = 0;
+    updateVoiceControls();
+    
+    playNextStep();
+  }
+
+  function playNextStep() {
+    if (!isPlaying || currentStepIndex >= currentDirections.length) {
+      isPlaying = false;
+      updateVoiceControls();
+      return;
+    }
+    
+    const utterance = new SpeechSynthesisUtterance(currentDirections[currentStepIndex]);
+    utterance.rate = 0.9; // Slightly slower for clarity
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    
+    // Highlight current step
+    highlightStep(currentStepIndex);
+    
+    utterance.onend = () => {
+      currentStepIndex++;
+      setTimeout(() => {
+        playNextStep();
+      }, 1000); // 1 second pause between steps
+    };
+    
+    utterance.onerror = () => {
+      isPlaying = false;
+      updateVoiceControls();
+    };
+    
+    speechSynthesis.speak(utterance);
+  }
+
+  function speakStep(stepNumber) {
+    if (!speechSynthesis) {
+      alert('Speech synthesis not supported in this browser.');
+      return;
+    }
+    
+    stopVoice();
+    
+    if (stepNumber <= currentDirections.length) {
+      const utterance = new SpeechSynthesisUtterance(currentDirections[stepNumber]);
+      utterance.rate = 0.9;
+      speechSynthesis.speak(utterance);
+      
+      highlightStep(stepNumber);
+      
+      utterance.onend = () => {
+        removeHighlight();
+      };
+    }
+  }
+
+  function stopVoice() {
+    if (speechSynthesis) {
+      speechSynthesis.cancel();
+    }
+    isPlaying = false;
+    removeHighlight();
+    updateVoiceControls();
+  }
+
+  function highlightStep(stepIndex) {
+    removeHighlight();
+    const steps = document.querySelectorAll('.directions-step');
+    if (steps[stepIndex]) {
+      steps[stepIndex].style.backgroundColor = '#e3f2fd';
+      steps[stepIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  function removeHighlight() {
+    const steps = document.querySelectorAll('.directions-step');
+    steps.forEach(step => {
+      step.style.backgroundColor = '';
+    });
+  }
+
+  function updateVoiceControls() {
+    const playBtn = document.getElementById('playAllBtn');
+    const stopBtn = document.getElementById('stopVoiceBtn');
+    const liveBtn = document.getElementById('liveNavBtn');
+    const status = document.getElementById('voiceStatus');
+    
+    if (isPlaying) {
+      playBtn.disabled = true;
+      stopBtn.disabled = false;
+      playBtn.classList.add('speaking');
+      status.textContent = `Playing step ${currentStepIndex + 1} of ${currentDirections.length}`;
+    } else {
+      playBtn.disabled = false;
+      stopBtn.disabled = true;
+      playBtn.classList.remove('speaking');
+      
+      if (isLiveNavigation) {
+        status.textContent = `Live navigation active - Step ${currentStepInRoute + 1}`;
+        liveBtn.innerHTML = '<span class="icon icon-stop icon-sm" aria-hidden="true"></span> Stop Live Navigation';
+        liveBtn.classList.add('live-active');
+      } else {
+        status.textContent = '';
+        liveBtn.innerHTML = '<span class="icon icon-compass icon-sm" aria-hidden="true"></span> Start Live Navigation';
+        liveBtn.classList.remove('live-active');
+      }
+    }
+  }
+
+  // Live Navigation Functions
+  function toggleLiveNavigation() {
+    if (isLiveNavigation) {
+      stopLiveNavigation();
+    } else {
+      startLiveNavigation();
+    }
+  }
+
+  function startLiveNavigation() {
+    if (!navigator.geolocation) {
+      alert('Geolocation is required for live navigation.');
+      return;
+    }
+
+    if (!currentRoute) {
+      alert('Please get directions first before starting live navigation.');
+      return;
+    }
+
+    isLiveNavigation = true;
+    currentStepInRoute = 0;
+    lastAnnouncedStep = -1;
+    
+    // Start watching user's position
+    watchPositionId = navigator.geolocation.watchPosition(
+      onPositionUpdate,
+      onPositionError,
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000
+      }
+    );
+
+    updateVoiceControls();
+    
+    // Announce start of navigation
+    speakLiveInstruction("Live navigation started. Proceeding to route.");
+  }
+
+  function stopLiveNavigation() {
+    isLiveNavigation = false;
+    
+    if (watchPositionId) {
+      navigator.geolocation.clearWatch(watchPositionId);
+      watchPositionId = null;
+    }
+    
+    removeHighlight();
+    updateVoiceControls();
+    
+    speakLiveInstruction("Live navigation stopped.");
+  }
+
+  function onPositionUpdate(position) {
+    userCurrentPosition = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude
+    };
+
+    if (!isLiveNavigation || !currentRoute) return;
+
+    const route = currentRoute.routes[0];
+    const steps = route.legs[0].steps;
+    
+    if (currentStepInRoute >= steps.length) {
+      // Route completed
+      stopLiveNavigation();
+      speakLiveInstruction("You have arrived at your destination!");
+      return;
+    }
+
+    const currentStep = steps[currentStepInRoute];
+    const stepStart = currentStep.start_location;
+    const stepEnd = currentStep.end_location;
+    
+    // Calculate distance to current step start and end
+    const distanceToStepStart = calculateDistance(userCurrentPosition, stepStart);
+    const distanceToStepEnd = calculateDistance(userCurrentPosition, stepEnd);
+    
+    // If user is close to the end of current step, move to next step
+    if (distanceToStepEnd < 50) { // 50 meters threshold
+      currentStepInRoute++;
+      
+      if (currentStepInRoute < steps.length) {
+        announceNextStep();
+      }
+    }
+    // If user is approaching current step and hasn't been announced yet
+    else if (distanceToStepStart < 100 && lastAnnouncedStep < currentStepInRoute) { // 100 meters threshold
+      announceCurrentStep();
+    }
+
+    // Highlight current step in UI
+    highlightLiveStep(currentStepInRoute);
+  }
+
+  function onPositionError(error) {
+    console.warn('Live navigation position error:', error);
+    if (isLiveNavigation) {
+      speakLiveInstruction("GPS signal lost. Trying to reconnect.");
+    }
+  }
+
+  function announceCurrentStep() {
+    if (!currentRoute || currentStepInRoute >= currentRoute.routes[0].legs[0].steps.length) return;
+    
+    const step = currentRoute.routes[0].legs[0].steps[currentStepInRoute];
+    const instruction = step.instructions.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+    
+    lastAnnouncedStep = currentStepInRoute;
+    speakLiveInstruction(`In 100 meters, ${instruction}`);
+  }
+
+  function announceNextStep() {
+    if (!currentRoute || currentStepInRoute >= currentRoute.routes[0].legs[0].steps.length) return;
+    
+    const step = currentRoute.routes[0].legs[0].steps[currentStepInRoute];
+    const instruction = step.instructions.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+    
+    speakLiveInstruction(instruction);
+  }
+
+  function speakLiveInstruction(text) {
+    if (!speechSynthesis) return;
+    
+    // Stop any current speech for immediate instruction
+    speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0; // Normal speed for live navigation
+    utterance.pitch = 1.1; // Slightly higher pitch for attention
+    utterance.volume = 1;
+    
+    speechSynthesis.speak(utterance);
+  }
+
+  function highlightLiveStep(stepIndex) {
+    removeHighlight();
+    const stepElement = document.getElementById(`step-${stepIndex}`);
+    if (stepElement) {
+      stepElement.style.backgroundColor = '#fff3cd';
+      stepElement.style.borderLeft = '4px solid #ff6b35';
+      stepElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  function calculateDistance(pos1, pos2) {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = pos1.lat * Math.PI/180;
+    const φ2 = pos2.lat * Math.PI/180;
+    const Δφ = (pos2.lat-pos1.lat) * Math.PI/180;
+    const Δλ = (pos2.lng-pos1.lng) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // Distance in meters
+  }
+
+  function hideDirections() {
+    document.getElementById('directions-panel').classList.remove('show');
+    stopVoice(); // Stop any playing voice when hiding directions
+    stopLiveNavigation(); // Stop live navigation when hiding directions
+    hideOilCollectionControls(); // Hide oil collection controls when hiding directions
+    
+    // Re-enable map interactions
+    if (map) {
+      map.setOptions({ draggable: true, scrollwheel: true, disableDoubleClickZoom: false });
+    }
+  }
+
+  // Handle selected job from jobs page
+  function handleSelectedJob() {
+    const selectedJob = localStorage.getItem('selectedJob');
+    const acceptedJob = localStorage.getItem('acceptedJob');
+    const storedUserLocation = localStorage.getItem('userLocation');
+    
+    if (selectedJob || acceptedJob) {
+      if (acceptedJob) {
+        const job = JSON.parse(acceptedJob);
+        
+        // Show oil collection controls for accepted jobs
+        showOilCollectionControls();
+        
+        // Auto-route to accepted job if user location is available
+        if (storedUserLocation) {
+          const userLoc = JSON.parse(storedUserLocation);
+          userOriginLatLng = userLoc;
+          
+          // Small delay to ensure map is loaded
+          setTimeout(async () => {
+            let jobPosition;
+            
+            // Check if job has lat/lng coordinates
+            if (job.lat && job.lng) {
+              jobPosition = { lat: job.lat, lng: job.lng };
+            } else if (job.pickup_address || job.address) {
+              // Use pickup_address first, fallback to address
+              const jobAddress = job.pickup_address || job.address;
+              
+              // Debug logging
+              console.log('🔍 Job Address Debug:');
+              console.log('  Full job object:', job);
+              console.log('  job.pickup_address:', job.pickup_address);
+              console.log('  job.address:', job.address);
+              console.log('  Selected jobAddress:', jobAddress);
+              
+              // Store address for potential Google Maps navigation
+              currentJobAddress = jobAddress;
+              console.log('  Stored currentJobAddress:', currentJobAddress);
+              // Geocode the address to get coordinates
+              try {
+                jobPosition = await geocodeAddress(jobAddress);
+              } catch (error) {
+                console.error('Failed to geocode job address:', error);
+                alert(`Unable to find location for: ${jobAddress}`);
+                return;
+              }
+            } else {
+              console.error('Job has no address or coordinates:', job);
+              alert('Job location not available for routing');
+              return;
+            }
+            
+            routeTo(userLoc, jobPosition);
+          }, 1000);
+        }
+      } else {
+        const job = JSON.parse(selectedJob);
+        
+        // Focus on selected job
+        setTimeout(async () => {
+          let jobPosition;
+          
+          // Check if job has lat/lng coordinates
+          if (job.lat && job.lng) {
+            jobPosition = { lat: job.lat, lng: job.lng };
+          } else if (job.pickup_address || job.address) {
+            // Use pickup_address first, fallback to address
+            const jobAddress = job.pickup_address || job.address;
+            
+            // Debug logging
+            console.log('🔍 Selected Job Address Debug:');
+            console.log('  Full job object:', job);
+            console.log('  job.pickup_address:', job.pickup_address);
+            console.log('  job.address:', job.address);
+            console.log('  Selected jobAddress:', jobAddress);
+            
+            // Store address for potential Google Maps navigation
+            currentJobAddress = jobAddress;
+            console.log('  Stored currentJobAddress:', currentJobAddress);
+            // Geocode the address to get coordinates
+            try {
+              jobPosition = await geocodeAddress(jobAddress);
+            } catch (error) {
+              console.error('Failed to geocode job address:', error);
+              alert(`Unable to find location for: ${jobAddress}`);
+              return;
+            }
+          } else {
+            console.error('Job has no address or coordinates:', job);
+            return;
+          }
+          
+          map.panTo(jobPosition);
+          map.setZoom(15);
+        }, 500);
+      }
+      
+      // Clear the stored job after handling
+      localStorage.removeItem('selectedJob');
+      // Don't remove acceptedJob here - we need it for oil collection
+    }
+    
+    // Set user location from storage if available
+    if (storedUserLocation && !userOriginLatLng) {
+      userOriginLatLng = JSON.parse(storedUserLocation);
+      document.getElementById("origin").value = `${userOriginLatLng.lat.toFixed(5)}, ${userOriginLatLng.lng.toFixed(5)}`;
+    }
+  }
+
+  // Show oil collection controls
+  function showOilCollectionControls() {
+    const controls = document.getElementById('oilCollectionControls');
+    if (controls) {
+      controls.style.display = 'block';
+      // Disable map dragging when directions panel is open
+      if (map) {
+        map.setOptions({ draggable: false, scrollwheel: false, disableDoubleClickZoom: true });
+      }
+    }
+  }
+
+  // Hide oil collection controls
+  function hideOilCollectionControls() {
+    const controls = document.getElementById('oilCollectionControls');
+    if (controls) {
+      controls.style.display = 'none';
+      // Re-enable map dragging when directions panel is closed
+      if (map) {
+        map.setOptions({ draggable: true, scrollwheel: true, disableDoubleClickZoom: false });
+      }
+    }
+  }
+
+  // Navigate to oil collection page
+  function goToOilCollection() {
+    const acceptedJob = localStorage.getItem('acceptedJob');
+    
+    if (!acceptedJob) {
+      alert('No active job found for oil collection.');
+      return;
+    }
+
+    // Store the job as active for the collection page
+    localStorage.setItem('activeJob', acceptedJob);
+    
+    // Navigate to oil collection page
+    window.location.href = 'oil-collection.html';
+  }
+
+  // Setup scroll event handlers to prevent map interaction when scrolling directions
+  function setupScrollEventHandlers() {
+    const directionsPanel = document.getElementById('directions-panel');
+    const directionsContent = document.getElementById('directions-content');
+    const oilCollectionControls = document.getElementById('oilCollectionControls');
+    
+    if (directionsPanel) {
+      // More aggressive event prevention for the entire panel
+      directionsPanel.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }, { passive: true });
+      
+      directionsPanel.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }, { passive: true });
+      
+      directionsPanel.addEventListener('touchend', (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }, { passive: true });
+      
+      directionsPanel.addEventListener('wheel', (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }, { passive: true });
+    }
+    
+    if (directionsContent) {
+      // Ensure the content area can scroll freely
+      directionsContent.style.overflow = 'auto';
+      directionsContent.style.WebkitOverflowScrolling = 'touch';
+      directionsContent.style.touchAction = 'pan-y';
+      directionsContent.style.overscrollBehavior = 'contain';
+      
+      // Force scrollable area recognition
+      directionsContent.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+      }, { passive: true });
+      
+      directionsContent.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+      }, { passive: true });
+      
+      // Add momentum scrolling enhancement for mobile
+      enhanceMobileScrolling(directionsContent);
+    }
+    
+    if (oilCollectionControls) {
+      oilCollectionControls.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+      }, { passive: true });
+      
+      oilCollectionControls.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+      }, { passive: true });
+    }
+  }
+
+  // Enhance mobile scrolling with better momentum and feedback
+  function enhanceMobileScrolling(element) {
+    // Force the correct CSS properties
+    element.style.overflowY = 'auto';
+    element.style.WebkitOverflowScrolling = 'touch';
+    element.style.touchAction = 'pan-y';
+    element.style.overscrollBehavior = 'contain';
+    element.style.height = 'auto';
+    element.style.maxHeight = 'none';
+    element.style.position = 'relative';
+    
+    let isScrolling = false;
+    let scrollTimeout;
+    
+    element.addEventListener('scroll', () => {
+      // Add visual feedback when scrolling
+      if (!isScrolling) {
+        element.style.scrollbarWidth = 'auto';
+        isScrolling = true;
+      }
+      
+      // Clear timeout and reset
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        element.style.scrollbarWidth = 'thin';
+        isScrolling = false;
+      }, 1000);
+    }, { passive: true });
+    
+    // Force a minimum height to ensure scrollability
+    const panel = element.closest('.directions-panel');
+    if (panel) {
+      const panelHeight = panel.offsetHeight;
+      const headerHeight = panel.querySelector('.directions-header')?.offsetHeight || 0;
+      const controlsHeight = panel.querySelector('.voice-controls')?.offsetHeight || 0;
+      const oilControlsHeight = panel.querySelector('.oil-collection-controls')?.offsetHeight || 0;
+      
+      const availableHeight = panelHeight - headerHeight - controlsHeight - oilControlsHeight - 40; // padding
+      element.style.minHeight = `${availableHeight}px`;
+      element.style.maxHeight = `${availableHeight}px`;
+    }
+  }
+
+  // Prevent map interaction when interacting with directions panel
+  function preventMapInteraction(event) {
+    event.stopPropagation();
+  }
+
+  // Automatically request user location when map loads
+  function requestUserLocationOnLoad() {
+    if (!navigator.geolocation) {
+      console.log("Geolocation isn't supported in this browser.");
+      return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        userOriginLatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        
+        // Create a distinct blue lollipop marker for user location
+        createUserLocationMarker(userOriginLatLng);
+        
+        // Update the origin input with user's location
+        document.getElementById("origin").value = `${userOriginLatLng.lat.toFixed(5)}, ${userOriginLatLng.lng.toFixed(5)}`;
+        
+        // Center map on user location
+        map.panTo(userOriginLatLng);
+        map.setZoom(14);
+      },
+      (err) => {
+        console.log("Could not get your location automatically: " + err.message);
+        // Silently fail for automatic location request
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+    );
+  }
+
+  // Create a distinct blue lollipop marker for user location
+  function createUserLocationMarker(position) {
+    // Remove existing user location marker if it exists
+    if (userLocationMarker) {
+      userLocationMarker.setMap(null);
+    }
+
+    // Create custom blue lollipop icon
+    const userLocationIcon = {
+      path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+      fillColor: "#1E88E5", // Material Blue 600
+      fillOpacity: 1,
+      strokeColor: "#FFFFFF",
+      strokeWeight: 2,
+      scale: 2,
+      anchor: new google.maps.Point(12, 24)
+    };
+
+    // Create the marker
+    userLocationMarker = new google.maps.Marker({
+      position: position,
+      map: map,
+      title: "Your Current Location",
+      icon: userLocationIcon,
+      zIndex: 1000 // Higher z-index to appear above other markers
+    });
+
+    // Add info window for user location
+    userLocationMarker.addListener("click", () => {
+      const content = `
+        <div class="infowin">
+          <h3><span class="icon icon-location icon-md" aria-hidden="true"></span> Your Location</h3>
+          <p>This is your current position</p>
+          <div style="margin-top: 12px;">
+            <button class="btn btn-primary" type="button" onclick="recenterOnUser()" style="width: 100%;"><span class="icon icon-target icon-sm" aria-hidden="true"></span> Center Map Here</button>
+          </div>
+        </div>`;
+      infoWindow.setContent(content);
+      infoWindow.open({ anchor: userLocationMarker, map });
+    });
+  }
+
+  // Function to recenter map on user location
+  window.recenterOnUser = function() {
+    if (userOriginLatLng) {
+      map.panTo(userOriginLatLng);
+      map.setZoom(14);
+      infoWindow.close();
+    }
+  };
+
+  // If the origin input is filled, geocode it; else use previous geolocation
+  async function resolveOrigin(originText) {
+    if (userOriginLatLng && (!originText || /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/.test(originText) === false)) {
+      return userOriginLatLng; // already captured via geolocation
+    }
+    if (!originText) return null;
+
+    // If user pasted lat,lng
+    const m = originText.match(/^-?\d+\.?\d*,\s*-?\d+\.?\d*$/);
+    if (m) {
+      const [lat, lng] = originText.split(",").map(Number);
+      return { lat, lng };
+    }
+
+    // Otherwise geocode the address text
+    const latLng = await geocodeAddress(originText);
+    return latLng;
+  }
+
+  function geocodeAddress(address) {
+    return new Promise((resolve, reject) => {
+      geocoder.geocode({ address }, (results, status) => {
+        console.log('🔍 Geocoding response:', { address, status, results });
+        
+        if (status === "OK" && results && results.length > 0 && results[0].geometry && results[0].geometry.location) {
+          const location = results[0].geometry.location;
+          // Ensure we return a proper lat/lng object
+          const latLng = {
+            lat: typeof location.lat === 'function' ? location.lat() : location.lat,
+            lng: typeof location.lng === 'function' ? location.lng() : location.lng
+          };
+          console.log('✅ Geocoding successful:', latLng);
+          resolve(latLng);
+        } else if (status === "OVER_QUERY_LIMIT") {
+          console.error('❌ Geocoding rate limit hit');
+          alert("Geocoding rate limit hit. Please store lat/lng in your DB.");
+          reject(new Error(status));
+        } else {
+          console.error('❌ Geocoding failed:', { status, results });
+          reject(new Error(status || "Geocoding failed"));
+        }
+      });
+    });
+  }
+
+  // Automatically start routing to the nearest available job
+  async function autoStartRouting() {
+    console.log('AutoStartRouting: Starting automatic routing...');
+    
+    // Check if there's an accepted or selected job first
+    const acceptedJob = localStorage.getItem('acceptedJob');
+    const selectedJob = localStorage.getItem('selectedJob');
+    
+    if (acceptedJob || selectedJob) {
+      console.log('AutoStartRouting: Found accepted/selected job, skipping auto-routing to nearest job');
+      return; // Don't auto-route if there's already a specific job to handle
+    }
+    
+    // Check if user location is available
+    if (!userOriginLatLng) {
+      console.log('AutoStartRouting: User location not available, requesting location...');
+      
+      // Try to get user location
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000
+            });
+          });
+          
+          userOriginLatLng = { 
+            lat: position.coords.latitude, 
+            lng: position.coords.longitude 
+          };
+          
+          // Create user location marker
+          createUserLocationMarker(userOriginLatLng);
+          
+          console.log('AutoStartRouting: User location obtained:', userOriginLatLng);
+          
+        } catch (error) {
+          console.error('AutoStartRouting: Could not get user location:', error);
+          
+          // Use default Durban location as fallback
+          userOriginLatLng = { lat: -29.8587, lng: 31.0218 };
+          console.log('AutoStartRouting: Using default Durban location as fallback');
+        }
+      } else {
+        // Use default location if geolocation not supported
+        userOriginLatLng = { lat: -29.8587, lng: 31.0218 };
+        console.log('AutoStartRouting: Geolocation not supported, using default location');
+      }
+    }
+
+    // Find the nearest available job
+    const nearestJob = findNearestJob(userOriginLatLng);
+    
+    if (nearestJob) {
+      console.log('AutoStartRouting: Found nearest job:', nearestJob);
+      
+      // Focus map on the route
+      map.panTo(nearestJob.position);
+      map.setZoom(14);
+      
+      // Start routing to the nearest job
+      routeTo(userOriginLatLng, nearestJob.position);
+      
+      // Show notification about auto-routing
+      showAutoRoutingNotification(nearestJob);
+      
+      // Start live navigation immediately
+      setTimeout(() => {
+        toggleLiveNavigation();
+      }, 2000);
+      
+    } else {
+      console.log('AutoStartRouting: No jobs available');
+    }
+  }
+
+  // Find the nearest job to the user's location
+  function findNearestJob(userLocation) {
+    let nearestJob = null;
+    let shortestDistance = Infinity;
+
+    DB_LOCATIONS.forEach(job => {
+      if (job.lat && job.lng) {
+        const jobLocation = { lat: job.lat, lng: job.lng };
+        const distance = calculateDistance(userLocation, jobLocation);
+        
+        if (distance < shortestDistance) {
+          shortestDistance = distance;
+          nearestJob = {
+            ...job,
+            position: jobLocation,
+            distance: distance
+          };
+        }
+      }
+    });
+
+    return nearestJob;
+  }
+
+  // Show notification about automatic routing
+  function showAutoRoutingNotification(job) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--primary-color);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      font-size: 14px;
+      font-weight: 500;
+      max-width: 90vw;
+      text-align: center;
+      animation: slideDown 0.5s ease-out;
+    `;
+    
+    notification.innerHTML = `
+      🚗 Auto-routing to nearest job: <strong>${job.name}</strong><br>
+      <small>💰 ${job.payment} • 📍 ${(job.distance / 1000).toFixed(1)} km away</small>
+    `;
+    
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideDown {
+        from { top: -100px; opacity: 0; }
+        to { top: 20px; opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(notification);
+    
+    // Remove notification after 5 seconds
+    setTimeout(() => {
+      notification.style.transition = 'all 0.5s ease-out';
+      notification.style.opacity = '0';
+      notification.style.transform = 'translateX(-50%) translateY(-20px)';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 500);
+    }, 5000);
+  }
+
+  // Small helper to avoid XSS in InfoWindow
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"]+/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[s]));
+  }
+
+  // Initialize hamburger menu when DOM is loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    new HamburgerMenu();
+    
+    // Add click outside to close navigation modal
+    const navigationModal = document.getElementById('navigationChoiceModal');
+    navigationModal.addEventListener('click', function(event) {
+      if (event.target === navigationModal) {
+        cancelNavigation();
+      }
+    });
+    
+    // Add escape key to close navigation modal
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        const modal = document.getElementById('navigationChoiceModal');
+        if (modal.classList.contains('show')) {
+          cancelNavigation();
+        }
+      }
+    });
+  });
+</script>
+
+<!-- Replace YOUR_API_KEY with your Maps JavaScript API key. Ensure Billing is enabled and the Geocoding & Directions APIs are also enabled. -->
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBvYq6yNASqpfBkXWuUUliHe5dJmg5mlJs&libraries=places&callback=initMap"></script>
+</body>
+</html>

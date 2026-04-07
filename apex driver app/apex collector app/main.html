@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Driver - Find Jobs Nearby</title>
+  <link rel="stylesheet" href="styles/global.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300d174'><path d='M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z'/></svg>">
+  
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Supabase Configuration -->
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth-service.js"></script>
+  <script src="js/apex-driver-service.js"></script>
+
+</head>
+
+
+<body>
+  <main class="landing-container full-height flex align-center justify-center">
+    <!-- Enhanced User Info Header with mobile-responsive design -->
+    <div id="userHeader" class="user-header" style="display: none;">
+      <div id="userInfo" class="user-info">
+        <div id="userName" class="user-name"></div>
+        <div id="userType" class="user-type"></div>
+      </div>
+      <div class="user-actions">
+        <button onclick="window.location.href='profile.html'" class="btn btn-secondary profile-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+          <span class="btn-text">Profile</span>
+        </button>
+        <button id="logoutBtn" class="btn btn-danger logout-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+          </svg>
+          <span class="btn-text">Logout</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="landing-content">
+      <h1 class="hero-title">
+        Welcome to <span class="logo-accent">Apex</span> Driver
+      </h1>
+      <p class="hero-subtitle">
+        Your reliable partner for delivery and ride services in Durban
+      </p>
+      
+      <button type="button" class="car-icon-container" id="findJobsBtn" aria-label="Find jobs nearby">
+        <div class="car-icon icon icon-car icon-xl" aria-hidden="true"></div>
+      </button>
+      
+      <p class="cta-text">
+        Click the car to find jobs nearby
+      </p>
+      
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="icon icon-location icon-lg" aria-hidden="true"></div>
+          <div class="feature-card-title">Location Based</div>
+          <div class="feature-card-subtitle">Find jobs near you</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon icon-volume icon-lg" aria-hidden="true"></div>
+          <div class="feature-card-title">Voice Navigation</div>
+          <div class="feature-card-subtitle">Turn-by-turn audio</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon icon-bolt icon-lg" aria-hidden="true"></div>
+          <div class="feature-card-title">Real-time</div>
+          <div class="feature-card-subtitle">Live job updates</div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 40px;">
+        <button class="btn btn-glass" id="skipToMap" type="button">
+          Skip to Map View
+        </button>
+      </div>
+
+      <!-- Authentication Status for Debugging -->
+      <div style="margin-top: 20px; padding: 12px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2);">
+        <p style="color: white; font-size: 14px; margin: 0;">
+          Auth Status: <span id="authStatus" style="font-weight: 600;">Checking...</span>
+        </p>
+        <button id="testLoginBtn" class="btn btn-secondary" style="margin-top: 8px; display: none;">
+          Go to Login Page
+        </button>
+        <button id="forceShowHeaderBtn" class="btn btn-secondary" style="margin-top: 8px;">
+          Show Logout Button (Test)
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Authentication and initialization
+    document.addEventListener('supabaseReady', async function() {
+      console.log('Main page: Supabase ready');
+      
+      // Check authentication
+      const isAuthed = await checkAuth();
+      console.log('Main page: Auth check result:', isAuthed);
+      if (!isAuthed) return; // Will redirect to auth page
+      
+      // Display user info
+      console.log('Main page: About to display user info');
+      displayUserInfo();
+      
+      // Initialize page functionality
+      initializePage();
+    });
+
+    async function displayUserInfo() {
+      console.log('displayUserInfo: Starting');
+      
+      try {
+        const user = AuthService.getCurrentUser();
+        console.log('displayUserInfo: Current user:', user);
+        
+        if (user) {
+          console.log('displayUserInfo: User found, getting format info');
+          const userInfo = await AuthService.formatUserInfo();
+          console.log('displayUserInfo: User info formatted:', userInfo);
+          
+          if (userInfo) {
+            console.log('displayUserInfo: Setting user info in DOM');
+            document.getElementById('userName').textContent = userInfo.name || user.email || 'User';
+            document.getElementById('userType').textContent = (userInfo.userType || 'user').toUpperCase();
+            
+            const userHeader = document.getElementById('userHeader');
+            console.log('displayUserInfo: User header element:', userHeader);
+            
+            if (userHeader) {
+              userHeader.style.display = 'flex';
+              console.log('displayUserInfo: User header now visible');
+            }
+            
+            console.log('User info:', userInfo);
+          } else {
+            console.log('displayUserInfo: formatUserInfo returned null, using basic user info');
+            // Fallback to basic user info
+            document.getElementById('userName').textContent = user.email || 'User';
+            document.getElementById('userType').textContent = 'USER';
+            document.getElementById('userHeader').style.display = 'flex';
+          }
+        } else {
+          console.log('displayUserInfo: No current user found, header will remain hidden');
+        }
+      } catch (error) {
+        console.error('displayUserInfo: Error:', error);
+        // Show basic info on error
+        document.getElementById('userName').textContent = 'User';
+        document.getElementById('userType').textContent = 'GUEST';
+        document.getElementById('userHeader').style.display = 'flex';
+      }
+    }
+
+    async function handleLogout() {
+      console.log('handleLogout: Starting logout process');
+      
+      // Update UI to show logging out
+      const logoutBtn = document.getElementById('logoutBtn');
+      const originalText = logoutBtn?.innerHTML;
+      if (logoutBtn) {
+        logoutBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg><span class="btn-text">Signing out...</span>';
+        logoutBtn.disabled = true;
+      }
+
+      try {
+        console.log('handleLogout: Calling AuthService.signOut()');
+        const result = await AuthService.signOut();
+        
+        if (result.error) {
+          console.error('AuthService signOut returned error:', result.error);
+        } else {
+          console.log('handleLogout: SignOut successful');
+        }
+        
+        // Hide user header immediately
+        const userHeader = document.getElementById('userHeader');
+        if (userHeader) {
+          userHeader.style.display = 'none';
+        }
+        
+        // Update auth status
+        updateAuthStatus();
+        
+        console.log('handleLogout: Redirecting to auth.html');
+        
+        // Small delay to ensure cleanup is complete
+        setTimeout(() => {
+          window.location.href = 'auth.html?logout=true';
+        }, 100);
+        
+      } catch (error) {
+        console.error('Logout error:', error);
+        
+        // Reset button state on error
+        if (logoutBtn && originalText) {
+          logoutBtn.innerHTML = originalText;
+          logoutBtn.disabled = false;
+        }
+        
+        // Force redirect anyway after clearing what we can locally
+        setTimeout(() => {
+          window.location.href = 'auth.html?logout=true';
+        }, 1000);
+      }
+    }
+
+    function initializePage() {
+      // Add click handlers
+      const findJobsBtn = document.getElementById('findJobsBtn');
+      const skipToMapBtn = document.getElementById('skipToMap');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const testLoginBtn = document.getElementById('testLoginBtn');
+      const forceShowHeaderBtn = document.getElementById('forceShowHeaderBtn');
+      
+      function navigateToJobs() {
+        window.location.href = 'jobs.html';
+      }
+      
+      // Car icon click handler
+      findJobsBtn?.addEventListener('click', navigateToJobs);
+      
+      // Skip button handler
+      skipToMapBtn?.addEventListener('click', function() {
+        window.location.href = 'map.html';
+      });
+      
+      // Logout button handler
+      logoutBtn?.addEventListener('click', handleLogout);
+      
+      // Test login button
+      testLoginBtn?.addEventListener('click', function() {
+        window.location.href = 'auth.html';
+      });
+      
+      // Force show header button for testing
+      forceShowHeaderBtn?.addEventListener('click', function() {
+        document.getElementById('userName').textContent = 'Test User';
+        document.getElementById('userType').textContent = 'TESTING';
+        document.getElementById('userHeader').style.display = 'flex';
+        document.getElementById('authStatus').textContent = 'Forced Visible (Test Mode)';
+        document.getElementById('authStatus').style.color = '#10b981';
+      });
+      
+      // Update auth status
+      updateAuthStatus();
+      
+      // Add pulse animation to car icon
+      const triggerPulse = () => {
+        findJobsBtn?.classList.add('is-pulsing');
+        setTimeout(() => findJobsBtn?.classList.remove('is-pulsing'), 2000);
+      };
+
+      const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (!reduceMotionQuery.matches) {
+        triggerPulse();
+        const pulseInterval = setInterval(triggerPulse, 5000);
+        reduceMotionQuery.addEventListener('change', (event) => {
+          if (event.matches) {
+            clearInterval(pulseInterval);
+            findJobsBtn?.classList.remove('is-pulsing');
+          }
+        });
+      }
+    }
+
+    function updateAuthStatus() {
+      const authStatusEl = document.getElementById('authStatus');
+      const testLoginBtn = document.getElementById('testLoginBtn');
+      
+      try {
+        const user = AuthService.getCurrentUser();
+        if (user) {
+          authStatusEl.textContent = `Logged in as ${user.email}`;
+          authStatusEl.style.color = '#10b981';
+          testLoginBtn.style.display = 'none';
+        } else {
+          authStatusEl.textContent = 'Not logged in';
+          authStatusEl.style.color = '#ef4444';
+          testLoginBtn.style.display = 'inline-block';
+        }
+      } catch (error) {
+        authStatusEl.textContent = 'Auth service not ready';
+        authStatusEl.style.color = '#f59e0b';
+        testLoginBtn.style.display = 'inline-block';
+      }
+    }
+
+    // Fallback auth check for browsers that don't support DOMContentLoaded properly
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        // Additional fallback if Supabase isn't ready yet
+        setTimeout(async () => {
+          if (!window.AuthService?.isReady) {
+            console.warn('Auth service not ready, redirecting to auth page');
+            window.location.href = 'auth.html';
+          }
+        }, 3000);
+      });
+    }
+  </script>
+
+</body>
+</html>

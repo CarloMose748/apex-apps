@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Connection Test - Apex Driver</title>
+    <link rel="stylesheet" href="styles/global.css">
+    
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Supabase Configuration -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/auth-service.js"></script>
+    <script src="js/apex-driver-service.js"></script>
+    <script src="js/df555-data-service.js"></script>
+    
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: var(--background-light);
+            min-height: 100vh;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 12px;
+        }
+        
+        .test-section {
+            background: white;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow-light);
+        }
+        
+        .test-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 8px;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .test-button {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .test-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 209, 116, 0.3);
+        }
+        
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .test-button.secondary {
+            background: var(--text-secondary);
+        }
+        
+        .test-button.danger {
+            background: #e74c3c;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-success { background: #2ecc71; }
+        .status-error { background: #e74c3c; }
+        .status-loading { background: #f39c12; animation: pulse 1s infinite; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .result-area {
+            background: #f8f9fa;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .connection-status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🧪 Apex Driver - Supabase Test Suite</h1>
+            <p>Test your database connection and verify all functionality</p>
+        </div>
+
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="connection-status disconnected">
+            <span class="status-indicator status-loading"></span>
+            Checking connection...
+        </div>
+
+        <!-- Database Statistics -->
+        <div class="test-section">
+            <h3>📊 Database Statistics</h3>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-value" id="df555Count">-</div>
+                    <div class="stat-label">DF555 Records</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="driverCount">-</div>
+                    <div class="stat-label">Drivers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="jobCount">-</div>
+                    <div class="stat-label">Jobs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="availableJobCount">-</div>
+                    <div class="stat-label">Available Jobs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeDriverCount">-</div>
+                    <div class="stat-label">Active Drivers</div>
+                </div>
+            </div>
+            <button class="test-button" onclick="refreshStats()">🔄 Refresh Statistics</button>
+        </div>
+
+        <div class="test-grid">
+            <!-- Connection Tests -->
+            <div class="test-section">
+                <h3>🔌 Connection Tests</h3>
+                <button class="test-button" onclick="testConnection()">Test Basic Connection</button>
+                <button class="test-button" onclick="testAuthentication()">Test Authentication</button>
+                <button class="test-button" onclick="testDatabase()">Test Database Access</button>
+                <div class="result-area" id="connectionResults"></div>
+            </div>
+
+            <!-- Driver Management -->
+            <div class="test-section">
+                <h3>👨‍💼 Driver Management</h3>
+                <button class="test-button" onclick="testCreateDriver()">Create Test Driver</button>
+                <button class="test-button" onclick="testGetDrivers()">Get All Drivers</button>
+                <button class="test-button" onclick="testUpdateDriverLocation()">Update Driver Location</button>
+                <button class="test-button" onclick="testUpdateDriverStatus()">Update Driver Status</button>
+                <div class="result-area" id="driverResults"></div>
+            </div>
+
+            <!-- Job Management -->
+            <div class="test-section">
+                <h3>💼 Job Management</h3>
+                <button class="test-button" onclick="testCreateJob()">Create Test Job</button>
+                <button class="test-button" onclick="testGetAvailableJobs()">Get Available Jobs</button>
+                <button class="test-button" onclick="testAssignJob()">Assign Job to Driver</button>
+                <button class="test-button" onclick="testUpdateJobStatus()">Update Job Status</button>
+                <div class="result-area" id="jobResults"></div>
+            </div>
+
+            <!-- Location Services -->
+            <div class="test-section">
+                <h3>📍 Location Services</h3>
+                <button class="test-button" onclick="testGetLocation()">Get Current Location</button>
+                <button class="test-button" onclick="testNearbyJobs()">Find Nearby Jobs</button>
+                <button class="test-button" onclick="testNearbyDrivers()">Find Nearby Drivers</button>
+                <button class="test-button" onclick="testDistanceCalculation()">Test Distance Calculation</button>
+                <div class="result-area" id="locationResults"></div>
+            </div>
+
+            <!-- Real-time Features -->
+            <div class="test-section">
+                <h3>⚡ Real-time Features</h3>
+                <button class="test-button" onclick="testJobSubscription()">Subscribe to Job Updates</button>
+                <button class="test-button" onclick="testUnsubscribe()">Unsubscribe</button>
+                <button class="test-button secondary" onclick="clearSubscriptions()">Clear All Subscriptions</button>
+                <div class="result-area" id="realtimeResults"></div>
+            </div>
+
+            <!-- Custom Queries -->
+            <div class="test-section">
+                <h3>🔍 Custom Queries</h3>
+                <div class="form-group">
+                    <label for="customTable">Table:</label>
+                    <select id="customTable">
+                        <option value="df555_data">df555_data</option>
+                        <option value="drivers">drivers</option>
+                        <option value="jobs">jobs</option>
+                        <option value="job_tracking">job_tracking</option>
+                        <option value="driver_earnings">driver_earnings</option>
+                        <option value="driver_reviews">driver_reviews</option>
+                    </select>
+                </div>
+                <button class="test-button" onclick="testCustomQuery()">Execute Query</button>
+                <button class="test-button secondary" onclick="testTableSchema()">Show Table Schema</button>
+                <div class="result-area" id="queryResults"></div>
+            </div>
+
+            <!-- DF555 Data Table -->
+            <div class="test-section">
+                <h3>📋 DF555 Data Table</h3>
+                <button class="test-button" onclick="testDF555Connection()">Test DF555 Table Connection</button>
+                <button class="test-button" onclick="getDF555Count()">Get Record Count</button>
+                <button class="test-button" onclick="getDF555Sample()">Get Sample Records (10)</button>
+                <button class="test-button" onclick="getDF555Schema()">Show Table Structure</button>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="df555Limit">Number of records to fetch:</label>
+                    <input type="number" id="df555Limit" value="50" min="1" max="1000">
+                </div>
+                <button class="test-button" onclick="getDF555Records()">Get Records</button>
+                <button class="test-button secondary" onclick="searchDF555Data()">Search DF555 Data</button>
+                <button class="test-button" onclick="exportDF555Data()">Export to JSON</button>
+                <button class="test-button" onclick="exportDF555CSV()">Export to CSV</button>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="df555Search">Search term (searches all text fields):</label>
+                    <input type="text" id="df555Search" placeholder="Enter search term...">
+                </div>
+                <button class="test-button" onclick="executeDF555Search()">Execute Search</button>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="df555Column">Column for filtering:</label>
+                    <input type="text" id="df555Column" placeholder="Enter column name...">
+                    <label for="df555Value">Value to filter by:</label>
+                    <input type="text" id="df555Value" placeholder="Enter value...">
+                </div>
+                <button class="test-button" onclick="filterDF555Data()">Filter by Column</button>
+                <div class="result-area" id="df555Results"></div>
+            </div>
+        </div>
+
+        <!-- Clean Up Section -->
+        <div class="test-section">
+            <h3>🧹 Clean Up Test Data</h3>
+            <p style="color: #e74c3c; margin-bottom: 15px;">
+                ⚠️ Warning: This will delete test data created during this session
+            </p>
+            <button class="test-button danger" onclick="cleanUpTestData()">Clean Up Test Data</button>
+            <button class="test-button secondary" onclick="clearAllResults()">Clear All Results</button>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 40px; color: var(--text-secondary);">
+            <p>Apex Driver Test Suite | Powered by Supabase</p>
+            <p><a href="main.html" style="color: var(--primary-color);">← Back to Main App</a> | <a href="admin.html" style="color: var(--primary-color);">🛡️ Admin Dashboard</a> | <a href="#" onclick="handleLogout()" style="color: var(--primary-color);">Logout</a></p>
+        </div>
+    </div>
+
+    <script>
+        let testDriverId = null;
+        let testJobId = null;
+        let subscriptions = [];
+        let supabaseReady = false;
+
+        // Wait for Supabase to be ready
+        document.addEventListener('supabaseReady', async function(event) {
+            console.log('Test page: Supabase ready');
+            
+            // Check authentication first
+            const isAuthed = await checkAuth();
+            if (!isAuthed) return; // Will redirect to auth page
+            
+            supabaseReady = true;
+            updateConnectionStatus(true);
+            refreshStats();
+            logResult('connectionResults', '✅ Supabase client initialized successfully');
+        });
+
+        // Connection status update
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            const indicator = statusEl.querySelector('.status-indicator');
+            
+            if (connected) {
+                statusEl.className = 'connection-status connected';
+                statusEl.innerHTML = '<span class="status-indicator status-success"></span>Connected to Supabase';
+            } else {
+                statusEl.className = 'connection-status disconnected';
+                statusEl.innerHTML = '<span class="status-indicator status-error"></span>Not connected to Supabase';
+            }
+        }
+
+        // Utility function to log results
+        function logResult(containerId, message, isError = false) {
+            const container = document.getElementById(containerId);
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = isError ? '❌' : '✅';
+            container.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Connection Tests
+        async function testConnection() {
+            try {
+                if (!supabaseReady) {
+                    logResult('connectionResults', 'Supabase not ready yet', true);
+                    return;
+                }
+                
+                const client = window.getSupabaseClient();
+                if (client) {
+                    logResult('connectionResults', 'Supabase client is available');
+                    
+                    // Test a simple query
+                    const { data, error } = await client.from('drivers').select('count').limit(1);
+                    if (error) {
+                        logResult('connectionResults', `Database query failed: ${error.message}`, true);
+                    } else {
+                        logResult('connectionResults', 'Database connection successful');
+                    }
+                } else {
+                    logResult('connectionResults', 'Supabase client not available', true);
+                }
+            } catch (error) {
+                logResult('connectionResults', `Connection test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testAuthentication() {
+            try {
+                const { user, error } = await SupabaseUtils.getCurrentUser();
+                if (error) {
+                    logResult('connectionResults', `Auth check: ${error.message} (This is normal for anonymous users)`);
+                } else if (user) {
+                    logResult('connectionResults', `Authenticated as: ${user.email}`);
+                } else {
+                    logResult('connectionResults', 'No authenticated user (anonymous access)');
+                }
+            } catch (error) {
+                logResult('connectionResults', `Auth test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testDatabase() {
+            try {
+                const { data, error } = await SupabaseUtils.selectRecords('drivers', {}, { limit: 1 });
+                if (error) {
+                    logResult('connectionResults', `Database access failed: ${error.message}`, true);
+                } else {
+                    logResult('connectionResults', `Database access successful. Found ${data ? data.length : 0} drivers`);
+                }
+            } catch (error) {
+                logResult('connectionResults', `Database test failed: ${error.message}`, true);
+            }
+        }
+
+        // Driver Management Tests
+        async function testCreateDriver() {
+            try {
+                const driverData = {
+                    email: `test.driver.${Date.now()}@example.com`,
+                    fullName: 'Test Driver',
+                    phoneNumber: '+27123456789',
+                    vehicleType: 'car',
+                    licenseNumber: 'TEST123456',
+                    vehicleMake: 'Toyota',
+                    vehicleModel: 'Test Model',
+                    vehicleYear: 2023,
+                    vehiclePlate: 'TEST123GP'
+                };
+
+                const { data, error } = await ApexDriverService.registerDriver(driverData);
+                if (error) {
+                    logResult('driverResults', `Failed to create driver: ${error.message}`, true);
+                } else {
+                    testDriverId = data.id;
+                    logResult('driverResults', `Driver created successfully: ${data.full_name} (ID: ${data.id})`);
+                    refreshStats();
+                }
+            } catch (error) {
+                logResult('driverResults', `Create driver test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testGetDrivers() {
+            try {
+                const { data, error } = await SupabaseUtils.selectRecords('drivers', {}, { limit: 10 });
+                if (error) {
+                    logResult('driverResults', `Failed to get drivers: ${error.message}`, true);
+                } else {
+                    logResult('driverResults', `Found ${data.length} drivers:`);
+                    data.forEach(driver => {
+                        logResult('driverResults', `  - ${driver.full_name} (${driver.status}) - ${driver.vehicle_make} ${driver.vehicle_model}`);
+                    });
+                }
+            } catch (error) {
+                logResult('driverResults', `Get drivers test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testUpdateDriverLocation() {
+            if (!testDriverId) {
+                logResult('driverResults', 'No test driver available. Create a driver first.', true);
+                return;
+            }
+
+            try {
+                // Durban coordinates
+                const lat = -29.8587 + (Math.random() - 0.5) * 0.01;
+                const lng = 31.0218 + (Math.random() - 0.5) * 0.01;
+
+                const { data, error } = await ApexDriverService.updateDriverLocation(testDriverId, lat, lng);
+                if (error) {
+                    logResult('driverResults', `Failed to update location: ${error.message}`, true);
+                } else {
+                    logResult('driverResults', `Driver location updated to: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                }
+            } catch (error) {
+                logResult('driverResults', `Update location test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testUpdateDriverStatus() {
+            if (!testDriverId) {
+                logResult('driverResults', 'No test driver available. Create a driver first.', true);
+                return;
+            }
+
+            try {
+                const statuses = ['active', 'busy', 'offline'];
+                const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+
+                const { data, error } = await ApexDriverService.updateDriverStatus(testDriverId, randomStatus);
+                if (error) {
+                    logResult('driverResults', `Failed to update status: ${error.message}`, true);
+                } else {
+                    logResult('driverResults', `Driver status updated to: ${data.status}`);
+                }
+            } catch (error) {
+                logResult('driverResults', `Update status test failed: ${error.message}`, true);
+            }
+        }
+
+        // Job Management Tests
+        async function testCreateJob() {
+            try {
+                const jobData = {
+                    customerName: 'Test Customer',
+                    customerPhone: '+27123456790',
+                    pickupAddress: '123 Test Street, Durban',
+                    pickupLocation: { lat: -29.8587, lng: 31.0218 },
+                    dropoffAddress: '456 Test Avenue, Durban',
+                    dropoffLocation: { lat: -29.8687, lng: 31.0318 },
+                    jobType: 'delivery',
+                    description: 'Test delivery job',
+                    price: 50.00
+                };
+
+                const { data, error } = await ApexDriverService.createJob(jobData);
+                if (error) {
+                    logResult('jobResults', `Failed to create job: ${error.message}`, true);
+                } else {
+                    testJobId = data.id;
+                    logResult('jobResults', `Job created successfully: ${data.job_type} - R${data.price} (ID: ${data.id})`);
+                    refreshStats();
+                }
+            } catch (error) {
+                logResult('jobResults', `Create job test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testGetAvailableJobs() {
+            try {
+                const { data, error } = await ApexDriverService.getAvailableJobs();
+                if (error) {
+                    logResult('jobResults', `Failed to get jobs: ${error.message}`, true);
+                } else {
+                    logResult('jobResults', `Found ${data.length} available jobs:`);
+                    data.slice(0, 5).forEach(job => {
+                        logResult('jobResults', `  - ${job.job_type} - R${job.price} - ${job.pickup_address}`);
+                    });
+                }
+            } catch (error) {
+                logResult('jobResults', `Get jobs test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testAssignJob() {
+            if (!testJobId || !testDriverId) {
+                logResult('jobResults', 'Need both test job and driver. Create them first.', true);
+                return;
+            }
+
+            try {
+                const { data, error } = await ApexDriverService.assignJobToDriver(testJobId, testDriverId);
+                if (error) {
+                    logResult('jobResults', `Failed to assign job: ${error.message}`, true);
+                } else {
+                    logResult('jobResults', `Job assigned successfully. Status: ${data.status}`);
+                    refreshStats();
+                }
+            } catch (error) {
+                logResult('jobResults', `Assign job test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testUpdateJobStatus() {
+            if (!testJobId) {
+                logResult('jobResults', 'No test job available. Create a job first.', true);
+                return;
+            }
+
+            try {
+                const statuses = ['in_progress', 'completed'];
+                const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+
+                const { data, error } = await ApexDriverService.updateJobStatus(testJobId, randomStatus, testDriverId);
+                if (error) {
+                    logResult('jobResults', `Failed to update job status: ${error.message}`, true);
+                } else {
+                    logResult('jobResults', `Job status updated to: ${data.status}`);
+                    refreshStats();
+                }
+            } catch (error) {
+                logResult('jobResults', `Update job status test failed: ${error.message}`, true);
+            }
+        }
+
+        // Location Services Tests
+        async function testGetLocation() {
+            try {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const { latitude, longitude } = position.coords;
+                            logResult('locationResults', `Current location: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+                        },
+                        (error) => {
+                            logResult('locationResults', `Geolocation error: ${error.message}`, true);
+                        }
+                    );
+                } else {
+                    logResult('locationResults', 'Geolocation not supported by this browser', true);
+                }
+            } catch (error) {
+                logResult('locationResults', `Get location test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testNearbyJobs() {
+            try {
+                // Use Durban coordinates
+                const lat = -29.8587;
+                const lng = 31.0218;
+                const radius = 10;
+
+                const { data, error } = await ApexDriverService.getAvailableJobs(lat, lng, radius);
+                if (error) {
+                    logResult('locationResults', `Failed to get nearby jobs: ${error.message}`, true);
+                } else {
+                    logResult('locationResults', `Found ${data.length} jobs within ${radius}km of Durban`);
+                    data.slice(0, 3).forEach(job => {
+                        logResult('locationResults', `  - ${job.job_type} - R${job.price} - Distance: ${job.distance_km || 'N/A'}km`);
+                    });
+                }
+            } catch (error) {
+                logResult('locationResults', `Nearby jobs test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testNearbyDrivers() {
+            try {
+                const client = window.getSupabaseClient();
+                const { data, error } = await client.rpc('nearby_drivers', {
+                    lat: -29.8587,
+                    lng: 31.0218,
+                    radius_km: 5
+                });
+
+                if (error) {
+                    logResult('locationResults', `Failed to get nearby drivers: ${error.message}`, true);
+                } else {
+                    logResult('locationResults', `Found ${data.length} drivers within 5km`);
+                    data.slice(0, 3).forEach(driver => {
+                        logResult('locationResults', `  - ${driver.full_name} - ${driver.vehicle_type} - ${driver.distance_km.toFixed(2)}km away`);
+                    });
+                }
+            } catch (error) {
+                logResult('locationResults', `Nearby drivers test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testDistanceCalculation() {
+            try {
+                const client = window.getSupabaseClient();
+                const { data, error } = await client.rpc('calculate_distance', {
+                    lat1: -29.8587,
+                    lng1: 31.0218,
+                    lat2: -29.8687,
+                    lng2: 31.0318
+                });
+
+                if (error) {
+                    logResult('locationResults', `Distance calculation failed: ${error.message}`, true);
+                } else {
+                    logResult('locationResults', `Distance between test points: ${data.toFixed(2)} km`);
+                }
+            } catch (error) {
+                logResult('locationResults', `Distance calculation test failed: ${error.message}`, true);
+            }
+        }
+
+        // Real-time Tests
+        async function testJobSubscription() {
+            try {
+                const subscription = ApexDriverService.subscribeToAvailableJobs((payload) => {
+                    logResult('realtimeResults', `Real-time update: ${payload.eventType} - New job: ${payload.new?.job_type || 'N/A'}`);
+                });
+
+                subscriptions.push(subscription);
+                logResult('realtimeResults', 'Subscribed to job updates. Create a new job to see real-time updates.');
+            } catch (error) {
+                logResult('realtimeResults', `Subscription test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testUnsubscribe() {
+            if (subscriptions.length > 0) {
+                const subscription = subscriptions.pop();
+                ApexDriverService.unsubscribe(subscription);
+                logResult('realtimeResults', 'Unsubscribed from latest subscription');
+            } else {
+                logResult('realtimeResults', 'No active subscriptions to unsubscribe from');
+            }
+        }
+
+        function clearSubscriptions() {
+            subscriptions.forEach(sub => ApexDriverService.unsubscribe(sub));
+            subscriptions = [];
+            logResult('realtimeResults', 'All subscriptions cleared');
+        }
+
+        // Custom Query Tests
+        async function testCustomQuery() {
+            try {
+                const table = document.getElementById('customTable').value;
+                const { data, error } = await SupabaseUtils.selectRecords(table, {}, { limit: 5 });
+
+                if (error) {
+                    logResult('queryResults', `Query failed: ${error.message}`, true);
+                } else {
+                    logResult('queryResults', `Query results for ${table} (showing first 5):`);
+                    logResult('queryResults', JSON.stringify(data, null, 2));
+                }
+            } catch (error) {
+                logResult('queryResults', `Custom query test failed: ${error.message}`, true);
+            }
+        }
+
+        async function testTableSchema() {
+            try {
+                const table = document.getElementById('customTable').value;
+                const client = window.getSupabaseClient();
+                
+                // Get table info from information_schema
+                const { data, error } = await client
+                    .from('information_schema.columns')
+                    .select('column_name, data_type, is_nullable')
+                    .eq('table_name', table)
+                    .eq('table_schema', 'public');
+
+                if (error) {
+                    logResult('queryResults', `Schema query failed: ${error.message}`, true);
+                } else {
+                    logResult('queryResults', `Schema for ${table}:`);
+                    data.forEach(col => {
+                        logResult('queryResults', `  ${col.column_name}: ${col.data_type} ${col.is_nullable === 'YES' ? '(nullable)' : '(not null)'}`);
+                    });
+                }
+            } catch (error) {
+                logResult('queryResults', `Schema test failed: ${error.message}`, true);
+            }
+        }
+
+        // DF555 Data Table Tests
+        async function testDF555Connection() {
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) {
+                    logResult('df555Results', 'Supabase client not available', true);
+                    return;
+                }
+
+                // Test basic connection to df555_data table
+                const { data, error } = await client.from('df555_data').select('*').limit(1);
+                
+                if (error) {
+                    logResult('df555Results', `DF555 table connection failed: ${error.message}`, true);
+                    logResult('df555Results', 'This could mean the table doesn\'t exist or you don\'t have permissions');
+                } else {
+                    logResult('df555Results', 'DF555 table connection successful!');
+                    if (data && data.length > 0) {
+                        logResult('df555Results', `Sample record structure: ${JSON.stringify(Object.keys(data[0]))}`);
+                    }
+                }
+            } catch (error) {
+                logResult('df555Results', `DF555 connection test failed: ${error.message}`, true);
+            }
+        }
+
+        async function getDF555Count() {
+            try {
+                const client = window.getSupabaseClient();
+                const { count, error } = await client
+                    .from('df555_data')
+                    .select('*', { count: 'exact', head: true });
+
+                if (error) {
+                    logResult('df555Results', `Failed to count DF555 records: ${error.message}`, true);
+                } else {
+                    logResult('df555Results', `Total records in df555_data: ${count}`);
+                    
+                    // Update stats if we have a dedicated stat element
+                    if (document.getElementById('df555Count')) {
+                        document.getElementById('df555Count').textContent = count || 0;
+                    }
+                }
+            } catch (error) {
+                logResult('df555Results', `Count query failed: ${error.message}`, true);
+            }
+        }
+
+        async function getDF555Sample() {
+            try {
+                const client = window.getSupabaseClient();
+                const { data, error } = await client
+                    .from('df555_data')
+                    .select('*')
+                    .limit(10);
+
+                if (error) {
+                    logResult('df555Results', `Failed to get sample records: ${error.message}`, true);
+                } else {
+                    logResult('df555Results', `Sample records from df555_data (${data.length} records):`);
+                    logResult('df555Results', JSON.stringify(data, null, 2));
+                }
+            } catch (error) {
+                logResult('df555Results', `Sample query failed: ${error.message}`, true);
+            }
+        }
+
+        async function getDF555Schema() {
+            try {
+                const client = window.getSupabaseClient();
+                
+                // Get table schema from information_schema
+                const { data, error } = await client
+                    .from('information_schema.columns')
+                    .select('column_name, data_type, is_nullable, column_default')
+                    .eq('table_name', 'df555_data')
+                    .eq('table_schema', 'public')
+                    .order('ordinal_position');
+
+                if (error) {
+                    logResult('df555Results', `Schema query failed: ${error.message}`, true);
+                } else if (data.length === 0) {
+                    logResult('df555Results', 'df555_data table not found in schema', true);
+                } else {
+                    logResult('df555Results', `Schema for df555_data table (${data.length} columns):`);
+                    data.forEach(col => {
+                        const nullable = col.is_nullable === 'YES' ? ' (nullable)' : ' (not null)';
+                        const defaultVal = col.column_default ? ` [default: ${col.column_default}]` : '';
+                        logResult('df555Results', `  📋 ${col.column_name}: ${col.data_type}${nullable}${defaultVal}`);
+                    });
+                }
+            } catch (error) {
+                logResult('df555Results', `Schema query failed: ${error.message}`, true);
+            }
+        }
+
+        async function getDF555Records() {
+            try {
+                const limit = parseInt(document.getElementById('df555Limit').value) || 50;
+                const client = window.getSupabaseClient();
+                
+                const { data, error } = await client
+                    .from('df555_data')
+                    .select('*')
+                    .limit(limit);
+
+                if (error) {
+                    logResult('df555Results', `Failed to get DF555 records: ${error.message}`, true);
+                } else {
+                    logResult('df555Results', `Retrieved ${data.length} records from df555_data:`);
+                    
+                    if (data.length > 0) {
+                        // Show column headers
+                        const columns = Object.keys(data[0]);
+                        logResult('df555Results', `Columns: ${columns.join(', ')}`);
+                        logResult('df555Results', '─'.repeat(80));
+                        
+                        // Show data in a formatted way
+                        data.forEach((record, index) => {
+                            logResult('df555Results', `Record ${index + 1}:`);
+                            columns.forEach(col => {
+                                const value = record[col];
+                                const displayValue = value !== null && value !== undefined ? 
+                                    (typeof value === 'object' ? JSON.stringify(value) : String(value)) : 'NULL';
+                                logResult('df555Results', `  ${col}: ${displayValue}`);
+                            });
+                            logResult('df555Results', ''); // Empty line between records
+                        });
+                    } else {
+                        logResult('df555Results', 'No records found in df555_data table');
+                    }
+                }
+            } catch (error) {
+                logResult('df555Results', `Get records query failed: ${error.message}`, true);
+            }
+        }
+
+        async function searchDF555Data() {
+            const searchTerm = document.getElementById('df555Search').value.trim();
+            if (!searchTerm) {
+                logResult('df555Results', 'Please enter a search term', true);
+                return;
+            }
+
+            try {
+                const client = window.getSupabaseClient();
+                
+                // First, get the schema to identify text columns
+                const { data: schema, error: schemaError } = await client
+                    .from('information_schema.columns')
+                    .select('column_name, data_type')
+                    .eq('table_name', 'df555_data')
+                    .eq('table_schema', 'public');
+
+                if (schemaError) {
+                    logResult('df555Results', `Schema query failed: ${schemaError.message}`, true);
+                    return;
+                }
+
+                // Filter for text-like columns
+                const textColumns = schema.filter(col => 
+                    col.data_type.includes('text') || 
+                    col.data_type.includes('varchar') || 
+                    col.data_type.includes('character')
+                ).map(col => col.column_name);
+
+                if (textColumns.length === 0) {
+                    logResult('df555Results', 'No text columns found for searching', true);
+                    return;
+                }
+
+                logResult('df555Results', `Searching in columns: ${textColumns.join(', ')}`);
+
+                // Build the search query using OR conditions
+                const searchConditions = textColumns.map(col => `${col}.ilike.%${searchTerm}%`).join(',');
+                
+                const { data, error } = await client
+                    .from('df555_data')
+                    .select('*')
+                    .or(searchConditions)
+                    .limit(100); // Limit search results
+
+                if (error) {
+                    logResult('df555Results', `Search query failed: ${error.message}`, true);
+                } else {
+                    logResult('df555Results', `Search results for "${searchTerm}": ${data.length} matches found`);
+                    
+                    if (data.length > 0) {
+                        data.forEach((record, index) => {
+                            logResult('df555Results', `\nMatch ${index + 1}:`);
+                            Object.entries(record).forEach(([key, value]) => {
+                                const displayValue = value !== null && value !== undefined ? 
+                                    (typeof value === 'object' ? JSON.stringify(value) : String(value)) : 'NULL';
+                                
+                                // Highlight matching text
+                                if (textColumns.includes(key) && displayValue.toLowerCase().includes(searchTerm.toLowerCase())) {
+                                    logResult('df555Results', `  🔍 ${key}: ${displayValue}`);
+                                } else {
+                                    logResult('df555Results', `  ${key}: ${displayValue}`);
+                                }
+                            });
+                        });
+                    } else {
+                        logResult('df555Results', `No records found matching "${searchTerm}"`);
+                    }
+                }
+            } catch (error) {
+                logResult('df555Results', `Search failed: ${error.message}`, true);
+            }
+        }
+
+        async function executeDF555Search() {
+            await searchDF555Data();
+        }
+
+        // Enhanced DF555 functions using the service
+        async function exportDF555Data() {
+            try {
+                const limit = parseInt(document.getElementById('df555Limit').value) || 50;
+                logResult('df555Results', `Exporting ${limit} records to JSON...`);
+                
+                const { data, error } = await DF555DataService.exportToJSON({}, limit);
+                
+                if (error) {
+                    logResult('df555Results', `Export failed: ${error.message}`, true);
+                } else {
+                    // Download the file
+                    DF555DataService.downloadAsFile(
+                        data, 
+                        `df555_data_export_${new Date().toISOString().split('T')[0]}.json`,
+                        'application/json'
+                    );
+                    logResult('df555Results', `JSON export completed successfully (${data.length} characters)`);
+                }
+            } catch (error) {
+                logResult('df555Results', `Export failed: ${error.message}`, true);
+            }
+        }
+
+        async function exportDF555CSV() {
+            try {
+                const limit = parseInt(document.getElementById('df555Limit').value) || 50;
+                logResult('df555Results', `Exporting ${limit} records to CSV...`);
+                
+                const { data, error } = await DF555DataService.exportToCSV({}, limit);
+                
+                if (error) {
+                    logResult('df555Results', `CSV export failed: ${error.message}`, true);
+                } else {
+                    // Download the file
+                    DF555DataService.downloadAsFile(
+                        data, 
+                        `df555_data_export_${new Date().toISOString().split('T')[0]}.csv`,
+                        'text/csv'
+                    );
+                    logResult('df555Results', `CSV export completed successfully`);
+                }
+            } catch (error) {
+                logResult('df555Results', `CSV export failed: ${error.message}`, true);
+            }
+        }
+
+        async function filterDF555Data() {
+            try {
+                const column = document.getElementById('df555Column').value.trim();
+                const value = document.getElementById('df555Value').value.trim();
+                
+                if (!column || !value) {
+                    logResult('df555Results', 'Please enter both column name and value for filtering', true);
+                    return;
+                }
+                
+                const limit = parseInt(document.getElementById('df555Limit').value) || 50;
+                logResult('df555Results', `Filtering by ${column} = '${value}'...`);
+                
+                const { data, error } = await DF555DataService.getRecordsByColumn(column, value, limit);
+                
+                if (error) {
+                    logResult('df555Results', `Filter failed: ${error.message}`, true);
+                } else {
+                    logResult('df555Results', `Filter results: ${data.length} records found`);
+                    
+                    if (data.length > 0) {
+                        data.forEach((record, index) => {
+                            logResult('df555Results', `\nRecord ${index + 1}:`);
+                            logResult('df555Results', DF555DataService.formatRecordForDisplay(record));
+                        });
+                    } else {
+                        logResult('df555Results', `No records found where ${column} = '${value}'`);
+                    }
+                }
+            } catch (error) {
+                logResult('df555Results', `Filter operation failed: ${error.message}`, true);
+            }
+        }
+
+        // Statistics
+        async function refreshStats() {
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) return;
+
+                // Get counts
+                const [df555Res, driversRes, jobsRes, availableJobsRes, activeDriversRes] = await Promise.all([
+                    client.from('df555_data').select('*', { count: 'exact', head: true }).catch(() => ({ count: 'N/A' })),
+                    client.from('drivers').select('*', { count: 'exact', head: true }),
+                    client.from('jobs').select('*', { count: 'exact', head: true }),
+                    client.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'available'),
+                    client.from('drivers').select('*', { count: 'exact', head: true }).eq('status', 'active')
+                ]);
+
+                document.getElementById('df555Count').textContent = df555Res.count || 0;
+                document.getElementById('driverCount').textContent = driversRes.count || 0;
+                document.getElementById('jobCount').textContent = jobsRes.count || 0;
+                document.getElementById('availableJobCount').textContent = availableJobsRes.count || 0;
+                document.getElementById('activeDriverCount').textContent = activeDriversRes.count || 0;
+            } catch (error) {
+                console.error('Error refreshing stats:', error);
+            }
+        }
+
+        // Clean up
+        async function cleanUpTestData() {
+            try {
+                let cleaned = 0;
+
+                if (testDriverId) {
+                    const { error: driverError } = await SupabaseUtils.deleteRecord('drivers', testDriverId);
+                    if (!driverError) cleaned++;
+                }
+
+                if (testJobId) {
+                    const { error: jobError } = await SupabaseUtils.deleteRecord('jobs', testJobId);
+                    if (!jobError) cleaned++;
+                }
+
+                // Clean up other test data (created during this session)
+                const { error: cleanError } = await window.getSupabaseClient()
+                    .from('drivers')
+                    .delete()
+                    .like('email', '%test.driver.%@example.com');
+
+                logResult('connectionResults', `Cleaned up ${cleaned} test records`);
+                testDriverId = null;
+                testJobId = null;
+                refreshStats();
+            } catch (error) {
+                logResult('connectionResults', `Clean up failed: ${error.message}`, true);
+            }
+        }
+
+        function clearAllResults() {
+            ['connectionResults', 'driverResults', 'jobResults', 'locationResults', 'realtimeResults', 'queryResults'].forEach(id => {
+                document.getElementById(id).textContent = '';
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!supabaseReady) {
+                setTimeout(() => {
+                    if (!supabaseReady) {
+                        updateConnectionStatus(false);
+                        logResult('connectionResults', 'Supabase initialization timeout', true);
+                    }
+                }, 5000);
+            }
+        });
+
+        // Logout function
+        async function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    await AuthService.signOut();
+                    window.location.href = 'auth.html';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    window.location.href = 'auth.html';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

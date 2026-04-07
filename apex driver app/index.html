@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Driver</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0d9488">
+    <link rel="stylesheet" href="styles/global.css">
+    <meta http-equiv="refresh" content="1; url=auth.html">
+    
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Supabase Configuration -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/auth-service.js"></script>
+</head>
+<body>
+    <div style="height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--primary-color); color: white; text-align: center;">
+        <div>
+            <h1 style="font-size: 2rem; margin-bottom: 1rem;"> Apex Driver</h1>
+            <div style="width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto;"></div>
+            <p>Starting your journey...</p>
+            <a href="main.html" style="color: white; text-decoration: underline;">Click here if not redirected</a>
+        </div>
+    </div>
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        // Check authentication before redirecting
+        document.addEventListener('supabaseReady', async function() {
+            try {
+                const { user } = await AuthService.refreshUser();
+                
+                if (user) {
+                    // User is authenticated, redirect to main app
+                    window.location.href = 'main.html';
+                } else {
+                    // No user, redirect to auth
+                    window.location.href = 'auth.html';
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                // Default to auth page
+                window.location.href = 'auth.html';
+            }
+        });
+
+        // Fallback redirect after timeout
+        setTimeout(function() {
+            if (window.location.href.includes('index.html')) {
+                window.location.href = 'auth.html';
+            }
+        }, 3000);
+    </script>
+    <script>
+      if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }
+    </script>
+</body>

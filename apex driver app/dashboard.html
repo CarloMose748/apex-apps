@@ -1,0 +1,2170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Apex Oil Collector</title>
+    <link rel="stylesheet" href="styles/global.css">
+    
+    <!-- Hamburger Menu -->
+    <script src="js/hamburger-menu.js"></script>
+    
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Supabase Configuration -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/auth-service.js"></script>
+    
+    <style>
+        .dashboard-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .dashboard-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .dashboard-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .dashboard-header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .header-icon {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-right: 10px;
+        }
+
+        .tab-icon {
+            margin-right: 8px;
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            /* Touch-friendly */
+            cursor: pointer;
+            -webkit-tap-highlight-color: rgba(0, 102, 204, 0.1);
+        }
+
+        .stat-card:hover,
+        .stat-card:active {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 1.8rem;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dashboard-tabs {
+            display: flex;
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 20px;
+            background: transparent;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            background: rgba(0, 102, 204, 0.05);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .data-table {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: var(--background-gray);
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .table-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: white;
+            font-size: 0.9rem;
+        }
+
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            width: 200px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background: var(--background-gray);
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            color: var(--text-secondary);
+        }
+
+        .data-table tr:hover {
+            background: rgba(0, 102, 204, 0.02);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-available {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-assigned {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .status-in-progress {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .status-collected {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .status-completed {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .status-cancelled {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .verification-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: #e8f5e8;
+            color: #2e7d32;
+            margin-left: 8px;
+        }
+
+        .quality-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 500;
+            background: #f3e5f5;
+            color: #7b1fa2;
+            margin-right: 8px;
+        }
+
+        .method-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 500;
+            background: #e3f2fd;
+            color: #1976d2;
+            margin-right: 8px;
+        }
+
+        .priority-urgent {
+            color: #d32f2f;
+            font-weight: 600;
+        }
+
+        .priority-high {
+            color: #f57c00;
+            font-weight: 600;
+        }
+
+        .priority-normal {
+            color: var(--text-secondary);
+        }
+
+        .priority-low {
+            color: #666;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            /* Touch-friendly */
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-view {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-edit {
+            background: #2196f3;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #1976d2;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+            font-family: Arial, sans-serif;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+            background: var(--background-gray);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            background: white;
+            color: var(--text-secondary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .current-page {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .photo-thumbnail {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            border: 1px solid var(--border-color);
+        }
+
+        .photo-count {
+            background: var(--primary-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            margin-left: 5px;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 10px;
+            }
+
+            .dashboard-header {
+                padding: 20px 15px;
+                text-align: center;
+            }
+
+            .dashboard-header h1 {
+                font-size: 1.8rem;
+                margin-bottom: 8px;
+            }
+
+            .dashboard-header p {
+                font-size: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+                margin-bottom: 20px;
+            }
+
+            .stat-card {
+                padding: 20px 15px;
+            }
+
+            .stat-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+                margin-bottom: 12px;
+            }
+
+            .stat-value {
+                font-size: 1.8rem;
+            }
+
+            .stat-label {
+                font-size: 0.8rem;
+            }
+
+            /* Make tabs scrollable on mobile */
+            .dashboard-tabs {
+                overflow-x: auto;
+                display: flex;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+                margin-bottom: 20px;
+            }
+
+            .tab-button {
+                flex: 0 0 auto;
+                min-width: 120px;
+                padding: 15px 10px;
+                font-size: 0.9rem;
+                text-align: center;
+            }
+
+            .table-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .table-title {
+                font-size: 1.1rem;
+                text-align: center;
+            }
+
+            .table-filters {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+
+            .filter-select,
+            .search-input {
+                width: 100%;
+                padding: 12px;
+                font-size: 1rem;
+                border-radius: var(--radius-md);
+            }
+
+            .refresh-button {
+                width: 100%;
+                justify-content: center;
+                padding: 12px;
+                font-size: 1rem;
+            }
+
+            /* Hide some table columns on mobile */
+            .data-table th:nth-child(3),
+            .data-table td:nth-child(3),
+            .data-table th:nth-child(6),
+            .data-table td:nth-child(6) {
+                display: none;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 12px 8px;
+                font-size: 0.85rem;
+            }
+
+            .data-table th {
+                font-size: 0.8rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .btn-small {
+                font-size: 0.8rem;
+                padding: 8px 12px;
+                width: 100%;
+                text-align: center;
+            }
+
+            .status-badge {
+                font-size: 0.7rem;
+                padding: 3px 8px;
+            }
+
+            .photo-count {
+                font-size: 0.6rem;
+                padding: 2px 4px;
+            }
+
+            .chart-container {
+                padding: 20px 15px;
+                margin-bottom: 20px;
+            }
+
+            .chart-title {
+                font-size: 1.1rem;
+                text-align: center;
+                margin-bottom: 15px;
+            }
+
+            .pagination {
+                flex-wrap: wrap;
+                gap: 5px;
+                padding: 15px;
+            }
+
+            .pagination button {
+                min-width: 40px;
+                padding: 8px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Extra small mobile screens */
+        @media (max-width: 480px) {
+            .dashboard-header h1 {
+                font-size: 1.6rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .stat-card {
+                padding: 15px;
+            }
+
+            .tab-button {
+                min-width: 100px;
+                padding: 12px 8px;
+                font-size: 0.8rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px 4px;
+                font-size: 0.8rem;
+            }
+
+            /* Show only essential columns on very small screens */
+            .data-table th:nth-child(4),
+            .data-table td:nth-child(4),
+            .data-table th:nth-child(5),
+            .data-table td:nth-child(5) {
+                display: none;
+            }
+        }
+
+        /* Landscape orientation adjustments */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+            }
+
+            .dashboard-header {
+                padding: 15px;
+            }
+
+            .dashboard-header h1 {
+                font-size: 1.6rem;
+            }
+        }
+
+        /* Loading states */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .refresh-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 30px;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Mobile table cards */
+        @media (max-width: 768px) {
+            .table-wrapper {
+                overflow: visible;
+            }
+
+            .data-table table {
+                display: none;
+            }
+
+            .mobile-cards {
+                display: block;
+            }
+
+            .mobile-card {
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius-md);
+                padding: 15px;
+                margin-bottom: 15px;
+                box-shadow: var(--shadow-sm);
+            }
+
+            .mobile-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 12px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .mobile-card-title {
+                font-weight: 600;
+                color: var(--text-primary);
+                font-size: 1rem;
+            }
+
+            .mobile-card-status {
+                flex-shrink: 0;
+            }
+
+            .mobile-card-details {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                margin-bottom: 12px;
+                font-size: 0.9rem;
+            }
+
+            .mobile-card-detail {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .mobile-card-detail-label {
+                font-size: 0.75rem;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 2px;
+            }
+
+            .mobile-card-detail-value {
+                color: var(--text-primary);
+                font-weight: 500;
+            }
+
+            .mobile-card-actions {
+                display: flex;
+                gap: 8px;
+                justify-content: flex-end;
+            }
+
+            .mobile-card-actions .btn-small {
+                flex: 1;
+                max-width: 100px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-cards {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger Menu -->
+    <div id="hamburger-menu"></div>
+    
+    <div class="dashboard-container">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <h1><span class="header-icon">OIL</span> Oil Collection Dashboard</h1>
+            <p>Monitor jobs, track collections, and analyze performance</p>
+        </div>
+
+        <!-- Statistics Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">&#8226;</div>
+                <div class="stat-value" id="totalJobs">-</div>
+                <div class="stat-label">Total Jobs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">&#10004;</div>
+                <div class="stat-value" id="completedJobs">-</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">&#9679;</div>
+                <div class="stat-value" id="totalVolume">-</div>
+                <div class="stat-label">Litres Collected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">&#8364;</div>
+                <div class="stat-value" id="totalEarnings">R-</div>
+                <div class="stat-label">Total Earnings</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Tabs -->
+        <div class="dashboard-tabs">
+            <button class="tab-button active" onclick="switchTab('available-jobs')">
+                <span class="tab-icon">&#8594;</span> Available Jobs
+            </button>
+            <button class="tab-button" onclick="switchTab('my-jobs')">
+                <span class="tab-icon">&#9788;</span> My Jobs
+            </button>
+            <button class="tab-button" onclick="switchTab('collection-history')">
+                <span class="tab-icon">&#8226;</span> Collection History
+            </button>
+            <button class="tab-button" onclick="switchTab('analytics')">
+                <span class="tab-icon">&#8599;</span> Analytics
+            </button>
+        </div>
+
+        <!-- Available Jobs Tab -->
+        <div id="available-jobs" class="tab-content active">
+            <div class="data-table">
+                <div class="table-header">
+                    <h3 class="table-title">Available Oil Collection Jobs</h3>
+                    <div class="table-filters">
+                        <select class="filter-select" id="priorityFilter">
+                            <option value="">All Priorities</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="high">High</option>
+                            <option value="normal">Normal</option>
+                            <option value="low">Low</option>
+                        </select>
+                        <input type="text" class="search-input" id="jobSearchInput" placeholder="Search jobs...">
+                        <button class="refresh-button" onclick="loadAvailableJobs()">
+                            &#8635; Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Location</th>
+                                <th>Est. Volume</th>
+                                <th>Payment</th>
+                                <th>Priority</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="availableJobsTable">
+                            <tr>
+                                <td colspan="7" class="loading">
+                                    <div class="loading-spinner"></div>
+                                    Loading available jobs...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="availableJobsPagination" style="display: none;">
+                    <!-- Pagination buttons will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- My Jobs Tab -->
+        <div id="my-jobs" class="tab-content">
+            <div class="data-table">
+                <div class="table-header">
+                    <h3 class="table-title">My Assigned Jobs</h3>
+                    <div class="table-filters">
+                        <select class="filter-select" id="myJobsStatusFilter">
+                            <option value="">All Statuses</option>
+                            <option value="assigned">Assigned</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="collected">Collected</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                        <input type="text" class="search-input" id="myJobsSearchInput" placeholder="Search my jobs...">
+                        <button class="refresh-button" onclick="loadMyJobs()">
+                            &#8635; Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Location</th>
+                                <th>Volume</th>
+                                <th>Payment</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="myJobsTable">
+                            <tr>
+                                <td colspan="7" class="loading">
+                                    <div class="loading-spinner"></div>
+                                    Loading your jobs...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collection History Tab -->
+        <div id="collection-history" class="tab-content">
+            <div class="data-table">
+                <div class="table-header">
+                    <h3 class="table-title">Collection History</h3>
+                    <div class="table-filters">
+                        <select class="filter-select" id="collectionStatusFilter">
+                            <option value="">All Collections</option>
+                            <option value="completed">Completed</option>
+                            <option value="pending_verification">Pending Verification</option>
+                            <option value="verified">Verified</option>
+                        </select>
+                        <input type="date" class="filter-select" id="dateFromFilter">
+                        <input type="date" class="filter-select" id="dateToFilter">
+                        <button class="refresh-button" onclick="loadCollectionHistory()">
+                            &#8635; Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Job</th>
+                                <th>Customer</th>
+                                <th>Volume</th>
+                                <th>Photos</th>
+                                <th>Earnings</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="collectionHistoryTable">
+                            <tr>
+                                <td colspan="8" class="loading">
+                                    <div class="loading-spinner"></div>
+                                    Loading collection history...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics" class="tab-content">
+            <div class="chart-container">
+                <h3 class="chart-title"><span class="tab-icon">&#8599;</span> Performance Overview</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">&#8226;</div>
+                        <div class="stat-value" id="thisMonthJobs">-</div>
+                        <div class="stat-label">This Month Jobs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">&#9679;</div>
+                        <div class="stat-value" id="thisMonthVolume">-</div>
+                        <div class="stat-label">This Month Volume</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">&#8364;</div>
+                        <div class="stat-value" id="thisMonthEarnings">R-</div>
+                        <div class="stat-label">This Month Earnings</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">&#9733;</div>
+                        <div class="stat-value" id="averageRating">-</div>
+                        <div class="stat-label">Average Rating</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3 class="chart-title"><span class="tab-icon">&#9733;</span> Performance Achievements</h3>
+                <div id="achievementsList">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        Calculating achievements...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/oil-collection-service.js"></script>
+    <script>
+        // Global variables
+        let currentTab = 'available-jobs';
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let allJobs = [];
+        let myJobs = [];
+        let collections = [];
+        let oilService;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard initializing...');
+            
+            // Use the global oil service instance
+            oilService = window.OilCollectionService;
+            console.log('Oil collection service ready:', !!oilService);
+            
+            // Check if Supabase is ready
+            if (window.supabaseClient) {
+                console.log('Supabase client ready, loading dashboard data');
+                loadDashboardData();
+            } else {
+                console.log('Waiting for Supabase client...');
+                // Wait for Supabase to be ready
+                const checkSupabase = setInterval(() => {
+                    if (window.supabaseClient) {
+                        console.log('Supabase client now ready, loading dashboard data');
+                        clearInterval(checkSupabase);
+                        loadDashboardData();
+                    }
+                }, 100);
+                
+                // Fallback - load after 2 seconds even if Supabase isn't ready
+                setTimeout(() => {
+                    console.log('Loading dashboard data with fallback');
+                    clearInterval(checkSupabase);
+                    loadDashboardData();
+                }, 2000);
+            }
+            
+            setupEventListeners();
+            setupMobileGestures();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Search filters
+            document.getElementById('jobSearchInput').addEventListener('input', filterAvailableJobs);
+            document.getElementById('priorityFilter').addEventListener('change', filterAvailableJobs);
+            document.getElementById('myJobsSearchInput').addEventListener('input', filterMyJobs);
+            document.getElementById('myJobsStatusFilter').addEventListener('change', filterMyJobs);
+            document.getElementById('collectionStatusFilter').addEventListener('change', filterCollectionHistory);
+            document.getElementById('dateFromFilter').addEventListener('change', filterCollectionHistory);
+            document.getElementById('dateToFilter').addEventListener('change', filterCollectionHistory);
+        }
+
+        // Setup mobile gestures
+        function setupMobileGestures() {
+            if (window.innerWidth <= 768) {
+                // Tab swipe functionality
+                const tabContainer = document.querySelector('.dashboard-tabs');
+                let touchStartX = 0;
+                let touchEndX = 0;
+
+                tabContainer.addEventListener('touchstart', function(e) {
+                    touchStartX = e.changedTouches[0].screenX;
+                });
+
+                tabContainer.addEventListener('touchend', function(e) {
+                    touchEndX = e.changedTouches[0].screenX;
+                    handleSwipe();
+                });
+
+                function handleSwipe() {
+                    const swipeThreshold = 50;
+                    const diff = touchStartX - touchEndX;
+
+                    if (Math.abs(diff) > swipeThreshold) {
+                        const tabs = ['available-jobs', 'my-jobs', 'collection-history', 'analytics'];
+                        const currentIndex = tabs.indexOf(currentTab);
+                        
+                        if (diff > 0 && currentIndex < tabs.length - 1) {
+                            // Swipe left - next tab
+                            const nextTab = tabs[currentIndex + 1];
+                            document.querySelector(`[onclick="switchTab('${nextTab}')"]`).click();
+                        } else if (diff < 0 && currentIndex > 0) {
+                            // Swipe right - previous tab
+                            const prevTab = tabs[currentIndex - 1];
+                            document.querySelector(`[onclick="switchTab('${prevTab}')"]`).click();
+                        }
+                    }
+                }
+
+                // Pull to refresh functionality
+                let startY = 0;
+                let pullDistance = 0;
+                const pullThreshold = 80;
+                let isRefreshing = false;
+
+                document.addEventListener('touchstart', function(e) {
+                    if (window.scrollY === 0) {
+                        startY = e.touches[0].clientY;
+                    }
+                });
+
+                document.addEventListener('touchmove', function(e) {
+                    if (window.scrollY === 0 && !isRefreshing) {
+                        pullDistance = e.touches[0].clientY - startY;
+                        if (pullDistance > 0 && pullDistance < pullThreshold) {
+                            // Visual feedback could be added here
+                            e.preventDefault();
+                        }
+                    }
+                });
+
+                document.addEventListener('touchend', function(e) {
+                    if (pullDistance > pullThreshold && !isRefreshing) {
+                        isRefreshing = true;
+                        // Show loading indicator
+                        const dashboardHeader = document.querySelector('.dashboard-header');
+                        const refreshIndicator = document.createElement('div');
+                        refreshIndicator.innerHTML = '&#8635; Refreshing...';
+                        refreshIndicator.style.cssText = 'text-align: center; padding: 10px; color: white; opacity: 0.8;';
+                        dashboardHeader.appendChild(refreshIndicator);
+                        
+                        // Refresh data
+                        loadDashboardData().finally(() => {
+                            setTimeout(() => {
+                                isRefreshing = false;
+                                if (refreshIndicator.parentNode) {
+                                    refreshIndicator.parentNode.removeChild(refreshIndicator);
+                                }
+                            }, 1000);
+                        });
+                    }
+                    pullDistance = 0;
+                });
+            }
+        }
+
+        // Load all dashboard data
+        async function loadDashboardData() {
+            console.log('Loading dashboard data...');
+            
+            // If this is a demo/test environment, create sample data
+            if (window.supabaseClient) {
+                await ensureSampleData();
+                
+                // Add a small delay to ensure data is properly inserted
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            await Promise.all([
+                loadStatistics(),
+                loadAvailableJobs(),
+                loadMyJobs(),
+                loadCollectionHistory(),
+                loadAnalytics()
+            ]);
+        }
+
+        // Ensure we have sample data for testing
+        async function ensureSampleData() {
+            try {
+                // Get current user
+                const { data: { user } } = await window.supabaseClient.auth.getUser();
+                const driverId = user?.id;
+                
+                if (!driverId) {
+                    console.log('No authenticated user, skipping sample data creation');
+                    return;
+                }
+                
+                console.log('Checking for existing data for driver:', driverId, 'user email:', user?.email);
+                
+                // Check if we already have data
+                const { data: existingCollections, error } = await window.supabaseClient
+                    .from('oil_collections')
+                    .select('id')
+                    .eq('driver_id', driverId)
+                    .limit(1);
+
+                if (error) {
+                    console.error('Error checking existing data:', error);
+                    return;
+                }
+
+                console.log('Existing collections check result:', existingCollections);
+
+                // If no data exists, create sample data
+                if (!existingCollections || existingCollections.length === 0) {
+                    console.log('No existing data found, creating sample oil collection data...');
+                    try {
+                        await createSampleOilCollections(driverId);
+                    } catch (sampleError) {
+                        console.error('Failed to create sample data, continuing without it:', sampleError);
+                    }
+                } else {
+                    console.log('Existing data found:', existingCollections.length, 'collections');
+                }
+
+            } catch (error) {
+                console.error('Error ensuring sample data:', error);
+            }
+        }
+
+        // Create sample oil collection data
+        async function createSampleOilCollections(driverId) {
+            try {
+                const sampleCollections = [
+                    {
+                        driver_id: driverId,
+                        job_id: 'job-1',
+                        collection_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+                        collected_volume: 25.5,
+                        unit: 'litres',
+                        oil_type: 'Used Cooking Oil',
+                        oil_condition: 'Good',
+                        collection_method: 'Manual Collection',
+                        collection_address: '123 Main Street, Durban',
+                        notes: 'Clean collection, good quality oil',
+                        payment_method: 'Cash',
+                        payment_reference: 'REF001',
+                        quality_assessment: 'High Quality - Clear, minimal debris',
+                        environmental_conditions: 'Normal temperature, dry conditions',
+                        equipment_used: ['Standard collection containers', 'funnel'],
+                        disposal_method: 'Recycling facility - BioDiesel processing',
+                        status: 'completed',
+                        verified_by: null, // Skip admin reference for now
+                        verified_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+                        verification_notes: 'Quality verified, documentation complete'
+                    },
+                    {
+                        driver_id: driverId,
+                        job_id: 'job-2',
+                        collection_date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+                        collected_volume: 45.0,
+                        unit: 'litres',
+                        oil_type: 'Used Cooking Oil',
+                        oil_condition: 'Fair',
+                        collection_method: 'Pump System',
+                        collection_address: '456 Commerce Ave, Durban',
+                        notes: 'Large volume collection, required multiple containers',
+                        payment_method: 'Bank Transfer',
+                        payment_reference: 'REF002',
+                        quality_assessment: 'Medium Quality - Some sediment present',
+                        environmental_conditions: 'Hot weather, outdoor collection',
+                        equipment_used: ['Electric pump', 'large containers', 'filtration setup'],
+                        disposal_method: 'Recycling facility - Energy recovery',
+                        status: 'verified',
+                        verified_by: null, // Skip admin reference for now
+                        verified_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+                        verification_notes: 'Large volume processed successfully'
+                    },
+                    {
+                        driver_id: driverId,
+                        job_id: 'job-3',
+                        collection_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+                        collected_volume: 15.2,
+                        unit: 'litres',
+                        oil_type: 'Used Cooking Oil',
+                        oil_condition: 'Excellent',
+                        collection_method: 'Manual Collection',
+                        collection_address: '789 Beach Road, Durban',
+                        notes: 'Regular weekly pickup, consistent quality',
+                        payment_method: 'Cash',
+                        payment_reference: 'REF003',
+                        quality_assessment: 'Excellent Quality - Fresh, clean oil',
+                        environmental_conditions: 'Indoor collection, controlled environment',
+                        equipment_used: ['Standard containers', 'measuring equipment'],
+                        disposal_method: 'Recycling facility - BioDiesel processing',
+                        status: 'completed',
+                        verified_by: null,
+                        verified_at: null,
+                        verification_notes: null
+                    }
+                ];
+
+                // Insert without geometry field to avoid parse errors
+                const { data, error } = await window.supabaseClient
+                    .from('oil_collections')
+                    .insert(sampleCollections);
+
+                if (error) {
+                    console.error('Error creating sample collections:', error);
+                } else {
+                    console.log('Sample oil collections created successfully:', data);
+                }
+
+            } catch (error) {
+                console.error('Error creating sample oil collections:', error);
+            }
+        }
+
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                // Get current user
+                let currentUser = null;
+                if (window.supabaseClient) {
+                    const { data: { user } } = await window.supabaseClient.auth.getUser();
+                    currentUser = user;
+                }
+                
+                const driverId = currentUser?.id || 'demo-driver';
+                console.log('Loading statistics for driver:', driverId);
+                
+                // Try to get stats from Supabase first
+                if (window.supabaseClient) {
+                    const stats = await loadStatsFromSupabase(driverId);
+                    updateStatsDisplay(stats);
+                } else {
+                    console.log('Supabase not available, using demo data');
+                    updateStatsDisplay({
+                        total_jobs: 0,
+                        total_collections: 0,
+                        total_volume: 0,
+                        total_earnings: 0
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                // Show demo data on error
+                updateStatsDisplay({
+                    total_jobs: 0,
+                    total_collections: 0,
+                    total_volume: 0,
+                    total_earnings: 0
+                });
+            }
+        }
+
+        // Load statistics directly from Supabase
+        async function loadStatsFromSupabase(driverId) {
+            try {
+                console.log('Fetching oil collection data from Supabase...');
+                
+                // Get all oil collections - try multiple approaches
+                let query = window.supabaseClient
+                    .from('oil_collections')
+                    .select('*');
+
+                // Try to find collections by driver_id or in notes field
+                if (driverId && driverId !== 'demo-driver') {
+                    query = query.or(`driver_id.eq.${driverId},notes.ilike.%${driverId}%`);
+                } else {
+                    // For demo purposes, get recent collections
+                    query = query.limit(20);
+                }
+
+                const { data: collections, error: collectionsError } = await query;
+
+                if (collectionsError) {
+                    console.error('Error fetching collections:', collectionsError);
+                    throw collectionsError;
+                }
+
+                console.log('Found collections for stats:', collections);
+
+                // Calculate stats from the data
+                const totalCollections = collections?.length || 0;
+                const totalVolume = collections?.reduce((sum, col) => {
+                    const volume = parseFloat(col.collected_volume) || 0;
+                    return sum + volume;
+                }, 0) || 0;
+                
+                // Calculate earnings based on volume (R10 per litre as base rate)
+                const baseRatePerLitre = 10;
+                const totalEarnings = totalVolume * baseRatePerLitre;
+
+                // Count completed/verified collections
+                const completedJobs = collections?.filter(col => 
+                    col.status === 'completed' || col.status === 'verified' || col.verified_at
+                ).length || 0;
+
+                const stats = {
+                    total_jobs: totalCollections,
+                    total_collections: completedJobs,
+                    total_volume: totalVolume,
+                    total_earnings: totalEarnings
+                };
+
+                console.log('Calculated stats:', stats);
+                return stats;
+
+            } catch (error) {
+                console.error('Error loading stats from Supabase:', error);
+                throw error;
+            }
+        }
+
+        // Update statistics display
+        function updateStatsDisplay(stats) {
+            document.getElementById('totalJobs').textContent = stats.total_jobs || 0;
+            document.getElementById('completedJobs').textContent = stats.total_collections || 0;
+            document.getElementById('totalVolume').textContent = (stats.total_volume || 0).toFixed(1) + 'L';
+            document.getElementById('totalEarnings').textContent = 'R' + (stats.total_earnings || 0).toFixed(2);
+        }
+
+        // Load available jobs
+        async function loadAvailableJobs() {
+            try {
+                const searchTerm = document.getElementById('jobSearchInput')?.value || '';
+                const priority = document.getElementById('priorityFilter')?.value || '';
+                
+                // Use global oil service
+                const service = window.OilCollectionService;
+                if (!service) {
+                    throw new Error('Oil collection service not available');
+                }
+                
+                allJobs = await service.getAvailableJobs({
+                    search: searchTerm,
+                    priority: priority
+                });
+
+                displayAvailableJobs(allJobs);
+            } catch (error) {
+                console.error('Error loading available jobs:', error);
+                document.getElementById('availableJobsTable').innerHTML = 
+                    '<tr><td colspan="7" class="empty-state">Error loading jobs. Please try again.</td></tr>';
+            }
+        }
+
+        // Display available jobs
+        function displayAvailableJobs(jobs) {
+            const tableBody = document.getElementById('availableJobsTable');
+            const tableWrapper = tableBody.closest('.table-wrapper');
+            
+            if (jobs.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <div class="empty-state-icon">&#8226;</div>
+                            <p>No available jobs found</p>
+                        </td>
+                    </tr>
+                `;
+                
+                // Clear mobile cards
+                let mobileCards = tableWrapper.querySelector('.mobile-cards');
+                if (mobileCards) {
+                    mobileCards.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">&#8226;</div>
+                            <p>No available jobs found</p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            // Desktop table view
+            tableBody.innerHTML = jobs.map(job => `
+                <tr>
+                    <td><strong>${job.customer_name}</strong></td>
+                    <td>${job.pickup_address}</td>
+                    <td>${job.estimated_oil_volume}L</td>
+                    <td>R${job.payment_amount.toFixed(2)}</td>
+                    <td><span class="priority-${job.priority}">${job.priority.toUpperCase()}</span></td>
+                    <td>${formatDate(job.created_at)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-small btn-view" onclick="viewJob('${job.id}')">View</button>
+                            <button class="btn-small btn-edit" onclick="acceptJob('${job.id}')">Accept</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Mobile cards view
+            let mobileCards = tableWrapper.querySelector('.mobile-cards');
+            if (!mobileCards) {
+                mobileCards = document.createElement('div');
+                mobileCards.className = 'mobile-cards';
+                tableWrapper.appendChild(mobileCards);
+            }
+
+            mobileCards.innerHTML = jobs.map(job => `
+                <div class="mobile-card">
+                    <div class="mobile-card-header">
+                        <div class="mobile-card-title">${job.customer_name}</div>
+                        <div class="mobile-card-status">
+                            <span class="priority-${job.priority}">${job.priority.toUpperCase()}</span>
+                        </div>
+                    </div>
+                    <div class="mobile-card-details">
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Location</div>
+                            <div class="mobile-card-detail-value">${job.pickup_address}</div>
+                        </div>
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Payment</div>
+                            <div class="mobile-card-detail-value">R${job.payment_amount.toFixed(2)}</div>
+                        </div>
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Volume</div>
+                            <div class="mobile-card-detail-value">${job.estimated_oil_volume}L</div>
+                        </div>
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Created</div>
+                            <div class="mobile-card-detail-value">${formatDate(job.created_at)}</div>
+                        </div>
+                    </div>
+                    <div class="mobile-card-actions">
+                        <button class="btn-small btn-view" onclick="viewJob('${job.id}')">View</button>
+                        <button class="btn-small btn-edit" onclick="acceptJob('${job.id}')">Accept</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load my jobs
+        async function loadMyJobs() {
+            try {
+                const searchTerm = document.getElementById('myJobsSearchInput')?.value || '';
+                const status = document.getElementById('myJobsStatusFilter')?.value || '';
+                
+                // Use global oil service
+                const service = window.OilCollectionService;
+                if (!service) {
+                    throw new Error('Oil collection service not available');
+                }
+                
+                // Get current user ID
+                let currentUserId = 'demo-driver';
+                if (window.supabaseClient) {
+                    const { data: { user } } = await window.supabaseClient.auth.getUser();
+                    currentUserId = user?.id || 'demo-driver';
+                }
+                
+                myJobs = await service.getMyJobs(currentUserId, {
+                    search: searchTerm,
+                    status: status
+                });
+                
+                displayMyJobs(myJobs);
+            } catch (error) {
+                console.error('Error loading my jobs:', error);
+                document.getElementById('myJobsTable').innerHTML = 
+                    '<tr><td colspan="7" class="empty-state">Error loading your jobs. Please try again.</td></tr>';
+            }
+        }
+
+        // Display my jobs
+        function displayMyJobs(jobs) {
+            const tableBody = document.getElementById('myJobsTable');
+            const tableWrapper = tableBody.closest('.table-wrapper');
+            
+            if (jobs.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <div class="empty-state-icon">&#9788;</div>
+                            <p>No assigned jobs found</p>
+                        </td>
+                    </tr>
+                `;
+                
+                // Clear mobile cards
+                let mobileCards = tableWrapper.querySelector('.mobile-cards');
+                if (mobileCards) {
+                    mobileCards.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">&#9788;</div>
+                            <p>No assigned jobs found</p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            // Desktop table view
+            tableBody.innerHTML = jobs.map(job => `
+                <tr>
+                    <td><strong>${job.name || job.customer_name}</strong></td>
+                    <td>${job.address || job.pickup_address}</td>
+                    <td>${job.estimatedVolume || '-'}L</td>
+                    <td>R${(job.payment || 0).toFixed(2)}</td>
+                    <td><span class="status-badge status-${job.status}">${job.status.replace('_', ' ').toUpperCase()}</span></td>
+                    <td>${formatDate(job.acceptedAt || job.created_at)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-small btn-view" onclick="viewJobDetail('${job.id}')">View</button>
+                            ${job.status === 'accepted' ? `<button class="btn-small btn-edit" onclick="startCollection('${job.id}')">Start</button>` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Mobile cards view
+            let mobileCards = tableWrapper.querySelector('.mobile-cards');
+            if (!mobileCards) {
+                mobileCards = document.createElement('div');
+                mobileCards.className = 'mobile-cards';
+                tableWrapper.appendChild(mobileCards);
+            }
+
+            mobileCards.innerHTML = jobs.map(job => `
+                <div class="mobile-card">
+                    <div class="mobile-card-header">
+                        <div class="mobile-card-title">${job.name || job.customer_name}</div>
+                        <div class="mobile-card-status">
+                            <span class="status-badge status-${job.status}">${job.status.replace('_', ' ').toUpperCase()}</span>
+                        </div>
+                    </div>
+                    <div class="mobile-card-details">
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Location</div>
+                            <div class="mobile-card-detail-value">${job.address || job.pickup_address}</div>
+                        </div>
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Payment</div>
+                            <div class="mobile-card-detail-value">R${(job.payment || 0).toFixed(2)}</div>
+                        </div>
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Volume</div>
+                            <div class="mobile-card-detail-value">${job.estimatedVolume || '-'}L</div>
+                        </div>
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Date</div>
+                            <div class="mobile-card-detail-value">${formatDate(job.acceptedAt || job.created_at)}</div>
+                        </div>
+                    </div>
+                    <div class="mobile-card-actions">
+                        <button class="btn-small btn-view" onclick="viewJobDetail('${job.id}')">View</button>
+                        ${job.status === 'accepted' ? `<button class="btn-small btn-edit" onclick="startCollection('${job.id}')">Start</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load collection history
+        async function loadCollectionHistory() {
+            try {
+                console.log('Loading collection history...');
+                
+                // Get current user
+                let currentUser = null;
+                if (window.supabaseClient) {
+                    const { data: { user } } = await window.supabaseClient.auth.getUser();
+                    currentUser = user;
+                }
+                
+                const driverId = currentUser?.id || 'demo-driver';
+                const status = document.getElementById('collectionStatusFilter')?.value || '';
+                const dateFrom = document.getElementById('dateFromFilter')?.value || '';
+                const dateTo = document.getElementById('dateToFilter')?.value || '';
+                
+                if (window.supabaseClient) {
+                    collections = await loadCollectionsFromSupabase(driverId, { status, dateFrom, dateTo });
+                } else {
+                    console.log('Supabase not available, using empty data');
+                    collections = [];
+                }
+                
+                console.log('Loaded collections:', collections);
+                displayCollectionHistory(collections);
+            } catch (error) {
+                console.error('Error loading collection history:', error);
+                document.getElementById('collectionHistoryTable').innerHTML = 
+                    '<tr><td colspan="8" class="empty-state">Error loading collection history. Please try again.</td></tr>';
+            }
+        }
+
+        // Load collections directly from Supabase
+        async function loadCollectionsFromSupabase(driverId, filters = {}) {
+            try {
+                console.log('Loading collections for driver:', driverId, 'with filters:', filters);
+                
+                // First try to get collections by driver_id
+                let query = window.supabaseClient
+                    .from('oil_collections')
+                    .select('*');
+
+                // Try multiple approaches to find collections
+                // 1. Direct driver_id match
+                // 2. Look for driver_id in notes field
+                // 3. Get all collections if driver_id is null (for demo purposes)
+                if (driverId && driverId !== 'demo-driver') {
+                    query = query.or(`driver_id.eq.${driverId},notes.ilike.%${driverId}%`);
+                } else {
+                    // For demo or when driver_id is null, get recent collections
+                    query = query.limit(10);
+                }
+
+                // Apply additional filters
+                if (filters.status) {
+                    query = query.eq('status', filters.status);
+                }
+
+                if (filters.dateFrom) {
+                    query = query.gte('collection_date', filters.dateFrom);
+                }
+
+                if (filters.dateTo) {
+                    query = query.lte('collection_date', filters.dateTo + 'T23:59:59');
+                }
+
+                const { data, error } = await query.order('collection_date', { ascending: false });
+
+                if (error) {
+                    console.error('Error fetching collections:', error);
+                    throw error;
+                }
+
+                console.log('Raw collections data from Supabase:', data);
+
+                // Transform data to match expected format
+                const transformedData = (data || []).map(collection => {
+                    // Extract location name from collection_address if available
+                    let locationName = 'Unknown Location';
+                    if (collection.collection_address) {
+                        // Try to get the first part before comma as location name
+                        const parts = collection.collection_address.split(',');
+                        locationName = parts[0].trim();
+                    }
+
+                    // Extract job details from notes if available
+                    let jobInfo = {};
+                    if (collection.notes) {
+                        const notes = collection.notes;
+                        // Extract job ID if present
+                        const jobIdMatch = notes.match(/Job ID: ([a-f0-9-]+)/);
+                        if (jobIdMatch) {
+                            jobInfo.extracted_job_id = jobIdMatch[1];
+                        }
+                        // Extract original job description
+                        const originalJobMatch = notes.match(/Original Job: (.+)/);
+                        if (originalJobMatch) {
+                            jobInfo.original_job = originalJobMatch[1].split('\n')[0];
+                        }
+                    }
+
+                    return {
+                        id: collection.id,
+                        job_id: collection.job_id || jobInfo.extracted_job_id || `job-${collection.id.substring(0, 8)}`,
+                        customer_name: jobInfo.original_job || locationName,
+                        pickup_address: collection.collection_address || 'Address not specified',
+                        oil_type: collection.oil_type || 'Used Cooking Oil',
+                        oil_condition: collection.oil_condition || 'Good',
+                        estimated_volume: collection.collected_volume || 0,
+                        volume_collected: collection.collected_volume || 0,
+                        collected_volume: collection.collected_volume || 0,
+                        unit: collection.unit || 'litres',
+                        status: collection.status || 'completed',
+                        collection_date: collection.collection_date || collection.created_at,
+                        collection_method: collection.collection_method || 'Manual',
+                        equipment_used: collection.equipment_used || ['Standard containers'],
+                        quality_assessment: collection.quality_assessment || 'Good',
+                        environmental_conditions: collection.environmental_conditions || 'Normal',
+                        disposal_method: collection.disposal_method || 'Recycling facility',
+                        payment_method: collection.payment_method || 'Cash',
+                        payment_reference: collection.payment_reference || '',
+                        verified_by: collection.verified_by || '',
+                        verified_at: collection.verified_at || '',
+                        verification_notes: collection.verification_notes || '',
+                        notes: collection.notes || ''
+                    };
+                });
+
+                console.log('Transformed collections data:', transformedData);
+                return transformedData;
+
+            } catch (error) {
+                console.error('Error loading collections from Supabase:', error);
+                throw error;
+            }
+        }
+
+        // Display collection history
+        function displayCollectionHistory(collections) {
+            const tableBody = document.getElementById('collectionHistoryTable');
+            const tableWrapper = tableBody.closest('.table-wrapper');
+            
+            if (collections.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <div class="empty-state-icon">&#8226;</div>
+                            <p>No collection history found</p>
+                        </td>
+                    </tr>
+                `;
+                
+                // Clear mobile cards
+                let mobileCards = tableWrapper.querySelector('.mobile-cards');
+                if (mobileCards) {
+                    mobileCards.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">&#8226;</div>
+                            <p>No collection history found</p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            // Desktop table view
+            tableBody.innerHTML = collections.map(collection => `
+                <tr>
+                    <td><strong>${collection.collection_location || collection.customer_name || 'Collection ' + collection.id}</strong></td>
+                    <td>${collection.collection_address || collection.pickup_address || '-'}</td>
+                    <td>${(collection.collected_volume || collection.volume_collected || 0).toFixed(1)}${collection.unit || 'L'}</td>
+                    <td>${collection.oil_type || 'Used Cooking Oil'}</td>
+                    <td>${collection.oil_condition || '-'}</td>
+                    <td>R${((collection.collected_volume || 0) * 10).toFixed(2)}</td>
+                    <td>${formatDate(collection.collection_date)}</td>
+                    <td>
+                        <span class="status-badge status-${collection.status || 'completed'}" title="${collection.verification_notes || ''}">
+                            ${(collection.status || 'completed').toUpperCase()}
+                            ${collection.verified_at ? ' ✓' : ''}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-small btn-view" onclick="viewCollection('${collection.id}')" title="View collection details">View</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Mobile cards view
+            let mobileCards = tableWrapper.querySelector('.mobile-cards');
+            if (!mobileCards) {
+                mobileCards = document.createElement('div');
+                mobileCards.className = 'mobile-cards';
+                tableWrapper.appendChild(mobileCards);
+            }
+
+            mobileCards.innerHTML = collections.map(collection => `
+                <div class="mobile-card">
+                    <div class="mobile-card-header">
+                        <div class="mobile-card-title">${collection.jobName || collection.job_id}</div>
+                        <div class="mobile-card-status">
+                            <span class="status-badge status-${collection.status || 'completed'}">${(collection.status || 'completed').toUpperCase()}</span>
+                            ${collection.verified_by ? '<span class="verification-badge">✓ Verified</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="mobile-card-details">
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Location</div>
+                            <div class="mobile-card-detail-value">${collection.collection_address || collection.collection_location || '-'}</div>
+                        </div>
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Volume</div>
+                            <div class="mobile-card-detail-value">${collection.collected_volume || 0}${collection.unit || 'L'}</div>
+                        </div>
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Oil Type</div>
+                            <div class="mobile-card-detail-value">${collection.oil_type || '-'}</div>
+                        </div>
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Condition</div>
+                            <div class="mobile-card-detail-value">${collection.oil_condition || '-'}</div>
+                        </div>
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Earnings</div>
+                            <div class="mobile-card-detail-value">R${((collection.collected_volume || 0) * 10).toFixed(2)}</div>
+                        </div>
+                        <div class="mobile-card-detail">
+                            <div class="mobile-card-detail-label">Date</div>
+                            <div class="mobile-card-detail-value">${formatDate(collection.collection_date)}</div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        ${collection.quality_assessment ? `<span class="quality-badge">${collection.quality_assessment}</span>` : ''}
+                        ${collection.collection_method ? `<span class="method-badge">${collection.collection_method}</span>` : ''}
+                    </div>
+                    <div class="mobile-card-actions">
+                        <button class="btn-small btn-view" onclick="viewCollection('${collection.job_id}')">View Details</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load analytics
+        async function loadAnalytics() {
+            try {
+                console.log('Loading analytics...');
+                
+                // Get current user
+                let currentUser = null;
+                if (window.supabaseClient) {
+                    const { data: { user } } = await window.supabaseClient.auth.getUser();
+                    currentUser = user;
+                }
+                
+                const driverId = currentUser?.id || 'demo-driver';
+                
+                let stats = {
+                    this_month_collections: 0,
+                    this_month_volume: 0,
+                    this_month_earnings: 0,
+                    total_volume: 0,
+                    total_collections: 0
+                };
+
+                if (window.supabaseClient) {
+                    stats = await loadAnalyticsFromSupabase(driverId);
+                }
+                
+                document.getElementById('thisMonthJobs').textContent = stats.this_month_collections || 0;
+                document.getElementById('thisMonthVolume').textContent = (stats.this_month_volume || 0).toFixed(1) + 'L';
+                document.getElementById('thisMonthEarnings').textContent = 'R' + (stats.this_month_earnings || 0).toFixed(2);
+                document.getElementById('averageRating').textContent = '4.8'; // Static for now
+                
+                displayAchievements(stats);
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+
+        // Load analytics data from Supabase
+        async function loadAnalyticsFromSupabase(driverId) {
+            try {
+                // Get current month's start date
+                const now = new Date();
+                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+                // Get this month's collections
+                let monthlyQuery = window.supabaseClient
+                    .from('oil_collections')
+                    .select('collected_volume, status, collection_date')
+                    .gte('collection_date', monthStart);
+
+                if (driverId && driverId !== 'demo-driver') {
+                    monthlyQuery = monthlyQuery.or(`driver_id.eq.${driverId},notes.ilike.%${driverId}%`);
+                }
+
+                const { data: monthlyCollections, error: monthlyError } = await monthlyQuery;
+
+                if (monthlyError) {
+                    console.error('Error fetching monthly collections:', monthlyError);
+                }
+
+                // Get all-time collections for achievements
+                let allQuery = window.supabaseClient
+                    .from('oil_collections')
+                    .select('collected_volume, status, collection_date, verified_at');
+
+                if (driverId && driverId !== 'demo-driver') {
+                    allQuery = allQuery.or(`driver_id.eq.${driverId},notes.ilike.%${driverId}%`);
+                } else {
+                    allQuery = allQuery.limit(50); // Limit for demo
+                }
+
+                const { data: allCollections, error: allError } = await allQuery;
+
+                if (allError) {
+                    console.error('Error fetching all collections:', allError);
+                }
+
+                // Calculate monthly stats (base rate R10 per litre)
+                const baseRatePerLitre = 10;
+                const monthlyStats = (monthlyCollections || []).reduce((acc, col) => {
+                    acc.count += 1;
+                    const volume = parseFloat(col.collected_volume) || 0;
+                    acc.volume += volume;
+                    acc.earnings += volume * baseRatePerLitre;
+                    return acc;
+                }, { count: 0, volume: 0, earnings: 0 });
+
+                // Calculate all-time stats
+                const allTimeStats = (allCollections || []).reduce((acc, col) => {
+                    acc.count += 1;
+                    acc.volume += parseFloat(col.collected_volume) || 0;
+                    // Count verified collections
+                    if (col.status === 'verified' || col.verified_at) {
+                        acc.verified += 1;
+                    }
+                    return acc;
+                }, { count: 0, volume: 0, verified: 0 });
+
+                return {
+                    this_month_collections: monthlyStats.count,
+                    this_month_volume: monthlyStats.volume,
+                    this_month_earnings: monthlyStats.earnings,
+                    total_collections: allTimeStats.count,
+                    total_volume: allTimeStats.volume,
+                    verified_collections: allTimeStats.verified
+                };
+
+            } catch (error) {
+                console.error('Error loading analytics from Supabase:', error);
+                return {
+                    this_month_collections: 0,
+                    this_month_volume: 0,
+                    this_month_earnings: 0,
+                    total_collections: 0,
+                    total_volume: 0,
+                    verified_collections: 0
+                };
+            }
+        }
+
+        // Display achievements
+        function displayAchievements(stats) {
+            const achievementsList = document.getElementById('achievementsList');
+            const totalVolume = stats.total_volume || 0;
+            const totalCollections = stats.total_collections || 0;
+            
+            const achievements = [];
+            
+            if (totalCollections >= 10) achievements.push('&#9733; Collected from 10+ locations');
+            if (totalVolume >= 500) achievements.push('&#9679; Collected 500+ litres');
+            if (totalCollections >= 50) achievements.push('&#10004; Expert Collector (50+ collections)');
+            if (totalVolume >= 1000) achievements.push('&#9829; Environmental Hero (1000+ litres)');
+            
+            if (achievements.length === 0) {
+                achievements.push('&#9733; Complete your first collection to earn achievements!');
+            }
+            
+            achievementsList.innerHTML = achievements.map(achievement => 
+                `<div style="padding: 15px; background: rgba(0, 102, 204, 0.1); border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--primary-color);">${achievement}</div>`
+            ).join('');
+        }
+
+        // Filter functions
+        function filterAvailableJobs() {
+            const searchTerm = document.getElementById('jobSearchInput').value.toLowerCase();
+            const priorityFilter = document.getElementById('priorityFilter').value;
+            
+            const filteredJobs = allJobs.filter(job => {
+                const matchesSearch = job.customer_name.toLowerCase().includes(searchTerm) ||
+                                    job.pickup_address.toLowerCase().includes(searchTerm);
+                const matchesPriority = !priorityFilter || job.priority === priorityFilter;
+                
+                return matchesSearch && matchesPriority;
+            });
+            
+            displayAvailableJobs(filteredJobs);
+        }
+
+        function filterMyJobs() {
+            const searchTerm = document.getElementById('myJobsSearchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('myJobsStatusFilter').value;
+            
+            const filteredJobs = myJobs.filter(job => {
+                const matchesSearch = (job.name || job.customer_name || '').toLowerCase().includes(searchTerm) ||
+                                    (job.address || job.pickup_address || '').toLowerCase().includes(searchTerm);
+                const matchesStatus = !statusFilter || job.status === statusFilter;
+                
+                return matchesSearch && matchesStatus;
+            });
+            
+            displayMyJobs(filteredJobs);
+        }
+
+        function filterCollectionHistory() {
+            const statusFilter = document.getElementById('collectionStatusFilter').value;
+            const dateFrom = document.getElementById('dateFromFilter').value;
+            const dateTo = document.getElementById('dateToFilter').value;
+            
+            const filteredCollections = collections.filter(collection => {
+                const matchesStatus = !statusFilter || (collection.status || 'completed') === statusFilter;
+                
+                let matchesDate = true;
+                if (dateFrom || dateTo) {
+                    const collectionDate = new Date(collection.timestamp);
+                    if (dateFrom) matchesDate = matchesDate && collectionDate >= new Date(dateFrom);
+                    if (dateTo) matchesDate = matchesDate && collectionDate <= new Date(dateTo + 'T23:59:59');
+                }
+                
+                return matchesStatus && matchesDate;
+            });
+            
+            displayCollectionHistory(filteredCollections);
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            
+            currentTab = tabName;
+            
+            // On mobile, scroll to content after tab switch
+            if (window.innerWidth <= 768) {
+                setTimeout(() => {
+                    document.getElementById(tabName).scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                }, 100);
+            }
+        }
+
+        // Action functions
+        function viewJob(jobId) {
+            alert(`Viewing job ${jobId} - This will open job details`);
+        }
+
+        async function acceptJob(jobId) {
+            if (confirm('Accept this oil collection job?')) {
+                try {
+                    // Use global oil service
+                    const service = window.OilCollectionService;
+                    if (!service) {
+                        throw new Error('Oil collection service not available');
+                    }
+                    
+                    // Get current user ID
+                    let currentUserId = 'demo-driver';
+                    if (window.supabaseClient) {
+                        const { data: { user } } = await window.supabaseClient.auth.getUser();
+                        currentUserId = user?.id || 'demo-driver';
+                    }
+                    
+                    const job = await service.acceptJob(jobId, currentUserId);
+                    if (job) {
+                        // Refresh data
+                        await loadDashboardData();
+                        alert('Job accepted successfully!');
+                    }
+                } catch (error) {
+                    console.error('Error accepting job:', error);
+                    alert('Error accepting job. Please try again.');
+                }
+            }
+        }
+
+        function viewJobDetail(jobId) {
+            window.location.href = `job-detail.html?id=${jobId}`;
+        }
+
+        function startCollection(jobId) {
+            localStorage.setItem('activeJob', JSON.stringify(myJobs.find(j => j.id === jobId)));
+            window.location.href = 'oil-collection.html';
+        }
+
+        function viewCollection(jobId) {
+            alert(`Viewing collection details for job ${jobId}`);
+        }
+
+        // Utility functions
+        function formatDate(date) {
+            if (!date) return '-';
+            const d = new Date(date);
+            return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        // Initialize hamburger menu when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            new HamburgerMenu();
+        });
+    </script>
+</body>
+</html>

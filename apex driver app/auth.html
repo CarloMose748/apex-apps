@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Driver - Sign In</title>
+    <link rel="stylesheet" href="styles/global.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300d174'><path d='M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z'/></svg>">
+    
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Supabase Configuration -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/auth-service.js"></script>
+    
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 40px 32px 32px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+
+        .auth-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .auth-logo {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            letter-spacing: -0.02em;
+            position: relative;
+        }
+
+        .auth-logo .icon {
+            width: 36px;
+            height: 36px;
+            fill: currentColor;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+
+        .auth-subtitle {
+            opacity: 0.9;
+            font-size: 0.95rem;
+            font-weight: 400;
+            position: relative;
+        }
+
+        .auth-form {
+            padding: 36px 32px 32px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 28px;
+            background: #f1f5f9;
+            border-radius: 14px;
+            padding: 5px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 14px 20px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .auth-tab.active {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+            letter-spacing: -0.01em;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 16px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+            box-sizing: border-box;
+            color: var(--text-primary);
+        }
+
+        .form-group input:hover {
+            border-color: #cbd5e1;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #94a3b8;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-secondary);
+            margin-top: 16px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary-color);
+        }
+
+        .password-toggle svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 20px;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+        }
+
+        .auth-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+        }
+
+        .auth-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .auth-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-divider {
+            text-align: center;
+            margin: 24px 0;
+            position: relative;
+            color: var(--text-secondary);
+        }
+
+        .auth-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .auth-divider span {
+            background: white;
+            padding: 0 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #94a3b8;
+        }
+
+        .social-buttons {
+            display: grid;
+            gap: 12px;
+        }
+
+        .social-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 14px;
+        }
+
+        .social-button:hover {
+            border-color: var(--primary-color);
+            background: #f8fafc;
+            transform: translateY(-1px);
+        }
+
+        .social-button svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .forgot-password a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .forgot-password a:hover {
+            color: var(--primary-dark);
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+            border: 1px solid #fecaca;
+            font-weight: 500;
+        }
+
+        .success-message {
+            background: #ecfdf5;
+            color: #059669;
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+            border: 1px solid #a7f3d0;
+            font-weight: 500;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .user-type-option {
+            padding: 20px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+        }
+
+        .user-type-option:hover {
+            border-color: #cbd5e1;
+        }
+
+        .user-type-option.selected {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.05);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .user-type-option .icon {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .user-type-option .icon svg {
+            width: 28px;
+            height: 28px;
+            fill: currentColor;
+        }
+
+        .user-type-option.selected .icon svg {
+            fill: var(--primary-color);
+        }
+
+        .user-type-option .label {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 16px;
+            }
+
+            .auth-card {
+                border-radius: 20px;
+            }
+            
+            .auth-form {
+                padding: 28px 24px 24px;
+            }
+            
+            .auth-header {
+                padding: 32px 24px 24px;
+            }
+
+            .form-group input {
+                padding: 14px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                    </svg>
+                    Apex Driver
+                </div>
+                <div class="auth-subtitle">Your reliable delivery partner</div>
+            </div>
+            
+            <div class="auth-form">
+                <!-- Tab Navigation -->
+                <div class="auth-tabs">
+                    <div class="auth-tab active" onclick="switchTab('signin')">Sign In</div>
+                    <div class="auth-tab" onclick="switchTab('signup')">Sign Up</div>
+                </div>
+
+                <!-- Error/Success Messages -->
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+                <div id="successMessage" class="success-message" style="display: none;"></div>
+
+                <!-- Sign In Form -->
+                <div id="signinForm" class="form-section active">
+                    <form onsubmit="handleSignIn(event)">
+                        <div class="form-group">
+                            <label for="signinEmail">Email Address</label>
+                            <input type="email" id="signinEmail" required placeholder="Enter your email">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signinPassword">Password</label>
+                            <input type="password" id="signinPassword" required placeholder="Enter your password">
+                            <span class="password-toggle" onclick="togglePassword('signinPassword')">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        
+                        <button type="submit" class="auth-button" id="signinButton">
+                            <span class="button-text">Sign In</span>
+                        </button>
+                    </form>
+                    
+                    <div class="forgot-password">
+                        <a href="#" onclick="showForgotPassword()">Forgot your password?</a>
+                    </div>
+                </div>
+
+                <!-- Sign Up Form -->
+                <div id="signupForm" class="form-section">
+                    <form onsubmit="handleSignUp(event)">
+                        <div class="form-group">
+                            <label for="signupFullName">Full Name</label>
+                            <input type="text" id="signupFullName" required placeholder="Enter your full name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signupEmail">Email Address</label>
+                            <input type="email" id="signupEmail" required placeholder="Enter your email">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signupPhone">Phone Number</label>
+                            <input type="tel" id="signupPhone" required placeholder="+27 123 456 789">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signupPassword">Password</label>
+                            <input type="password" id="signupPassword" required placeholder="Create a secure password" minlength="6">
+                            <span class="password-toggle" onclick="togglePassword('signupPassword')">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signupConfirmPassword">Confirm Password</label>
+                            <input type="password" id="signupConfirmPassword" required placeholder="Confirm your password">
+                            <span class="password-toggle" onclick="togglePassword('signupConfirmPassword')">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        
+                        <!-- Driver-specific fields -->
+                        <div id="driverFields" class="driver-specific">
+                            <div class="form-group">
+                                <label for="vehicleType">Vehicle Type</label>
+                                <select id="vehicleType" required>
+                                    <option value="">Select vehicle type</option>
+                                    <option value="car">Car</option>
+                                    <option value="motorcycle">Motorcycle</option>
+                                    <option value="bicycle">Bicycle</option>
+                                    <option value="van">Van</option>
+                                    <option value="truck">Truck</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="licenseNumber">License Number</label>
+                                <input type="text" id="licenseNumber" placeholder="Enter your license number">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="idFront">ID Document (Front)</label>
+                                <input type="file" id="idFront" accept="image/*" required>
+                                <small style="color: #666; display: block; margin-top: 5px;">Upload a clear photo of the front of your ID/License</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="idBack">ID Document (Back)</label>
+                                <input type="file" id="idBack" accept="image/*" required>
+                                <small style="color: #666; display: block; margin-top: 5px;">Upload a clear photo of the back of your ID/License</small>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="auth-button" id="signupButton">
+                            <span class="button-text">Create Account</span>
+                        </button>
+                    </form>
+                </div>
+
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px;">
+            <h3>Reset Password</h3>
+            <form onsubmit="handleForgotPassword(event)">
+                <div class="form-group">
+                    <label for="resetEmail">Email Address</label>
+                    <input type="email" id="resetEmail" required placeholder="Enter your email">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="closeForgotPassword()" style="flex: 1; padding: 12px; border: 2px solid #ddd; background: white; border-radius: 8px; cursor: pointer;">Cancel</button>
+                    <button type="submit" style="flex: 1; padding: 12px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer;">Send Reset Link</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentUserType = 'driver';
+        let supabaseReady = false;
+
+        // Wait for Supabase to be ready
+        document.addEventListener('supabaseReady', function(event) {
+            supabaseReady = true;
+            console.log('Auth page: Supabase client ready');
+            
+            // Check for logout parameter
+            handleLogoutRedirect();
+            
+            // Check if user is already logged in
+            checkExistingAuth();
+        });
+
+        // Tab switching
+        function switchTab(tab) {
+            // Update tab appearance
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.auth-tab:${tab === 'signin' ? 'first-child' : 'last-child'}`).classList.add('active');
+            
+            // Show appropriate form
+            document.querySelectorAll('.form-section').forEach(f => f.classList.remove('active'));
+            document.getElementById(tab + 'Form').classList.add('active');
+            
+            clearMessages();
+        }
+
+        // User type selection
+        function selectUserType(type) {
+            currentUserType = type;
+
+            // Update UI (safely)
+            document.querySelectorAll('.user-type-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            const selectedOption = document.querySelector(`[data-type="${type}"]`);
+            if (selectedOption) {
+                selectedOption.classList.add('selected');
+            }
+
+            // Show/hide driver fields (force block for drivers)
+            const driverFields = document.getElementById('driverFields');
+            if (driverFields) {
+                driverFields.style.display = type === 'driver' ? 'block' : 'none';
+                
+                // Make driver fields required if type is driver
+                const inputs = driverFields.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    input.required = type === 'driver';
+                });
+            }
+        }
+
+        // Password visibility toggle
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = input.parentNode.querySelector('.password-toggle');
+            const svg = toggle.querySelector('svg path');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                // Eye with slash (hidden)
+                svg.setAttribute('d', 'M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7zm8 0c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2zm0 0l3.5-3.5m0 7L9.5 12m0 0L13 8.5M13 8.5l-3.5 3.5');
+            } else {
+                input.type = 'password';
+                // Regular eye (visible)
+                svg.setAttribute('d', 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z');
+            }
+        }
+
+        // Message handling
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function showInfo(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            successDiv.style.background = '#3b82f6';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function clearMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            const successDiv = document.getElementById('successMessage');
+            successDiv.style.display = 'none';
+            successDiv.style.background = ''; // Reset background
+        }
+
+        // Loading state management
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+            
+            if (isLoading) {
+                button.disabled = true;
+                buttonText.innerHTML = '<span class="loading-spinner"></span> Processing...';
+            } else {
+                button.disabled = false;
+                buttonText.textContent = buttonId === 'signinButton' ? 'Sign In' : 'Create Account';
+            }
+        }
+
+        // Authentication functions
+        async function handleSignIn(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('signinEmail').value;
+            const password = document.getElementById('signinPassword').value;
+
+            setLoading('signinButton', true);
+            clearMessages();
+
+            // If Supabase isn't ready, wait for it (with timeout)
+            if (!supabaseReady) {
+                showInfo('Initializing authentication service...');
+                
+                let attempts = 0;
+                const maxAttempts = 30; // 3 seconds max wait
+                
+                while (!supabaseReady && attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!supabaseReady) {
+                    showError('Authentication service failed to initialize. Please refresh the page.');
+                    setLoading('signinButton', false);
+                    return;
+                }
+                
+                clearMessages();
+            }
+
+            try {
+                const { data, error } = await SupabaseUtils.signIn(email, password);
+
+                if (error) {
+                    showError(error.message);
+                } else if (data.user) {
+                    // ROLE-BASED ACCESS CONTROL: Check if user has driver platform access
+                    showInfo('Verifying driver credentials...');
+                    
+                    try {
+                        const client = window.getSupabaseClient();
+                        
+                        // Check user_roles table first
+                        const { data: userRole, error: roleError } = await client
+                            .from('user_roles')
+                            .select('platform, platform_role, status')
+                            .eq('user_id', data.user.id)
+                            .eq('platform', 'driver')
+                            .maybeSingle();
+                        
+                        if (roleError && roleError.code !== 'PGRST116') {
+                            console.error('Error checking user role:', roleError);
+                        }
+                        
+                        if (!userRole) {
+                            console.log('User authenticated but no driver role found:', data.user.email);
+                            showError('Access denied. You do not have permission to access the Driver portal. Please register for a driver account or contact support.');
+                            await SupabaseUtils.signOut();
+                            return;
+                        }
+                        
+                        if (userRole.status !== 'active') {
+                            const statusMessage = userRole.status === 'pending' 
+                                ? 'Your driver account is pending admin approval. Please wait for activation.' 
+                                : `Your driver account is ${userRole.status}. Please contact administrator.`;
+                            showError(statusMessage);
+                            await SupabaseUtils.signOut();
+                            return;
+                        }
+                        
+                        // Verify user exists in drivers table
+                        const { data: driverData, error: driverError } = await SupabaseUtils.selectRecords('drivers', 
+                            { email: data.user.email }, 
+                            { limit: 1 }
+                        );
+                        
+                        if (driverError) {
+                            console.error('Error checking driver table:', driverError);
+                            showError('Unable to verify driver credentials. Please try again.');
+                            await SupabaseUtils.signOut();
+                            return;
+                        }
+                        
+                        if (!driverData || driverData.length === 0) {
+                            console.log('User authenticated but not found in drivers table:', data.user.email);
+                            showError('Access denied. This account is not registered as a driver. Please contact administration.');
+                            await SupabaseUtils.signOut();
+                            return;
+                        }
+                        
+                        // Check if driver is verified/approved
+                        const driver = driverData[0];
+                        if (driver.verification_status === 'suspended' || driver.verification_status === 'rejected') {
+                            showError(`Driver account is ${driver.verification_status}. Please contact administration.`);
+                            await SupabaseUtils.signOut();
+                            return;
+                        }
+                        
+                        if (driver.verification_status === 'pending') {
+                            showError('Driver account is pending approval. Please wait for administration to verify your account.');
+                            await SupabaseUtils.signOut();
+                            return;
+                        }
+                        
+                        // User is a valid driver, proceed with login
+                        showSuccess('Driver verified! Redirecting...');
+                        
+                        // Store user info with driver details
+                        localStorage.setItem('apex_user', JSON.stringify({
+                            id: data.user.id,
+                            email: data.user.email,
+                            user_metadata: data.user.user_metadata,
+                            driver_id: driver.id,
+                            driver_name: driver.full_name
+                        }));
+                        
+                        // Redirect to main app
+                        setTimeout(() => {
+                            window.location.href = 'main.html';
+                        }, 1500);
+                        
+                    } catch (driverCheckError) {
+                        console.error('Exception checking driver credentials:', driverCheckError);
+                        showError('Unable to verify driver credentials. Please try again.');
+                        await SupabaseUtils.signOut();
+                    }
+                }
+            } catch (error) {
+                showError('An unexpected error occurred. Please try again.');
+                console.error('Sign in error:', error);
+            } finally {
+                setLoading('signinButton', false);
+            }
+        }
+
+                async function handleSignUp(event) {
+            event.preventDefault();
+
+            const fullName = document.getElementById('signupFullName').value;
+            const email = document.getElementById('signupEmail').value;
+            const phone = document.getElementById('signupPhone').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('signupConfirmPassword').value;
+            const vehicleType = document.getElementById('vehicleType').value;
+            const licenseNumber = document.getElementById('licenseNumber').value;
+            const idFront = document.getElementById('idFront').files[0];
+            const idBack = document.getElementById('idBack').files[0];
+
+            // Validation
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+
+            if (!vehicleType) {
+                showError('Please select a vehicle type');
+                return;
+            }
+
+            setLoading('signupButton', true);
+            clearMessages();
+
+            if (!supabaseReady) {
+                showInfo('Initializing authentication service...');
+                let attempts = 0;
+                while (!supabaseReady && attempts < 30) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                if (!supabaseReady) {
+                    showError('Authentication service failed to initialize.');
+                    setLoading('signupButton', false);
+                    return;
+                }
+                clearMessages();
+            }
+
+            try {
+                const metadata = {
+                    full_name: fullName,
+                    phone_number: phone,
+                    user_type: 'driver',
+                    vehicle_type: vehicleType,
+                    license_number: licenseNumber
+                };
+
+                const { data, error } = await SupabaseUtils.signUp(email, password, metadata);
+
+                if (error) {
+                    showError(error.message);
+                } else {
+                    showSuccess('Account created! Please check your email to verify.');
+                    if (data.user) {
+                        setTimeout(async () => {
+                            try {
+                                await createDriverRecord(data.user, {
+                                    fullName,
+                                    phone,
+                                    vehicleType,
+                                    licenseNumber
+                                }, {
+                                    front: idFront,
+                                    back: idBack
+                                });
+                            } catch (e) {
+                                console.log('User record creation handled on first login');
+                            }
+                        }, 1000);
+                    }
+                    setTimeout(() => {
+                        switchTab('signin');
+                        document.getElementById('signinEmail').value = email;
+                    }, 2000);
+                }
+            } catch (error) {
+                showError('An unexpected error occurred.');
+                console.error('Sign up error:', error);
+            } finally {
+                setLoading('signupButton', false);
+            }
+        }
+
+        async function createDriverRecord(user, driverData, files) {
+            try {
+                let idFrontUrl = null;
+                let idBackUrl = null;
+
+                // Upload ID photos if provided
+                if (files && files.front) {
+                    const frontExt = files.front.name.split('.').pop();
+                    const frontPath = `ids/${user.id}_front_${Date.now()}.${frontExt}`;
+                    const { error: uploadError } = await SupabaseUtils.uploadFile('driver-documents', frontPath, files.front);
+                    if (!uploadError) {
+                        idFrontUrl = await SupabaseUtils.getPublicUrl('driver-documents', frontPath);
+                    } else {
+                        console.error('ID Front upload error:', uploadError);
+                    }
+                }
+
+                if (files && files.back) {
+                    const backExt = files.back.name.split('.').pop();
+                    const backPath = `ids/${user.id}_back_${Date.now()}.${backExt}`;
+                    const { error: uploadError } = await SupabaseUtils.uploadFile('driver-documents', backPath, files.back);
+                    if (!uploadError) {
+                        idBackUrl = await SupabaseUtils.getPublicUrl('driver-documents', backPath);
+                    } else {
+                        console.error('ID Back upload error:', uploadError);
+                    }
+                }
+
+                const driverRecord = {
+                    id: user.id, // Use Auth ID
+                    email: user.email,
+                    full_name: driverData.fullName,
+                    phone_number: driverData.phone,
+                    vehicle_type: driverData.vehicleType,
+                    license_number: driverData.licenseNumber,
+                    id_front_url: idFrontUrl,
+                    id_back_url: idBackUrl,
+                    vehicle_make: '', 
+                    vehicle_model: '', 
+                    vehicle_year: null, 
+                    vehicle_plate: '', 
+                    verification_status: 'pending'
+                };
+
+                const { error } = await SupabaseUtils.insertRecord('drivers', driverRecord);
+                
+                if (error) {
+                    console.error('Error creating driver record:', error);
+                } else {
+                    console.log('Driver record created successfully');
+                }
+
+                // Create user role for driver platform
+                try {
+                    const client = window.getSupabaseClient();
+                    const { error: roleError } = await client
+                        .from('user_roles')
+                        .insert([{
+                            user_id: user.id,
+                            email: user.email.toLowerCase(),
+                            platform: 'driver',
+                            platform_role: 'driver',
+                            status: 'pending', // Will be set to 'active' when admin approves
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        }]);
+                    
+                    if (roleError) {
+                        console.error('Error creating user role:', roleError);
+                        // Continue anyway - role can be added later during migration
+                    } else {
+                        console.log('User role created successfully for driver platform');
+                    }
+                } catch (roleCreationError) {
+                    console.error('Exception creating user role:', roleCreationError);
+                    // Continue anyway - role can be added later
+                }
+            } catch (error) {
+                console.error('Error creating driver record:', error);
+                // Don't show this error to user as signup was successful
+            }
+        }// Forgot password
+        function showForgotPassword() {
+            document.getElementById('forgotPasswordModal').style.display = 'flex';
+        }
+
+        function closeForgotPassword() {
+            document.getElementById('forgotPasswordModal').style.display = 'none';
+        }
+
+        async function handleForgotPassword(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('resetEmail').value;
+
+            // If Supabase isn't ready, wait for it (with timeout)
+            if (!supabaseReady) {
+                showInfo('Initializing authentication service...');
+                
+                let attempts = 0;
+                const maxAttempts = 30; // 3 seconds max wait
+                
+                while (!supabaseReady && attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!supabaseReady) {
+                    showError('Authentication service failed to initialize. Please refresh the page.');
+                    return;
+                }
+                
+                clearMessages();
+            }
+
+            try {
+                const client = window.getSupabaseClient();
+                const { error } = await client.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/auth.html'
+                });
+
+                if (error) {
+                    showError('Error sending reset email: ' + error.message);
+                } else {
+                    showSuccess('Password reset email sent! Check your inbox.');
+                    closeForgotPassword();
+                }
+            } catch (error) {
+                showError('An error occurred sending the reset email');
+                console.error('Password reset error:', error);
+            }
+        }
+
+        // Check for existing authentication
+        function handleLogoutRedirect() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromLogout = urlParams.get('logout');
+            
+            if (fromLogout === 'true') {
+                console.log('Auth page: Handling logout redirect');
+                
+                // Clear any remaining session data
+                try {
+                    localStorage.removeItem('apex_user');
+                    localStorage.removeItem('driverId');
+                    localStorage.clear(); // Clear all localStorage for this domain
+                    sessionStorage.clear(); // Clear all sessionStorage for this domain
+                    
+                    // Show logout success message
+                    showSuccess('You have been successfully logged out');
+                    
+                    // Clean up the URL
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, newUrl);
+                } catch (error) {
+                    console.error('Error clearing session data:', error);
+                }
+            }
+        }
+
+        async function checkExistingAuth() {
+            try {
+                // Don't check existing auth if we're coming from logout
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('logout') === 'true') {
+                    return; // Skip auth check for logout redirects
+                }
+                
+                const { user, error } = await SupabaseUtils.getCurrentUser();
+                
+                if (user && !error) {
+                    // User is authenticated, but verify they exist in drivers table
+                    try {
+                        const { data: driverData, error: driverError } = await SupabaseUtils.selectRecords('drivers', 
+                            { email: user.email }, 
+                            { limit: 1 }
+                        );
+                        
+                        if (driverError || !driverData || driverData.length === 0) {
+                            console.log('User authenticated but not in drivers table, signing out');
+                            await SupabaseUtils.signOut();
+                            return;
+                        }
+                        
+                        const driver = driverData[0];
+                        
+                        // Check driver status
+                        if (driver.verification_status === 'suspended' || 
+                            driver.verification_status === 'rejected' || 
+                            driver.verification_status === 'pending') {
+                            console.log('Driver account not approved, signing out');
+                            await SupabaseUtils.signOut();
+                            showError(`Driver account is ${driver.verification_status}. Please contact administration.`);
+                            return;
+                        }
+                        
+                        // Valid driver, redirect to main app
+                        window.location.href = 'main.html';
+                        
+                    } catch (driverCheckError) {
+                        console.log('Error checking driver status, signing out');
+                        await SupabaseUtils.signOut();
+                    }
+                }
+            } catch (error) {
+                console.log('No existing authentication found');
+            }
+        }
+
+        // Handle URL parameters (for email verification, password reset, etc.)
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const type = urlParams.get('type');
+            const message = urlParams.get('message');
+
+            if (type === 'recovery') {
+                showSuccess('You can now reset your password');
+                // Show password reset form or redirect to password reset page
+            } else if (message) {
+                showSuccess(decodeURIComponent(message));
+            }
+
+            // Check for auth errors in URL
+            const error = urlParams.get('error');
+            const errorDescription = urlParams.get('error_description');
+            
+            if (error) {
+                showError(errorDescription || 'Authentication error occurred');
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize user type
+            selectUserType('driver');
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+

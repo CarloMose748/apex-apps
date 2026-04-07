@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Details - Apex Driver</title>
+  <link rel="stylesheet" href="styles/global.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300d174'><path d='M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z'/></svg>">
+  
+  <!-- Hamburger Menu -->
+  <script src="js/hamburger-menu.js"></script>
+  
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Supabase Configuration -->
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth-service.js"></script>
+  <script src="js/apex-driver-service.js"></script>
+  
+  <style>
+    body {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .job-detail-container {
+      min-height: 100dvh;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .job-detail-header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      padding: 18px 20px;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.2);
+      z-index: 100;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .job-detail-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .back-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.9);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      transition: all 0.2s ease;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .back-button:hover {
+      color: white;
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateX(-2px);
+    }
+
+    .header-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.01em;
+    }
+
+    .map-container {
+      flex: 1;
+      position: relative;
+      min-height: 360px;
+      height: min(520px, calc(100vh - 220px));
+      background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+      border-bottom: none;
+      transition: height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .map-container.expanded {
+      height: calc(100vh - 140px) !important;
+      min-height: calc(100vh - 140px) !important;
+    }
+
+    .map-container.expanding {
+      height: calc(100vh - 140px) !important;
+      min-height: calc(100vh - 140px) !important;
+    }
+
+    #map {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 360px;
+      background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+      display: block !important;
+    }
+
+    .map-container.expanded #map {
+      height: 100% !important;
+      min-height: calc(100vh - 140px) !important;
+    }
+
+    .job-info-panel {
+      background: white;
+      border-top: none;
+      padding: 0;
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+      overflow-y: auto;
+      position: relative;
+      transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      transform: translateY(0);
+      z-index: 200;
+      border-radius: 24px 24px 0 0;
+      margin-top: -24px;
+    }
+
+    .job-info-panel.collapsed {
+      transform: translateY(calc(100% - 80px));
+    }
+
+    .panel-handle {
+      width: 100%;
+      height: 40px;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+      position: relative;
+      border-radius: 24px 24px 0 0;
+    }
+
+    .panel-handle:active {
+      cursor: grabbing;
+    }
+
+    .panel-handle-indicator {
+      width: 48px;
+      height: 5px;
+      background: #cbd5e1;
+      border-radius: 3px;
+      transition: background 0.2s ease;
+    }
+
+    .panel-handle:hover .panel-handle-indicator {
+      background: #94a3b8;
+    }
+
+    .panel-content {
+      padding: 24px;
+      height: calc(100% - 40px);
+      overflow-y: auto;
+    }
+
+    .job-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .job-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .job-type {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      background: #f1f5f9;
+      padding: 6px 12px;
+      border-radius: 10px;
+      display: inline-block;
+      font-weight: 600;
+    }
+
+    .job-payment {
+      font-size: 1.75rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-align: right;
+      letter-spacing: -0.02em;
+    }
+
+    .job-details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .detail-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      padding: 14px 16px;
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 1px solid rgba(226, 232, 240, 0.6);
+      transition: all 0.2s ease;
+    }
+
+    .detail-item:hover {
+      background: #f1f5f9;
+      border-color: rgba(226, 232, 240, 0.9);
+    }
+
+    .detail-icon {
+      font-size: 1.1rem;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .detail-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 0.8rem;
+    }
+
+    .detail-value {
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .job-address {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      margin-bottom: 24px;
+      padding: 18px;
+      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      border-radius: 16px;
+      border-left: 4px solid var(--primary-color);
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 14px;
+    }
+
+    .btn-accept-job {
+      flex: 2;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      color: white;
+      border: none;
+      padding: 18px 24px;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+      letter-spacing: -0.01em;
+    }
+
+    .btn-accept-job:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-accept-job:active {
+      transform: translateY(-1px);
+    }
+
+    .btn-get-directions {
+      flex: 1;
+      background: white;
+      color: var(--text-primary);
+      border: 2px solid #e2e8f0;
+      padding: 18px 24px;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      letter-spacing: -0.01em;
+    }
+
+    .btn-get-directions:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: #eff6ff;
+      transform: translateY(-2px);
+    }
+
+    .priority-badge {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 8px;
+      margin-left: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .loading-content {
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e2e8f0;
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%;
+      animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      margin: 0 auto 20px;
+    }
+
+    .loading-content p {
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .job-details-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+      }
+      
+      .panel-content {
+        padding: 20px;
+        max-height: 48vh;
+      }
+
+      .job-payment {
+        font-size: 1.4rem;
+      }
+
+      .map-container {
+        min-height: 300px;
+        height: clamp(280px, 45vh, 360px);
+      }
+
+      .map-container.expanded {
+        height: calc(100vh - 120px) !important;
+        min-height: calc(100vh - 120px) !important;
+      }
+
+      #map {
+        min-height: 300px;
+      }
+
+      .map-container.expanded #map {
+        height: 100% !important;
+        min-height: calc(100vh - 120px) !important;
+      }
+
+      .job-info-panel {
+        border-radius: 20px 20px 0 0;
+        margin-top: -20px;
+      }
+
+      .panel-handle {
+        border-radius: 20px 20px 0 0;
+      }
+
+      .job-info-panel.collapsed {
+        transform: translateY(calc(100% - 60px));
+      }
+    }
+
+    @media (max-width: 480px) {
+      .job-detail-header {
+        padding: 14px 16px;
+      }
+
+      .header-title {
+        font-size: 1rem;
+      }
+
+      .back-button {
+        padding: 6px 12px;
+        font-size: 14px;
+      }
+
+      .job-payment {
+        font-size: 1.25rem;
+      }
+
+      .panel-content {
+        padding: 16px;
+      }
+
+      .detail-item {
+        padding: 12px 14px;
+        font-size: 0.85rem;
+      }
+
+      .action-buttons {
+        gap: 10px;
+      }
+
+      .btn-accept-job, .btn-get-directions {
+        padding: 16px 20px;
+        font-size: 0.95rem;
+      }
+
+      .job-info-panel.collapsed {
+        transform: translateY(calc(100% - 50px));
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Hamburger Menu -->
+  <div id="hamburger-menu"></div>
+  
+  <main class="job-detail-container">
+    <header class="job-detail-header">
+      <div class="header-content">
+        <a href="jobs.html" class="back-button">
+          ← Back to Jobs
+        </a>
+        <div class="header-title">Job Details</div>
+        <div></div> <!-- Spacer for flexbox centering -->
+      </div>
+    </header>
+
+    <div class="map-container">
+      <div id="map"></div>
+      <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite" aria-busy="true">
+        <div class="loading-content">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <p>Loading job location...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="job-info-panel" id="jobInfoPanel">
+      <div class="panel-handle" id="panelHandle">
+        <div class="panel-handle-indicator"></div>
+      </div>
+      <div class="panel-content" id="panelContent">
+        <!-- Job details will be loaded here -->
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let map, jobData, userLocation;
+    let jobMarker, userMarker;
+    let mapInitialized = false;
+
+    // Panel slide functionality variables
+    let isCollapsed = false;
+    let isDragging = false;
+    let startY = 0;
+    let startTransform = 0;
+    let mapResizeTimeout = null;
+    let mapResizeObserver = null;
+
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM loaded, starting initialization');
+      loadJobData();
+      initializePanelSliding();
+      initializeMapResizeObserver();
+      
+      // Try to initialize map every 500ms until Google Maps is available
+      const mapInitInterval = setInterval(() => {
+        if (typeof google !== 'undefined' && google.maps && jobData && !map) {
+          console.log('Google Maps available, initializing...');
+          clearInterval(mapInitInterval);
+          initializeMapWithJob();
+        }
+      }, 500);
+      
+      // Stop trying after 10 seconds
+      setTimeout(() => {
+        clearInterval(mapInitInterval);
+        if (!map) {
+          console.error('Failed to initialize map after 10 seconds');
+          document.getElementById('loadingOverlay').innerHTML = 
+            '<div class="loading-content"><p>Failed to load map. Please refresh the page.</p><button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">Refresh</button></div>';
+        }
+      }, 10000);
+    });
+
+    // Initialize panel sliding functionality
+    function initializePanelSliding() {
+      const panel = document.getElementById('jobInfoPanel');
+      const handle = document.getElementById('panelHandle');
+      const mapContainer = document.querySelector('.map-container');
+
+      // Handle click to toggle panel
+      handle.addEventListener('click', function() {
+        togglePanel();
+      });
+
+      // Touch events for mobile sliding
+      handle.addEventListener('touchstart', handleTouchStart, { passive: false });
+      handle.addEventListener('touchmove', handleTouchMove, { passive: false });
+      handle.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+      // Mouse events for desktop dragging
+      handle.addEventListener('mousedown', handleMouseDown);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      function handleTouchStart(e) {
+        isDragging = true;
+        startY = e.touches[0].clientY;
+        startTransform = isCollapsed ? 1 : 0;
+        panel.style.transition = 'none';
+        e.preventDefault();
+      }
+
+      function handleTouchMove(e) {
+        if (!isDragging) return;
+        
+        const currentY = e.touches[0].clientY;
+        const deltaY = currentY - startY;
+        const panelHeight = panel.offsetHeight;
+        const movePercent = deltaY / panelHeight;
+        
+        let newTransform = startTransform + movePercent;
+        newTransform = Math.max(0, Math.min(1, newTransform));
+        
+        const translateValue = newTransform * (panelHeight - (window.innerWidth <= 480 ? 50 : window.innerWidth <= 768 ? 60 : 80));
+        panel.style.transform = `translateY(${translateValue}px)`;
+        
+        // Adjust map container height in real-time
+        adjustMapContainerDuringDrag(newTransform);
+        
+        e.preventDefault();
+      }
+
+      function handleTouchEnd(e) {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        panel.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+        
+        // Reset map container transition
+        const mapContainer = document.querySelector('.map-container');
+        if (mapContainer) {
+          mapContainer.style.transition = 'height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+          mapContainer.style.height = ''; // Reset to CSS-defined height
+          mapContainer.classList.remove('expanding');
+          
+          // Force immediate map resize to ensure it fills the container
+          if (map) {
+            setTimeout(() => {
+              forceMapResize();
+            }, 10);
+          }
+        }
+        
+        const currentY = e.changedTouches[0].clientY;
+        const deltaY = currentY - startY;
+        const threshold = 50;
+        
+        if (Math.abs(deltaY) > threshold) {
+          if (deltaY > 0) {
+            collapsePanel();
+          } else {
+            expandPanel();
+          }
+        } else {
+          // Snap back to current state
+          if (isCollapsed) {
+            collapsePanel();
+          } else {
+            expandPanel();
+          }
+        }
+      }
+
+      function handleMouseDown(e) {
+        isDragging = true;
+        startY = e.clientY;
+        startTransform = isCollapsed ? 1 : 0;
+        panel.style.transition = 'none';
+        e.preventDefault();
+      }
+
+      function handleMouseMove(e) {
+        if (!isDragging) return;
+        
+        const currentY = e.clientY;
+        const deltaY = currentY - startY;
+        const panelHeight = panel.offsetHeight;
+        const movePercent = deltaY / panelHeight;
+        
+        let newTransform = startTransform + movePercent;
+        newTransform = Math.max(0, Math.min(1, newTransform));
+        
+        const translateValue = newTransform * (panelHeight - (window.innerWidth <= 480 ? 50 : window.innerWidth <= 768 ? 60 : 80));
+        panel.style.transform = `translateY(${translateValue}px)`;
+        
+        // Adjust map container height in real-time
+        adjustMapContainerDuringDrag(newTransform);
+      }
+
+      function handleMouseUp(e) {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        panel.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+        
+        // Reset map container transition
+        const mapContainer = document.querySelector('.map-container');
+        if (mapContainer) {
+          mapContainer.style.transition = 'height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+          mapContainer.style.height = ''; // Reset to CSS-defined height
+          mapContainer.classList.remove('expanding');
+          
+          // Force immediate map resize to ensure it fills the container
+          if (map) {
+            setTimeout(() => {
+              forceMapResize();
+            }, 10);
+          }
+        }
+        
+        const currentY = e.clientY;
+        const deltaY = currentY - startY;
+        const threshold = 50;
+        
+        if (Math.abs(deltaY) > threshold) {
+          if (deltaY > 0) {
+            collapsePanel();
+          } else {
+            expandPanel();
+          }
+        } else {
+          // Snap back to current state
+          if (isCollapsed) {
+            collapsePanel();
+          } else {
+            expandPanel();
+          }
+        }
+      }
+    }
+
+    // Initialize ResizeObserver to watch map container size changes
+    function initializeMapResizeObserver() {
+      if (typeof ResizeObserver !== 'undefined') {
+        const mapContainer = document.querySelector('.map-container');
+        const mapElement = document.getElementById('map');
+        
+        mapResizeObserver = new ResizeObserver(entries => {
+          for (let entry of entries) {
+            if (map && mapElement) {
+              const newHeight = entry.contentRect.height;
+              console.log('Map container resized to:', newHeight);
+              
+              // Force map element height
+              mapElement.style.height = newHeight + 'px';
+              
+              // Trigger map resize
+              google.maps.event.trigger(map, 'resize');
+            }
+          }
+        });
+        
+        if (mapContainer) {
+          mapResizeObserver.observe(mapContainer);
+        }
+      }
+    }
+
+    // Force map to properly resize and fill its container
+    function forceMapResize() {
+      if (!map) return;
+      
+      console.log('Force resizing map...');
+      
+      // Get the map container and its current dimensions
+      const mapContainer = document.querySelector('.map-container');
+      const mapElement = document.getElementById('map');
+      
+      if (mapContainer && mapElement) {
+        console.log('Map container height:', mapContainer.offsetHeight);
+        console.log('Map element height:', mapElement.offsetHeight);
+        
+        // Force the map element to match container height
+        mapElement.style.height = mapContainer.offsetHeight + 'px';
+        mapElement.style.width = mapContainer.offsetWidth + 'px';
+      }
+      
+      // Multiple resize triggers with different timing strategies
+      google.maps.event.trigger(map, 'resize');
+      
+      // Force immediate resize
+      setTimeout(() => {
+        google.maps.event.trigger(map, 'resize');
+        if (mapElement) {
+          mapElement.style.height = mapContainer.offsetHeight + 'px';
+        }
+      }, 10);
+      
+      // Additional resize after brief delay
+      setTimeout(() => {
+        google.maps.event.trigger(map, 'resize');
+        if (mapElement) {
+          mapElement.style.height = mapContainer.offsetHeight + 'px';
+        }
+      }, 100);
+      
+      // Final resize
+      setTimeout(() => {
+        google.maps.event.trigger(map, 'resize');
+        if (mapElement) {
+          mapElement.style.height = mapContainer.offsetHeight + 'px';
+        }
+      }, 300);
+      
+      console.log('Map resize sequence initiated');
+    }
+
+    // Adjust map container height during drag for real-time feedback
+    function adjustMapContainerDuringDrag(transformPercent) {
+      const mapContainer = document.querySelector('.map-container');
+      const mapElement = document.getElementById('map');
+      if (!mapContainer) return;
+      
+      // Disable transition during drag for smooth real-time adjustment
+      mapContainer.style.transition = 'none';
+      
+      // Calculate intermediate height based on transform percentage
+      const baseHeight = window.innerWidth <= 768 ? 
+        'clamp(280px, 45vh, 360px)' : 
+        'min(520px, calc(100vh - 220px))';
+      
+      const expandedHeight = window.innerWidth <= 768 ? 
+        'calc(100vh - 120px)' : 
+        'calc(100vh - 140px)';
+      
+      if (transformPercent > 0.5) {
+        // More collapsed, start expanding map
+        mapContainer.style.height = expandedHeight;
+        if (!mapContainer.classList.contains('expanded')) {
+          mapContainer.classList.add('expanding');
+        }
+        
+        // Force map element height update
+        if (mapElement) {
+          setTimeout(() => {
+            const newHeight = mapContainer.offsetHeight;
+            mapElement.style.height = newHeight + 'px';
+          }, 10);
+        }
+      } else {
+        // More expanded, use base height
+        mapContainer.style.height = baseHeight;
+        mapContainer.classList.remove('expanding');
+      }
+      
+      // Throttled map resize trigger for performance
+      if (map && mapResizeTimeout === null) {
+        mapResizeTimeout = setTimeout(() => {
+          // Multiple resize triggers to ensure map fills the space
+          google.maps.event.trigger(map, 'resize');
+          if (mapElement) {
+            mapElement.style.height = mapContainer.offsetHeight + 'px';
+          }
+          setTimeout(() => {
+            google.maps.event.trigger(map, 'resize');
+          }, 20);
+          mapResizeTimeout = null;
+        }, 30); // Reduced throttle for more responsive updates
+      }
+    }
+
+    function togglePanel() {
+      if (isCollapsed) {
+        expandPanel();
+      } else {
+        collapsePanel();
+      }
+    }
+
+    function collapsePanel() {
+      const panel = document.getElementById('jobInfoPanel');
+      const mapContainer = document.querySelector('.map-container');
+      
+      console.log('Collapsing panel...');
+      
+      panel.classList.add('collapsed');
+      mapContainer.classList.add('expanded');
+      isCollapsed = true;
+      
+      // Force immediate map container height update
+      setTimeout(() => {
+        const mapElement = document.getElementById('map');
+        if (mapElement && mapContainer) {
+          const newHeight = mapContainer.offsetHeight;
+          console.log('Setting map height to:', newHeight);
+          mapElement.style.height = newHeight + 'px';
+          mapElement.style.minHeight = newHeight + 'px';
+        }
+      }, 50);
+      
+      // Trigger map resize and recenter after animation
+      setTimeout(() => {
+        if (map && jobData) {
+          console.log('Adjusting map for collapsed panel');
+          
+          // Force resize the map to fill new container dimensions
+          forceMapResize();
+          
+          // Give the map a moment to process the resize, then recenter
+          setTimeout(() => {
+            // Recenter and adjust zoom for full map view
+            const jobPosition = { lat: parseFloat(jobData.lat), lng: parseFloat(jobData.lng) };
+            
+            if (userLocation) {
+              // If we have both user and job locations, fit bounds with more padding
+              const bounds = new google.maps.LatLngBounds();
+              const userPos = { lat: parseFloat(userLocation.lat), lng: parseFloat(userLocation.lng) };
+              
+              bounds.extend(jobPosition);
+              bounds.extend(userPos);
+              
+              // Fit with padding for better full-screen view
+              map.fitBounds(bounds, {
+                top: 20,
+                right: 20,
+                bottom: 100, // More bottom padding since panel is still partially visible
+                left: 20
+              });
+            } else {
+              // Just center on job location with appropriate zoom for full map view
+              map.setCenter(jobPosition);
+              map.setZoom(15); // Slightly zoomed out for better overview
+            }
+          }, 100); // Increased delay to ensure resize is processed
+        }
+      }, 350); // Wait for animation to complete
+    }
+
+    function expandPanel() {
+      const panel = document.getElementById('jobInfoPanel');
+      const mapContainer = document.querySelector('.map-container');
+      
+      panel.classList.remove('collapsed');
+      mapContainer.classList.remove('expanded');
+      isCollapsed = false;
+      
+      // Trigger map resize and recenter after animation
+      setTimeout(() => {
+        if (map && jobData) {
+          console.log('Adjusting map for expanded panel');
+          
+          // Force resize the map to fill new container dimensions
+          forceMapResize();
+          
+          // Give the map a moment to process the resize, then recenter
+          setTimeout(() => {
+            // Recenter for the smaller map view
+            const jobPosition = { lat: parseFloat(jobData.lat), lng: parseFloat(jobData.lng) };
+            
+            if (userLocation) {
+              // Fit bounds with padding appropriate for smaller map area
+              const bounds = new google.maps.LatLngBounds();
+              const userPos = { lat: parseFloat(userLocation.lat), lng: parseFloat(userLocation.lng) };
+              
+              bounds.extend(jobPosition);
+              bounds.extend(userPos);
+              
+              // Fit with padding for the reduced map area
+              map.fitBounds(bounds, {
+                top: 20,
+                right: 20,
+                bottom: 20,
+                left: 20
+              });
+            } else {
+              // Center on job location with closer zoom for detailed view
+              map.setCenter(jobPosition);
+              map.setZoom(16); // Closer zoom for detail view
+            }
+          }, 50); // Small delay to ensure resize is processed
+        }
+      }, 320); // Slightly after animation completes
+    }
+
+    // Load job data from localStorage
+    function loadJobData() {
+      const selectedJob = localStorage.getItem('selectedJobForInfo');
+      const storedUserLocation = localStorage.getItem('userLocation');
+      
+      if (!selectedJob) {
+        // For testing purposes, use sample data if no job is selected
+        console.log('No job data found, using sample data for testing');
+        jobData = {
+          id: 1,
+          name: "KFC Delivery",
+          address: "380 Anton Lembede St, Durban Central, Durban",
+          lat: -29.8587,
+          lng: 31.0218,
+          jobType: "Food Delivery",
+          payment: "R85",
+          estimatedTime: "25 min",
+          priority: false
+        };
+      } else {
+        jobData = JSON.parse(selectedJob);
+        // Clean up localStorage
+        localStorage.removeItem('selectedJobForInfo');
+      }
+
+      userLocation = storedUserLocation ? JSON.parse(storedUserLocation) : null;
+
+      console.log('Job data loaded:', jobData);
+      console.log('User location:', userLocation);
+
+      // Render job info panel immediately
+      renderJobInfo();
+
+      // Initialize map if Google Maps is already loaded
+      if (mapInitialized) {
+        initializeMapWithJob();
+      }
+    }
+
+    // Initialize Google Maps with job data
+    function initializeMapWithJob() {
+      if (!jobData) {
+        console.error('No job data available for map initialization');
+        return;
+      }
+
+      const jobPosition = { lat: parseFloat(jobData.lat), lng: parseFloat(jobData.lng) };
+      
+      console.log('Initializing map with job position:', jobPosition);
+      console.log('Map container element:', document.getElementById("map"));
+      
+      if (typeof google === 'undefined' || !google.maps) {
+        console.error('Google Maps not loaded');
+        return;
+      }
+
+      try {
+        // Create map with simple configuration
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: jobPosition,
+          zoom: 16,
+          mapTypeId: google.maps.MapTypeId.ROADMAP
+        });
+
+        console.log('Map created successfully');
+
+        // Wait for map to be ready, then add markers
+        google.maps.event.addListenerOnce(map, 'tilesloaded', function() {
+          console.log('Map tiles loaded');
+          
+          // Add job marker
+          createJobMarker(jobPosition);
+          
+          // Add user marker if available
+          if (userLocation) {
+            const userPos = { lat: parseFloat(userLocation.lat), lng: parseFloat(userLocation.lng) };
+            createUserMarker(userPos);
+            
+            // Fit bounds to show both markers
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(jobPosition);
+            bounds.extend(userPos);
+            map.fitBounds(bounds);
+          }
+          
+          // Hide loading overlay
+          setTimeout(() => {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+              overlay.style.display = 'none';
+            }
+            console.log('Loading overlay hidden');
+          }, 1000);
+        });
+
+      } catch (error) {
+        console.error('Error initializing map:', error);
+        document.getElementById('loadingOverlay').innerHTML = 
+          '<div class="loading-content"><p>Error loading map: ' + error.message + '</p></div>';
+      }
+    }
+
+    // Create job marker
+    function createJobMarker(position) {
+      console.log('Creating job marker at:', position);
+      
+      try {
+        // Create a prominent red marker for the job location
+        jobMarker = new google.maps.Marker({
+          position: position,
+          map: map,
+          title: jobData.name,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#ff4444',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3,
+            scale: 15
+          },
+          zIndex: 1000,
+          animation: google.maps.Animation.DROP
+        });
+
+        console.log('Job marker created successfully');
+
+        // Add info window
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="max-width: 280px; padding: 12px;">
+              <h3 style="margin: 0 0 8px 0; color: #333; font-size: 18px;">${getJobTypeEmoji(jobData.jobType)} ${jobData.name}</h3>
+              <div style="margin: 0 0 8px 0; font-weight: bold; color: #0066cc; font-size: 20px;">${jobData.payment}</div>
+              <div style="margin: 0 0 8px 0; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; display: inline-block; font-size: 14px; color: #666;">${jobData.jobType}</div>
+              <div style="margin: 8px 0 0 0; font-size: 13px; color: #666; line-height: 1.4;"><span class="icon icon-location icon-sm"></span> ${jobData.address}</div>
+              <div style="margin: 8px 0 0 0; font-size: 13px; color: #666;">⏱️ Est. ${jobData.estimatedTime}</div>
+            </div>
+          `
+        });
+
+        jobMarker.addListener('click', () => {
+          infoWindow.open(map, jobMarker);
+        });
+
+        // Auto-open info window after a delay
+        setTimeout(() => {
+          infoWindow.open(map, jobMarker);
+          console.log('Job info window opened');
+        }, 1500);
+
+        return jobMarker;
+
+      } catch (error) {
+        console.error('Error creating job marker:', error);
+        return null;
+      }
+    }
+
+    // Create user location marker
+    function createUserMarker(position) {
+      console.log('Creating user marker at:', position);
+      
+      try {
+        userMarker = new google.maps.Marker({
+          position: position,
+          map: map,
+          title: "Your Location",
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#1E88E5',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3,
+            scale: 12
+          },
+          zIndex: 999
+        });
+
+        const userInfoWindow = new google.maps.InfoWindow({
+          content: '<div style="padding: 8px;"><strong><span class="icon icon-location icon-sm"></span> Your Location</strong></div>'
+        });
+
+        userMarker.addListener('click', () => {
+          userInfoWindow.open(map, userMarker);
+        });
+
+        console.log('User marker created successfully');
+        return userMarker;
+
+      } catch (error) {
+        console.error('Error creating user marker:', error);
+        return null;
+      }
+    }
+
+    // Render job information panel
+    function renderJobInfo() {
+      const distance = userLocation ? calculateDistance(
+        userLocation.lat, userLocation.lng,
+        jobData.lat, jobData.lng
+      ) : null;
+
+      const distanceText = distance ? 
+        (distance < 1 ? `${Math.round(distance * 1000)}m away` : `${distance.toFixed(1)}km away`) :
+        'Distance unknown';
+
+      const panelContent = document.getElementById('panelContent');
+      const safeName = jobData.name.replace(/"/g, '&quot;');
+      const safeAddress = jobData.address.replace(/"/g, '&quot;');
+
+      panelContent.innerHTML = `
+        <div class="job-header">
+          <div>
+            <div class="job-title">
+              ${getJobTypeEmoji(jobData.jobType)} ${safeName}
+              ${jobData.priority ? '<span class="priority-badge">High Priority</span>' : ''}
+            </div>
+            <div class="job-type">${jobData.jobType}</div>
+          </div>
+          <div class="job-payment" aria-label="Payment ${jobData.payment}">${jobData.payment}</div>
+        </div>
+        
+        <div class="job-details-grid">
+          <div class="detail-item">
+            <span class="icon icon-ruler icon-sm detail-icon" aria-hidden="true"></span>
+            <span class="detail-label">Distance:</span>
+            <span class="detail-value">${distanceText}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-icon" aria-hidden="true">⏱️</span>
+            <span class="detail-label">Est. Time:</span>
+            <span class="detail-value">${jobData.estimatedTime}</span>
+          </div>
+        </div>
+        
+        <div class="job-address">
+          <span class="icon icon-location icon-sm" aria-hidden="true"></span> ${safeAddress}
+        </div>
+        
+        <div class="action-buttons">
+          <button type="button" class="btn-accept-job" onclick="acceptJob()" aria-label="Accept ${safeName}">
+            <span class="icon icon-car icon-sm" aria-hidden="true"></span> Accept This Job
+          </button>
+          <button type="button" class="btn-get-directions" onclick="getDirections()" aria-label="Get directions to ${safeName}">
+            <span class="icon icon-location icon-sm" aria-hidden="true"></span> Get Directions
+          </button>
+        
+        </div>
+      `;
+    }
+
+    // Helper functions
+    function getJobTypeEmoji(jobType) {
+      switch(jobType) {
+        case 'Food Delivery': return '<span class="icon icon-food icon-md" aria-hidden="true"></span>';
+        case 'Grocery Delivery': return '<span class="icon icon-grocery icon-md" aria-hidden="true"></span>';
+        case 'Pharmacy Delivery': return '<span class="icon icon-pharmacy icon-md" aria-hidden="true"></span>';
+        case 'Document Delivery': return '<span class="icon icon-document icon-md" aria-hidden="true"></span>';
+        case 'Package Delivery': return '<span class="icon icon-package icon-md" aria-hidden="true"></span>';
+        case 'Oil Collection': return '<span class="icon icon-oil icon-md" aria-hidden="true">🛢️</span>';
+        default: return '<span class="icon icon-car icon-md" aria-hidden="true"></span>';
+      }
+    }
+
+    function calculateDistance(lat1, lng1, lat2, lng2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // Action functions
+    function acceptJob() {
+      if (confirm(`Accept job: ${jobData.name} for ${jobData.payment}?\n\nYou will be routed to the pickup location.`)) {
+        // Store accepted job and navigate to map with routing
+        localStorage.setItem('acceptedJob', JSON.stringify(jobData));
+        if (userLocation) {
+          localStorage.setItem('userLocation', JSON.stringify(userLocation));
+        }
+        window.location.href = 'map.html';
+      }
+    }
+
+    function getDirections() {
+      // Navigate to map page with selected job for routing
+      localStorage.setItem('selectedJob', JSON.stringify(jobData));
+      if (userLocation) {
+        localStorage.setItem('userLocation', JSON.stringify(userLocation));
+      }
+      window.location.href = 'map.html';
+    }
+
+    // Initialize hamburger menu when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      new HamburgerMenu();
+    });
+  </script>
+
+  <!-- Google Maps API -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBvYq6yNASqpfBkXWuUUliHe5dJmg5mlJs&libraries=places"></script>
+</body>
+</html>

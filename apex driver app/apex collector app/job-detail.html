@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Details - Apex Driver</title>
+  <link rel="stylesheet" href="styles/global.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300d174'><path d='M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z'/></svg>">
+  
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Supabase Configuration -->
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth-service.js"></script>
+  <script src="js/apex-driver-service.js"></script>
+  
+  <style>
+    .job-detail-container {
+      min-height: 100dvh;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .job-detail-header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, #00b562 100%);
+      padding: 16px 20px;
+      box-shadow: 0 4px 16px rgba(0, 209, 116, 0.2);
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .back-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.25s ease;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .back-button:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateX(-2px);
+    }
+
+    .header-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.01em;
+    }
+
+    .map-container {
+      flex: 1;
+      position: relative;
+      min-height: 360px;
+      height: min(520px, calc(100vh - 220px));
+      background: #e5e7eb;
+      border-bottom: none;
+    }
+
+    #map {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 360px;
+      background: #e5e7eb;
+    }
+
+    .job-info-panel {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      margin-top: -16px;
+      position: relative;
+      padding: 24px 20px;
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+      z-index: 50;
+    }
+
+    .job-info-panel::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 4px;
+      background: #d1d5db;
+      border-radius: 2px;
+    }
+
+    .job-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      padding-top: 12px;
+    }
+
+    .job-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .job-type {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      padding: 5px 10px;
+      border-radius: 6px;
+      display: inline-block;
+      font-weight: 500;
+    }
+
+    .job-payment {
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary-color) 0%, #00b562 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-align: right;
+    }
+
+    .job-details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .detail-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+
+    .detail-icon {
+      font-size: 1.1rem;
+      color: var(--primary-color);
+    }
+
+    .detail-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 0.8rem;
+    }
+
+    .detail-value {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .job-address {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border-radius: 10px;
+      border-left: 4px solid var(--primary-color);
+      line-height: 1.5;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-accept-job {
+      flex: 2;
+      background: linear-gradient(135deg, var(--primary-color) 0%, #00b562 100%);
+      color: white;
+      border: none;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 16px rgba(0, 209, 116, 0.25);
+    }
+
+    .btn-accept-job:hover {
+      background: linear-gradient(135deg, #00b562 0%, #009952 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0, 209, 116, 0.35);
+    }
+
+    .btn-get-directions {
+      flex: 1;
+      background: white;
+      color: var(--text-primary);
+      border: 2px solid var(--border-color);
+      padding: 16px 20px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .btn-get-directions:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: var(--primary-50);
+    }
+
+    .priority-badge {
+      background: linear-gradient(135deg, var(--accent-color) 0%, #e85a2a 100%);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 20px;
+      margin-left: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    }
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+
+    .loading-content {
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid var(--border-color);
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .job-details-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+      }
+      
+      .job-info-panel {
+        padding: 20px 16px;
+        max-height: 48vh;
+      }
+
+      .job-payment {
+        font-size: 1.35rem;
+      }
+
+      .map-container {
+        min-height: 300px;
+        height: clamp(280px, 45vh, 360px);
+      }
+
+      #map {
+        min-height: 300px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .job-detail-header {
+        padding: 12px 16px;
+      }
+
+      .header-title {
+        font-size: 1rem;
+      }
+
+      .job-payment {
+        font-size: 1.2rem;
+      }
+
+      .job-info-panel {
+        padding: 18px 14px;
+      }
+
+      .detail-item {
+        font-size: 0.85rem;
+      }
+
+      .action-buttons {
+        gap: 10px;
+      }
+
+      .btn-accept-job,
+      .btn-get-directions {
+        padding: 14px 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="job-detail-container">
+    <header class="job-detail-header">
+      <div class="header-content">
+        <a href="jobs.html" class="back-button">
+          ← Back to Jobs
+        </a>
+        <div class="header-title">Job Details</div>
+        <div></div> <!-- Spacer for flexbox centering -->
+      </div>
+    </header>
+
+    <div class="map-container">
+      <div id="map"></div>
+      <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite" aria-busy="true">
+        <div class="loading-content">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <p>Loading job location...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="job-info-panel" id="jobInfoPanel">
+      <!-- Job details will be loaded here -->
+    </div>
+  </main>
+
+  <script>
+    let map, jobData, userLocation;
+    let jobMarker, userMarker;
+    let mapInitialized = false;
+
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM loaded, starting initialization');
+      loadJobData();
+      
+      // Try to initialize map every 500ms until Google Maps is available
+      const mapInitInterval = setInterval(() => {
+        if (typeof google !== 'undefined' && google.maps && jobData && !map) {
+          console.log('Google Maps available, initializing...');
+          clearInterval(mapInitInterval);
+          initializeMapWithJob();
+        }
+      }, 500);
+      
+      // Stop trying after 10 seconds
+      setTimeout(() => {
+        clearInterval(mapInitInterval);
+        if (!map) {
+          console.error('Failed to initialize map after 10 seconds');
+          document.getElementById('loadingOverlay').innerHTML = 
+            '<div class="loading-content"><p>Failed to load map. Please refresh the page.</p><button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">Refresh</button></div>';
+        }
+      }, 10000);
+    });
+
+    // Load job data from localStorage
+    function loadJobData() {
+      const selectedJob = localStorage.getItem('selectedJobForInfo');
+      const storedUserLocation = localStorage.getItem('userLocation');
+      
+      if (!selectedJob) {
+        // For testing purposes, use sample data if no job is selected
+        console.log('No job data found, using sample data for testing');
+        jobData = {
+          id: 1,
+          name: "KFC Delivery",
+          address: "380 Anton Lembede St, Durban Central, Durban",
+          lat: -29.8587,
+          lng: 31.0218,
+          jobType: "Food Delivery",
+          payment: "R85",
+          estimatedTime: "25 min",
+          priority: false
+        };
+      } else {
+        jobData = JSON.parse(selectedJob);
+        // Clean up localStorage
+        localStorage.removeItem('selectedJobForInfo');
+      }
+
+      userLocation = storedUserLocation ? JSON.parse(storedUserLocation) : null;
+
+      console.log('Job data loaded:', jobData);
+      console.log('User location:', userLocation);
+
+      // Render job info panel immediately
+      renderJobInfo();
+
+      // Initialize map if Google Maps is already loaded
+      if (mapInitialized) {
+        initializeMapWithJob();
+      }
+    }
+
+    // Initialize Google Maps with job data
+    function initializeMapWithJob() {
+      if (!jobData) {
+        console.error('No job data available for map initialization');
+        return;
+      }
+
+      const jobPosition = { lat: parseFloat(jobData.lat), lng: parseFloat(jobData.lng) };
+      
+      console.log('Initializing map with job position:', jobPosition);
+      console.log('Map container element:', document.getElementById("map"));
+      
+      if (typeof google === 'undefined' || !google.maps) {
+        console.error('Google Maps not loaded');
+        return;
+      }
+
+      try {
+        // Create map with simple configuration
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: jobPosition,
+          zoom: 16,
+          mapTypeId: google.maps.MapTypeId.ROADMAP
+        });
+
+        console.log('Map created successfully');
+
+        // Wait for map to be ready, then add markers
+        google.maps.event.addListenerOnce(map, 'tilesloaded', function() {
+          console.log('Map tiles loaded');
+          
+          // Add job marker
+          createJobMarker(jobPosition);
+          
+          // Add user marker if available
+          if (userLocation) {
+            const userPos = { lat: parseFloat(userLocation.lat), lng: parseFloat(userLocation.lng) };
+            createUserMarker(userPos);
+            
+            // Fit bounds to show both markers
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(jobPosition);
+            bounds.extend(userPos);
+            map.fitBounds(bounds);
+          }
+          
+          // Hide loading overlay
+          setTimeout(() => {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+              overlay.style.display = 'none';
+            }
+            console.log('Loading overlay hidden');
+          }, 1000);
+        });
+
+      } catch (error) {
+        console.error('Error initializing map:', error);
+        document.getElementById('loadingOverlay').innerHTML = 
+          '<div class="loading-content"><p>Error loading map: ' + error.message + '</p></div>';
+      }
+    }
+
+    // Create job marker
+    function createJobMarker(position) {
+      console.log('Creating job marker at:', position);
+      
+      try {
+        // Create a prominent red marker for the job location
+        jobMarker = new google.maps.Marker({
+          position: position,
+          map: map,
+          title: jobData.name,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#ff4444',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3,
+            scale: 15
+          },
+          zIndex: 1000,
+          animation: google.maps.Animation.DROP
+        });
+
+        console.log('Job marker created successfully');
+
+        // Add info window
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="max-width: 280px; padding: 12px;">
+              <h3 style="margin: 0 0 8px 0; color: #333; font-size: 18px;">${getJobTypeEmoji(jobData.jobType)} ${jobData.name}</h3>
+              <div style="margin: 0 0 8px 0; font-weight: bold; color: #00d174; font-size: 20px;">${jobData.payment}</div>
+              <div style="margin: 0 0 8px 0; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; display: inline-block; font-size: 14px; color: #666;">${jobData.jobType}</div>
+              <div style="margin: 8px 0 0 0; font-size: 13px; color: #666; line-height: 1.4;"><span class="icon icon-location icon-sm"></span> ${jobData.address}</div>
+              <div style="margin: 8px 0 0 0; font-size: 13px; color: #666;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#666" style="vertical-align: middle; margin-right: 4px;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg> Est. ${jobData.estimatedTime}</div>
+            </div>
+          `
+        });
+
+        jobMarker.addListener('click', () => {
+          infoWindow.open(map, jobMarker);
+        });
+
+        // Auto-open info window after a delay
+        setTimeout(() => {
+          infoWindow.open(map, jobMarker);
+          console.log('Job info window opened');
+        }, 1500);
+
+        return jobMarker;
+
+      } catch (error) {
+        console.error('Error creating job marker:', error);
+        return null;
+      }
+    }
+
+    // Create user location marker
+    function createUserMarker(position) {
+      console.log('Creating user marker at:', position);
+      
+      try {
+        userMarker = new google.maps.Marker({
+          position: position,
+          map: map,
+          title: "Your Location",
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#1E88E5',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3,
+            scale: 12
+          },
+          zIndex: 999
+        });
+
+        const userInfoWindow = new google.maps.InfoWindow({
+          content: '<div style="padding: 8px;"><strong><span class="icon icon-location icon-sm"></span> Your Location</strong></div>'
+        });
+
+        userMarker.addListener('click', () => {
+          userInfoWindow.open(map, userMarker);
+        });
+
+        console.log('User marker created successfully');
+        return userMarker;
+
+      } catch (error) {
+        console.error('Error creating user marker:', error);
+        return null;
+      }
+    }
+
+    // Render job information panel
+    function renderJobInfo() {
+      const distance = userLocation ? calculateDistance(
+        userLocation.lat, userLocation.lng,
+        jobData.lat, jobData.lng
+      ) : null;
+
+      const distanceText = distance ? 
+        (distance < 1 ? `${Math.round(distance * 1000)}m away` : `${distance.toFixed(1)}km away`) :
+        'Distance unknown';
+
+      const jobInfoPanel = document.getElementById('jobInfoPanel');
+      const safeName = jobData.name.replace(/"/g, '&quot;');
+      const safeAddress = jobData.address.replace(/"/g, '&quot;');
+
+      jobInfoPanel.innerHTML = `
+        <div class="job-header">
+          <div>
+            <div class="job-title">
+              ${getJobTypeEmoji(jobData.jobType)} ${safeName}
+              ${jobData.priority ? '<span class="priority-badge">High Priority</span>' : ''}
+            </div>
+            <div class="job-type">${jobData.jobType}</div>
+          </div>
+          <div class="job-payment" aria-label="Payment ${jobData.payment}">${jobData.payment}</div>
+        </div>
+        
+        <div class="job-details-grid">
+          <div class="detail-item">
+            <span class="icon icon-ruler icon-sm detail-icon" aria-hidden="true"></span>
+            <span class="detail-label">Distance:</span>
+            <span class="detail-value">${distanceText}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-icon" aria-hidden="true">⏱️</span>
+            <span class="detail-label">Est. Time:</span>
+            <span class="detail-value">${jobData.estimatedTime}</span>
+          </div>
+        </div>
+        
+        <div class="job-address">
+          <span class="icon icon-location icon-sm" aria-hidden="true"></span> ${safeAddress}
+        </div>
+        
+        <div class="action-buttons">
+          <button type="button" class="btn-accept-job" onclick="acceptJob()" aria-label="Accept ${safeName}">
+            <span class="icon icon-car icon-sm" aria-hidden="true"></span> Accept This Job
+          </button>
+          <button type="button" class="btn-get-directions" onclick="getDirections()" aria-label="Get directions to ${safeName}">
+            <span class="icon icon-location icon-sm" aria-hidden="true"></span> Get Directions
+          </button>
+        
+        </div>
+      `;
+    }
+
+    // Helper functions
+    function getJobTypeEmoji(jobType) {
+      switch(jobType) {
+        case 'Food Delivery': return '<span class="icon icon-food icon-md" aria-hidden="true"></span>';
+        case 'Grocery Delivery': return '<span class="icon icon-grocery icon-md" aria-hidden="true"></span>';
+        case 'Pharmacy Delivery': return '<span class="icon icon-pharmacy icon-md" aria-hidden="true"></span>';
+        case 'Document Delivery': return '<span class="icon icon-document icon-md" aria-hidden="true"></span>';
+        case 'Package Delivery': return '<span class="icon icon-package icon-md" aria-hidden="true"></span>';
+        default: return '<span class="icon icon-car icon-md" aria-hidden="true"></span>';
+      }
+    }
+
+    function calculateDistance(lat1, lng1, lat2, lng2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // Action functions
+    function acceptJob() {
+      if (confirm(`Accept job: ${jobData.name} for ${jobData.payment}?\n\nYou will be routed to the pickup location.`)) {
+        // Store accepted job and navigate to map with routing
+        localStorage.setItem('acceptedJob', JSON.stringify(jobData));
+        if (userLocation) {
+          localStorage.setItem('userLocation', JSON.stringify(userLocation));
+        }
+        window.location.href = 'map.html';
+      }
+    }
+
+    function getDirections() {
+      // Navigate to map page with selected job for routing
+      localStorage.setItem('selectedJob', JSON.stringify(jobData));
+      if (userLocation) {
+        localStorage.setItem('userLocation', JSON.stringify(userLocation));
+      }
+      window.location.href = 'map.html';
+    }
+  </script>
+
+  <!-- Google Maps API -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBvYq6yNASqpfBkXWuUUliHe5dJmg5mlJs&libraries=places"></script>
+</body>
+</html>

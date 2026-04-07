@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Hamburger Menu</title>
+    <link rel="stylesheet" href="styles/global.css">
+    
+    <!-- Hamburger Menu -->
+    <script src="js/hamburger-menu.js"></script>
+    
+    <style>
+        .test-container {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .test-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 20px;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+        }
+        
+        .test-content {
+            background: white;
+            padding: 20px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-good {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+        
+        .status-error {
+            color: var(--error-color);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger Menu -->
+    <div id="hamburger-menu"></div>
+    
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🍔 Hamburger Menu Test</h1>
+            <p>Testing navigation component functionality</p>
+        </div>
+        
+        <div class="test-content">
+            <h2>Component Status</h2>
+            <div class="status-item">
+                <span>Hamburger Menu Container:</span>
+                <span id="container-status" class="status-error">Not Found</span>
+            </div>
+            <div class="status-item">
+                <span>Menu Toggle Button:</span>
+                <span id="toggle-status" class="status-error">Not Found</span>
+            </div>
+            <div class="status-item">
+                <span>Menu Overlay:</span>
+                <span id="overlay-status" class="status-error">Not Found</span>
+            </div>
+            <div class="status-item">
+                <span>Mobile Menu Panel:</span>
+                <span id="panel-status" class="status-error">Not Found</span>
+            </div>
+            <div class="status-item">
+                <span>JavaScript Class:</span>
+                <span id="class-status" class="status-error">Not Loaded</span>
+            </div>
+        </div>
+        
+        <div class="test-content">
+            <h2>Instructions</h2>
+            <p>1. Look for the hamburger menu icon (☰) in the top-left corner</p>
+            <p>2. Click the icon to open the navigation menu</p>
+            <p>3. Click outside the menu or press Escape to close it</p>
+            <p>4. Check the status indicators above for any issues</p>
+        </div>
+        
+        <div class="test-content">
+            <h2>Manual Test Controls</h2>
+            <button class="btn btn-primary" onclick="testMenuOpen()">Test Open Menu</button>
+            <button class="btn btn-secondary" onclick="testMenuClose()">Test Close Menu</button>
+            <button class="btn btn-outline" onclick="refreshStatus()">Refresh Status</button>
+            <button class="btn btn-warning" onclick="debugMenu()">Debug Info</button>
+        </div>
+        
+        <div class="test-content">
+            <h2>Page Navigation Tests</h2>
+            <p>Use these links to test the hamburger menu on different pages:</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 15px;">
+                <a href="main.html" class="btn btn-outline">Main Page</a>
+                <a href="dashboard.html" class="btn btn-outline">Dashboard</a>
+                <a href="jobs.html" class="btn btn-outline">Jobs</a>
+                <a href="map.html" class="btn btn-outline">Map</a>
+                <a href="profile.html" class="btn btn-outline">Profile</a>
+                <a href="oil-collection.html" class="btn btn-outline">Oil Collection</a>
+                <a href="admin.html" class="btn btn-outline">Admin</a>
+                <a href="verification-pending.html" class="btn btn-outline">Verification</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let menuInstance = null;
+        
+        // Initialize hamburger menu when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                menuInstance = new HamburgerMenu();
+                updateStatus();
+                console.log('Hamburger menu initialized successfully');
+            } catch (error) {
+                console.error('Error initializing hamburger menu:', error);
+                updateStatus();
+            }
+        });
+        
+        function updateStatus() {
+            // Check container
+            const container = document.getElementById('hamburger-menu');
+            document.getElementById('container-status').textContent = container ? 'Found' : 'Not Found';
+            document.getElementById('container-status').className = container ? 'status-good' : 'status-error';
+            
+            // Check toggle button
+            const toggle = document.getElementById('hamburgerToggle');
+            document.getElementById('toggle-status').textContent = toggle ? 'Found' : 'Not Found';
+            document.getElementById('toggle-status').className = toggle ? 'status-good' : 'status-error';
+            
+            // Check overlay
+            const overlay = document.getElementById('mobileMenuOverlay');
+            document.getElementById('overlay-status').textContent = overlay ? 'Found' : 'Not Found';
+            document.getElementById('overlay-status').className = overlay ? 'status-good' : 'status-error';
+            
+            // Check panel
+            const panel = document.getElementById('mobileMenu');
+            document.getElementById('panel-status').textContent = panel ? 'Found' : 'Not Found';
+            document.getElementById('panel-status').className = panel ? 'status-good' : 'status-error';
+            
+            // Check class
+            const classExists = typeof HamburgerMenu !== 'undefined';
+            document.getElementById('class-status').textContent = classExists ? 'Loaded' : 'Not Loaded';
+            document.getElementById('class-status').className = classExists ? 'status-good' : 'status-error';
+        }
+        
+        function testMenuOpen() {
+            if (menuInstance && typeof menuInstance.openMenu === 'function') {
+                menuInstance.openMenu();
+            } else {
+                alert('Menu instance not available or openMenu method not found');
+            }
+        }
+        
+        function testMenuClose() {
+            if (menuInstance && typeof menuInstance.closeMenu === 'function') {
+                menuInstance.closeMenu();
+            } else {
+                alert('Menu instance not available or closeMenu method not found');
+            }
+        }
+        
+        function refreshStatus() {
+            updateStatus();
+        }
+        
+        function debugMenu() {
+            console.log('=== Hamburger Menu Debug Info ===');
+            console.log('Menu Instance:', menuInstance);
+            console.log('Menu Container:', document.getElementById('hamburger-menu'));
+            console.log('Toggle Button:', document.getElementById('hamburgerToggle'));
+            console.log('Menu Overlay:', document.getElementById('mobileMenuOverlay'));
+            console.log('Menu Panel:', document.getElementById('mobileMenu'));
+            console.log('HamburgerMenu Class:', typeof HamburgerMenu);
+            
+            if (menuInstance) {
+                console.log('Is Initialized:', menuInstance.isInitialized);
+                console.log('Is Open:', menuInstance.isOpen);
+                console.log('Current Page:', menuInstance.currentPage);
+            }
+            
+            // Show debug alert
+            const container = document.getElementById('hamburger-menu');
+            const toggle = document.getElementById('hamburgerToggle');
+            const overlay = document.getElementById('mobileMenuOverlay');
+            const panel = document.getElementById('mobileMenu');
+            
+            alert(`Debug Info:
+Container: ${container ? 'Found' : 'Missing'}
+Toggle: ${toggle ? 'Found' : 'Missing'}  
+Overlay: ${overlay ? 'Found' : 'Missing'}
+Panel: ${panel ? 'Found' : 'Missing'}
+Instance: ${menuInstance ? 'Created' : 'Missing'}
+Initialized: ${menuInstance?.isInitialized ? 'Yes' : 'No'}
+Check console for detailed info.`);
+        }
+        
+        // Add global logout function for testing
+        function handleLogout() {
+            alert('Logout function called - this is a test page');
+            console.log('Logout would redirect to auth.html in production');
+        }
+    </script>
+</body>
+</html>

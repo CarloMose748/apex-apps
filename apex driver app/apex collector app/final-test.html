@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Test</title>
+</head>
+<body>
+    <h1>Final Test</h1>
+    <button onclick="testEverything()">Test Everything</button>
+    <div id="output"></div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const supabaseUrl = 'https://gwifqztaegzpcwgvezuy.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3aWZxenRhZWd6cGN3Z3ZlenV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjc3NzA1NzksImV4cCI6MjA0MzM0NjU3OX0.NTaR2vWZXJhVhK6fEqvRnAkU9xP2kDgFY8I-HYvVWqI';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        window.testEverything = async function() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                // Step 1: Get data
+                console.log('Step 1: Getting data...');
+                const { data, error } = await supabase
+                    .from('available_jobs')
+                    .select('*');
+                
+                if (error) {
+                    output.innerHTML = `<p>Database Error: ${error.message}</p>`;
+                    return;
+                }
+                
+                output.innerHTML += `<p>Step 1: Found ${data?.length || 0} records</p>`;
+                console.log('Raw data:', data);
+                
+                if (!data || data.length === 0) {
+                    output.innerHTML += '<p>No data to format</p>';
+                    return;
+                }
+                
+                // Step 2: Format data using exact same logic as jobs.html
+                console.log('Step 2: Formatting data...');
+                const formattedJobs = data?.map(job => {
+                    console.log('Formatting job:', job);
+                    
+                    const jobAddress = job.pickup_address || job.address || job.location || 'Unknown Location';
+                    const jobName = job.description || job.customer_name || job.title || job.name || 'Delivery Job';
+                    
+                    if (!jobAddress || jobAddress === 'Unknown Location') {
+                        console.warn('Skipping job with no valid address:', job);
+                        return null;
+                    }
+                    
+                    const formattedJob = {
+                        id: job.id,
+                        name: jobName,
+                        address: jobAddress,
+                        jobType: job.job_type || job.type || 'Food Delivery',
+                        payment: job.payment || job.amount || job.price || 'R50',
+                        estimatedTime: job.estimated_time || job.duration || job.time || '30 min'
+                    };
+                    
+                    console.log('Formatted job result:', formattedJob);
+                    return formattedJob;
+                }).filter(job => job !== null) || [];
+                
+                output.innerHTML += `<p>Step 2: Formatted ${formattedJobs.length} jobs</p>`;
+                console.log('Final formatted jobs:', formattedJobs);
+                
+                // Step 3: Group by address (same logic as jobs.html)
+                console.log('Step 3: Grouping by address...');
+                const grouped = {};
+                formattedJobs.forEach(job => {
+                    const address = job.address || 'Unknown Location';
+                    if (!grouped[address]) {
+                        grouped[address] = [];
+                    }
+                    grouped[address].push(job);
+                });
+                
+                output.innerHTML += `<p>Step 3: Grouped into ${Object.keys(grouped).length} addresses</p>`;
+                console.log('Grouped jobs:', grouped);
+                
+                // Step 4: Display results
+                const jobsHtml = Object.entries(grouped).map(([address, jobs]) => `
+                    <div style="border: 1px solid #ccc; margin: 10px; padding: 10px;">
+                        <h3>${address} (${jobs.length} jobs)</h3>
+                        ${jobs.map(job => `
+                            <div style="background: #f5f5f5; margin: 5px 0; padding: 8px;">
+                                <strong>${job.name}</strong><br>
+                                Type: ${job.jobType}<br>
+                                Payment: ${job.payment}<br>
+                                Time: ${job.estimatedTime}
+                            </div>
+                        `).join('')}
+                    </div>
+                `).join('');
+                
+                output.innerHTML += `<h2>Final Result:</h2>${jobsHtml}`;
+                
+            } catch (err) {
+                console.error('Error:', err);
+                output.innerHTML += `<p>Error: ${err.message}</p>`;
+            }
+        };
+    </script>
+</body>
+</html>

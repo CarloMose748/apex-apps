@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Apex Collector</title>
+    <link rel="stylesheet" href="styles/global.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300d174'><path d='M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z'/></svg>">
+    
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Services -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/auth-service.js"></script>
+    <script src="js/admin-service.js"></script>
+    
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            min-height: 100vh;
+        }
+
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 28px;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+            overflow: hidden;
+        }
+
+        .admin-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .admin-header h1 {
+            position: relative;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .admin-header p {
+            position: relative;
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .admin-nav {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border-color);
+        }
+
+        .nav-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #00b562 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0, 209, 116, 0.2);
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: linear-gradient(135deg, #00b562 0%, #009952 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 209, 116, 0.3);
+        }
+
+        .nav-btn.secondary {
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+            box-shadow: 0 2px 8px rgba(100, 116, 139, 0.2);
+        }
+
+        .nav-btn.secondary:hover {
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            box-shadow: 0 4px 16px rgba(100, 116, 139, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            text-align: center;
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.25s ease;
+            border: 1px solid var(--border-color);
+            border-left-width: 4px;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #00b562 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--primary-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .user-table th,
+        .user-table td {
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .user-table th {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .user-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .user-table td {
+            font-size: 14px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e; }
+        .status-approved { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; }
+        .status-rejected { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #991b1b; }
+        .status-under_review { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 8px 14px;
+            font-size: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-approve {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-approve:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-1px);
+        }
+
+        .btn-reject {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-reject:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            transform: translateY(-1px);
+        }
+
+        .btn-view {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25);
+        }
+
+        .btn-view:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-1px);
+        }
+
+        .search-filters {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 10px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            min-width: 160px;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 209, 116, 0.1);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 48px;
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-secondary);
+        }
+
+        .success-message, .error-message {
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 28px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: var(--background-gray);
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 209, 116, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 16px;
+            }
+
+            .admin-header {
+                padding: 24px 20px;
+            }
+
+            .admin-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .admin-nav {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            .nav-btn {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .search-filters {
+                flex-direction: column;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+
+            .filter-group select,
+            .filter-group input {
+                width: 100%;
+            }
+            
+            .user-table {
+                font-size: 13px;
+            }
+
+            .user-table th,
+            .user-table td {
+                padding: 10px 8px;
+            }
+            
+            .action-buttons {
+                justify-content: flex-start;
+            }
+
+            .section-card {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Admin Header -->
+        <div class="admin-header">
+            <h1><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg> Admin Dashboard</h1>
+            <p id="adminInfo">Loading admin info...</p>
+            <div style="position: absolute; top: 20px; right: 20px;">
+                <button onclick="handleLogout()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="admin-nav">
+            <button class="nav-btn active" onclick="showSection('dashboard')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 4px;"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Dashboard</button>
+            <button class="nav-btn" onclick="showSection('pending')"><span class="icon icon-clock" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px;"></span> Pending</button>
+            <button class="nav-btn" onclick="showSection('search')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 4px;"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg> Search</button>
+            <button class="nav-btn secondary" onclick="window.location.href='main.html'"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 4px;"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> Main App</button>
+            <button class="nav-btn secondary" onclick="window.location.href='test.html'"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 4px;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM10 17l-3.5-3.5 1.41-1.41L10 14.17l4.59-4.59 1.41 1.41L10 17z"/></svg> Test Suite</button>
+        </div>
+
+        <!-- Messages -->
+        <div id="successMessage" class="success-message" style="display: none;"></div>
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" class="section">
+            <div class="section-card">
+                <h3 class="section-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg> Verification Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalPending">-</div>
+                        <div class="stat-label">Total Pending</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalApproved">-</div>
+                        <div class="stat-label">Total Approved</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalRejected">-</div>
+                        <div class="stat-label">Total Rejected</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalUsers">-</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h3 class="section-title"><span class="icon icon-car" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 6px;"></span> Driver Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="driversPending">-</div>
+                        <div class="stat-label">Drivers Pending</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="driversApproved">-</div>
+                        <div class="stat-label">Drivers Approved</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="driversRejected">-</div>
+                        <div class="stat-label">Drivers Rejected</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="driversTotal">-</div>
+                        <div class="stat-label">Total Drivers</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h3 class="section-title"><span class="icon icon-package" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 6px;"></span> Customer Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="customersPending">-</div>
+                        <div class="stat-label">Customers Pending</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="customersApproved">-</div>
+                        <div class="stat-label">Customers Approved</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="customersRejected">-</div>
+                        <div class="stat-label">Customers Rejected</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="customersTotal">-</div>
+                        <div class="stat-label">Total Customers</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Verifications Section -->
+        <div id="pendingSection" class="section" style="display: none;">
+            <div class="section-card">
+                <h3 class="section-title">
+                    <span class="icon icon-clock" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 6px;"></span> Pending Verifications
+                    <button class="nav-btn" onclick="refreshPendingList()"><span class="icon icon-refresh" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></span> Refresh</button>
+                </h3>
+                
+                <div id="pendingDrivers">
+                    <h4><span class="icon icon-car" style="width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 6px;"></span> Pending Drivers (<span id="pendingDriverCount">0</span>)</h4>
+                    <div id="pendingDriversList" class="loading">Loading pending drivers...</div>
+                </div>
+
+                <div id="pendingCustomers" style="margin-top: 30px;">
+                    <h4><span class="icon icon-package" style="width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 6px;"></span> Pending Customers (<span id="pendingCustomerCount">0</span>)</h4>
+                    <div id="pendingCustomersList" class="loading">Loading pending customers...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div id="searchSection" class="section" style="display: none;">
+            <div class="section-card">
+                <h3 class="section-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg> Search Users</h3>
+                
+                <div class="search-filters">
+                    <div class="filter-group">
+                        <label>User Type</label>
+                        <select id="searchUserType">
+                            <option value="driver">Drivers</option>
+                            <option value="customer">Customers</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Status</label>
+                        <select id="searchStatus">
+                            <option value="">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="under_review">Under Review</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Search</label>
+                        <input type="text" id="searchQuery" placeholder="Name, email, phone...">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>&nbsp;</label>
+                        <button class="nav-btn" onclick="performSearch()">Search</button>
+                    </div>
+                </div>
+                
+                <div id="searchResults">
+                    <div class="no-data">Use the filters above to search for users</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Modal -->
+    <div id="verificationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Verify User</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <div id="modalBody">
+                <div class="form-group">
+                    <label>Action</label>
+                    <select id="verificationAction">
+                        <option value="approved">Approve User</option>
+                        <option value="rejected">Reject User</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Notes (Optional)</label>
+                    <textarea id="verificationNotes" placeholder="Add any notes about this verification decision..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 20px;">
+                    <button class="nav-btn secondary" onclick="closeModal()">Cancel</button>
+                    <button class="nav-btn" onclick="submitVerification()">Submit Verification</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentVerification = null;
+        let currentSection = 'dashboard';
+
+        // Initialize admin dashboard
+        document.addEventListener('supabaseReady', async function(event) {
+            console.log('Admin Dashboard: Supabase ready');
+            
+            // Store supabase client for later use
+            window.currentSupabaseClient = event.detail.client;
+            
+            // Check basic authentication first
+            const isAuthed = await checkAuth();
+            if (!isAuthed) return;
+
+            console.log('Admin Dashboard: User is authenticated');
+            
+            // Get current user directly from Supabase client as fallback
+            let currentUser = null;
+            try {
+                // Try AuthService first
+                if (AuthService && typeof AuthService.getCurrentUser === 'function') {
+                    currentUser = AuthService.getCurrentUser();
+                    console.log('Admin Dashboard: Got user from AuthService.getCurrentUser():', currentUser?.email);
+                } else if (AuthService && AuthService.currentUser) {
+                    currentUser = AuthService.currentUser;
+                    console.log('Admin Dashboard: Got user from AuthService.currentUser:', currentUser?.email);
+                } else {
+                    // Direct Supabase fallback using the client from the event
+                    console.log('Admin Dashboard: Using direct Supabase fallback...');
+                    const { data: { user }, error } = await event.detail.client.auth.getUser();
+                    if (user && !error) {
+                        currentUser = user;
+                        console.log('Admin Dashboard: Got user from Supabase directly:', currentUser?.email);
+                    } else {
+                        console.error('Admin Dashboard: Failed to get user from Supabase:', error);
+                    }
+                }
+            } catch (error) {
+                console.error('Admin Dashboard: Error getting current user:', error);
+            }            if (!currentUser?.email) {
+                console.error('Admin Dashboard: No valid user found after all attempts');
+                showError('Unable to determine current user. Please try refreshing the page.');
+                return;
+            }
+            
+            console.log('Admin Dashboard: Final current user email:', currentUser.email);
+
+            // Check admin privileges with the user object (not just email)
+            console.log('Admin Dashboard: Checking admin privileges...');
+            const isAdminUser = await AdminService.checkAdminStatus(currentUser);
+            console.log('Admin Dashboard: Admin check result:', isAdminUser);
+            
+            if (!isAdminUser) {
+                console.error('Admin Dashboard: Access denied for user:', currentUser?.email);
+                showError('Access denied. Admin privileges required.');
+                
+                // Add debug info and quick fix button
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.innerHTML = `
+                    <strong>Access denied. Admin privileges required.</strong><br>
+                    <small>Debug: Logged in as ${currentUser?.email}</small><br>
+                    <button onclick="makeCurrentUserAdmin()" style="margin-top: 10px; padding: 8px 15px; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg> Grant Admin Access to Current User
+                    </button>
+                `;
+                
+                return;
+            }
+
+            console.log('Admin Dashboard: Admin access granted');
+            // Initialize dashboard
+            await initializeDashboard();
+        });
+
+        async function initializeDashboard() {
+            try {
+                // Display admin info
+                const admin = AdminService.getCurrentAdmin();
+                document.getElementById('adminInfo').textContent = 
+                    `Welcome, ${admin.full_name} (${admin.role})`;
+
+                // Load dashboard data
+                await loadDashboardStats();
+                await loadPendingVerifications();
+                
+                // Update last login
+                AdminService.updateLastLogin();
+                
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                showError('Failed to initialize admin dashboard');
+            }
+        }
+
+        async function loadDashboardStats() {
+            try {
+                const stats = await AdminService.getVerificationStats();
+                
+                // Total stats
+                document.getElementById('totalPending').textContent = stats.total.pending;
+                document.getElementById('totalApproved').textContent = stats.total.approved;
+                document.getElementById('totalRejected').textContent = stats.total.rejected;
+                document.getElementById('totalUsers').textContent = stats.total.total;
+                
+                // Driver stats
+                document.getElementById('driversPending').textContent = stats.drivers.pending;
+                document.getElementById('driversApproved').textContent = stats.drivers.approved;
+                document.getElementById('driversRejected').textContent = stats.drivers.rejected;
+                document.getElementById('driversTotal').textContent = stats.drivers.total;
+                
+                // Customer stats
+                document.getElementById('customersPending').textContent = stats.customers.pending;
+                document.getElementById('customersApproved').textContent = stats.customers.approved;
+                document.getElementById('customersRejected').textContent = stats.customers.rejected;
+                document.getElementById('customersTotal').textContent = stats.customers.total;
+                
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+                showError('Failed to load statistics');
+            }
+        }
+
+        async function loadPendingVerifications() {
+            try {
+                const pending = await AdminService.getPendingVerifications();
+                
+                // Update counts
+                document.getElementById('pendingDriverCount').textContent = pending.drivers.length;
+                document.getElementById('pendingCustomerCount').textContent = pending.customers.length;
+                
+                // Display pending drivers
+                displayPendingUsers(pending.drivers, 'driver', 'pendingDriversList');
+                
+                // Display pending customers
+                displayPendingUsers(pending.customers, 'customer', 'pendingCustomersList');
+                
+            } catch (error) {
+                console.error('Error loading pending verifications:', error);
+                showError('Failed to load pending verifications');
+                
+                // Remove loading classes and show error state
+                document.getElementById('pendingDriversList').classList.remove('loading');
+                document.getElementById('pendingCustomersList').classList.remove('loading');
+                document.getElementById('pendingDriversList').innerHTML = '<div class="no-data">Error loading drivers</div>';
+                document.getElementById('pendingCustomersList').innerHTML = '<div class="no-data">Error loading customers</div>';
+            }
+        }
+
+        function displayPendingUsers(users, userType, containerId) {
+            const container = document.getElementById(containerId);
+            
+            // Remove loading class
+            container.classList.remove('loading');
+            
+            if (!users || users.length === 0) {
+                container.innerHTML = '<div class="no-data">No pending ' + userType + 's found</div>';
+                return;
+            }
+
+            let html = '<table class="user-table"><thead><tr>';
+            html += '<th>Name</th><th>Email</th><th>Phone</th>';
+            
+            if (userType === 'driver') {
+                html += '<th>Vehicle</th>';
+            }
+            
+            html += '<th>Status</th><th>Registered</th><th>Actions</th></tr></thead><tbody>';
+
+            users.forEach(user => {
+                const formattedUser = AdminService.formatUserInfo(user, userType);
+                html += `<tr>
+                    <td>${formattedUser.name}</td>
+                    <td>${formattedUser.email}</td>
+                    <td>${formattedUser.phone}</td>`;
+                
+                if (userType === 'driver') {
+                    html += `<td>${formattedUser.vehicleType}<br><small>${formattedUser.vehicleInfo}</small></td>`;
+                }
+                
+                html += `<td><span class="status-badge status-${formattedUser.verificationStatus}">${formattedUser.verificationStatus}</span></td>
+                    <td>${new Date(formattedUser.createdAt).toLocaleDateString()}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-small btn-approve" onclick="openVerificationModal('${user.id}', '${userType}', 'approved')">
+                                <span class="icon icon-check" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px; filter: brightness(0) invert(1);"></span> Approve
+                            </button>
+                            <button class="btn-small btn-reject" onclick="openVerificationModal('${user.id}', '${userType}', 'rejected')">
+                                <span class="icon icon-close" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px; filter: brightness(0) invert(1);"></span> Reject
+                            </button>
+                            <button class="btn-small btn-view" onclick="viewUserDetails('${user.id}', '${userType}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 4px;"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg> View
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function showSection(section) {
+            // Update navigation
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
+            
+            // Show selected section
+            document.getElementById(section + 'Section').style.display = 'block';
+            currentSection = section;
+            
+            // Load section-specific data
+            if (section === 'dashboard') {
+                loadDashboardStats();
+            } else if (section === 'pending') {
+                loadPendingVerifications();
+            }
+        }
+
+        async function refreshPendingList() {
+            clearMessages();
+            
+            // Show loading state
+            document.getElementById('pendingDriversList').className = 'loading';
+            document.getElementById('pendingDriversList').innerHTML = 'Refreshing pending drivers...';
+            document.getElementById('pendingCustomersList').className = 'loading';
+            document.getElementById('pendingCustomersList').innerHTML = 'Refreshing pending customers...';
+            
+            try {
+                await loadPendingVerifications();
+                await loadDashboardStats(); // Also refresh stats
+                showSuccess('Pending verifications refreshed');
+            } catch (error) {
+                showError('Failed to refresh data');
+            }
+        }
+
+        async function performSearch() {
+            const userType = document.getElementById('searchUserType').value;
+            const status = document.getElementById('searchStatus').value;
+            const query = document.getElementById('searchQuery').value.trim();
+            
+            try {
+                clearMessages();
+                document.getElementById('searchResults').innerHTML = '<div class="loading">Searching...</div>';
+                
+                const filters = {};
+                if (status) {
+                    filters.verification_status = status;
+                }
+                
+                const results = await AdminService.searchUsers(userType, filters);
+                
+                // Filter by search query if provided
+                let filteredResults = results;
+                if (query) {
+                    filteredResults = results.filter(user => 
+                        user.full_name.toLowerCase().includes(query.toLowerCase()) ||
+                        user.email.toLowerCase().includes(query.toLowerCase()) ||
+                        user.phone_number.includes(query)
+                    );
+                }
+                
+                displaySearchResults(filteredResults, userType);
+                
+            } catch (error) {
+                console.error('Error performing search:', error);
+                showError('Search failed: ' + error.message);
+            }
+        }
+
+        function displaySearchResults(users, userType) {
+            const container = document.getElementById('searchResults');
+            
+            if (!users || users.length === 0) {
+                container.innerHTML = '<div class="no-data">No users found matching your criteria</div>';
+                return;
+            }
+
+            displayPendingUsers(users, userType, 'searchResults');
+        }
+
+        function openVerificationModal(userId, userType, defaultAction) {
+            currentVerification = { userId, userType };
+            
+            document.getElementById('modalTitle').textContent = `Verify ${userType.charAt(0).toUpperCase() + userType.slice(1)}`;
+            document.getElementById('verificationAction').value = defaultAction;
+            document.getElementById('verificationNotes').value = '';
+            
+            document.getElementById('verificationModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('verificationModal').style.display = 'none';
+            currentVerification = null;
+        }
+
+        async function submitVerification() {
+            if (!currentVerification) return;
+            
+            const action = document.getElementById('verificationAction').value;
+            const notes = document.getElementById('verificationNotes').value.trim();
+            
+            try {
+                clearMessages();
+                
+                const result = await AdminService.verifyUser(
+                    currentVerification.userId,
+                    currentVerification.userType,
+                    action,
+                    notes
+                );
+                
+                showSuccess(result.message);
+                closeModal();
+                
+                // Refresh current section
+                if (currentSection === 'pending') {
+                    await loadPendingVerifications();
+                } else if (currentSection === 'search') {
+                    await performSearch();
+                }
+                
+                // Always refresh dashboard stats
+                await loadDashboardStats();
+                
+            } catch (error) {
+                console.error('Error submitting verification:', error);
+                showError('Verification failed: ' + error.message);
+            }
+        }
+
+        async function viewUserDetails(userId, userType) {
+            try {
+                const details = await AdminService.getUserDetails(userId, userType);
+                const user = AdminService.formatUserInfo(details.user, userType);
+                
+                let info = `Name: ${user.name}\n`;
+                info += `Email: ${user.email}\n`;
+                info += `Phone: ${user.phone}\n`;
+                info += `Status: ${user.verificationStatus}\n`;
+                info += `Registered: ${new Date(user.createdAt).toLocaleDateString()}\n`;
+                
+                if (userType === 'driver') {
+                    info += `\nVehicle: ${user.vehicleType}\n`;
+                    if (user.vehicleInfo) info += `Details: ${user.vehicleInfo}\n`;
+                    if (user.licensePlate) info += `Plate: ${user.licensePlate}\n`;
+                }
+                
+                if (user.verificationNotes) {
+                    info += `\nNotes: ${user.verificationNotes}`;
+                }
+                
+                alert(info);
+                
+            } catch (error) {
+                console.error('Error viewing user details:', error);
+                showError('Failed to load user details');
+            }
+        }
+
+        async function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    await AuthService.signOut();
+                    window.location.href = 'auth.html';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    window.location.href = 'auth.html';
+                }
+            }
+        }
+
+        // Debug function to add current user as admin (call from console)
+        window.makeCurrentUserAdmin = async function() {
+            try {
+                // Get current user with comprehensive fallback approach
+                let currentUser = null;
+                try {
+                    // Try AuthService first
+                    if (AuthService && typeof AuthService.getCurrentUser === 'function') {
+                        currentUser = AuthService.getCurrentUser();
+                    } else if (AuthService && AuthService.currentUser) {
+                        currentUser = AuthService.currentUser;
+                    } else {
+                        // Direct Supabase fallback using stored client
+                        if (window.currentSupabaseClient) {
+                            const { data: { user }, error } = await window.currentSupabaseClient.auth.getUser();
+                            if (user && !error) {
+                                currentUser = user;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error getting current user:', error);
+                }
+                
+                if (!currentUser?.email) {
+                    console.error('No user logged in or email found');
+                    return;
+                }
+
+                console.log('Adding current user as admin:', currentUser.email);
+                
+                const adminRecord = {
+                    email: currentUser.email,
+                    full_name: currentUser.user_metadata?.full_name || currentUser.email,
+                    role: 'super_admin',
+                    permissions: ['verify_users', 'manage_jobs', 'view_analytics', 'manage_admins'],
+                    status: 'active'
+                };
+
+                const { data, error } = await SupabaseUtils.insertRecord('admins', adminRecord);
+                
+                if (error) {
+                    console.error('Error adding admin:', error);
+                    alert('Error adding admin: ' + error.message);
+                } else {
+                    console.log('Admin added successfully:', data);
+                    alert('Admin privileges added! Please refresh the page.');
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Error in makeCurrentUserAdmin:', error);
+                alert('Error: ' + error.message);
+            }
+        };
+
+        // Utility functions
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function clearMessages() {
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('verificationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

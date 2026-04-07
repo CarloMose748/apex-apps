@@ -1,0 +1,3809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Oil Collection - Apex Driver</title>
+  <link rel="stylesheet" href="styles/global.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300d174'><path d='M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z'/></svg>">
+  
+  <!-- Hamburger Menu -->
+  <script src="js/hamburger-menu.js"></script>
+  
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- HTML2Canvas for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <!-- jsPDF for PDF creation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <!-- HTML5-QRCode for barcode/QR scanning -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  
+  <!-- Supabase Configuration -->
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth-service.js"></script>
+  <script src="js/apex-driver-service.js"></script>
+  <script src="js/oil-collection-service.js"></script>
+  
+  <style>
+    body {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .oil-collection-container {
+      min-height: 100vh;
+      padding-bottom: 80px;
+      /* Mobile optimization */
+      -webkit-overflow-scrolling: touch;
+      overflow-x: hidden;
+    }
+
+    .collection-header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      padding: 20px 0;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      /* Mobile safe area */
+      padding-top: max(20px, env(safe-area-inset-top));
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .back-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.9);
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .back-button:hover {
+      color: white;
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .header-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.01em;
+    }
+
+    .collection-content {
+      padding: 24px 0;
+    }
+
+    .job-summary {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      border: 1px solid rgba(226, 232, 240, 0.6);
+    }
+
+    .job-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .job-address {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-radius: 12px;
+    }
+
+    .job-payment {
+      font-weight: 700;
+      font-size: 1.25rem;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .collection-form {
+      background: white;
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      border: 1px solid rgba(226, 232, 240, 0.6);
+    }
+
+    .form-section {
+      margin-bottom: 32px;
+    }
+
+    .form-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    /* QR Scanner Styles */
+    .scanner-section {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 2px solid var(--primary-color);
+    }
+
+    .scanner-button {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      min-height: 56px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    }
+
+    .scanner-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+    }
+
+    .scanner-button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    #qr-reader {
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-top: 16px;
+      display: none;
+      border: 3px solid var(--primary-color);
+      background: #000;
+      min-height: 300px;
+    }
+
+    #qr-reader.active {
+      display: block;
+    }
+
+    #qr-reader video {
+      width: 100% !important;
+      height: auto !important;
+      border-radius: 16px;
+    }
+
+    #qr-reader__scan_region {
+      position: relative !important;
+    }
+
+    #qr-reader__dashboard {
+      background: rgba(0, 0, 0, 0.8) !important;
+      padding: 10px !important;
+    }
+
+    #qr-reader__dashboard_section {
+      color: white !important;
+    }
+
+    #qr-reader__camera_selection {
+      background: var(--background-light) !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: var(--radius-sm) !important;
+      padding: 8px !important;
+      color: var(--text-primary) !important;
+    }
+
+    .scanned-bins-list {
+      margin-top: 16px;
+    }
+
+    .scanned-bin-item {
+      background: white;
+      padding: 16px 18px;
+      border-radius: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 4px solid var(--primary-color);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: all 0.2s ease;
+    }
+
+    .scanned-bin-item:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .bin-info {
+      flex: 1;
+    }
+
+    .bin-serial {
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .bin-details {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .bin-remove {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+    }
+
+    .bin-remove:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+    }
+
+    .scanner-info {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-top: 14px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .scanner-status {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: white;
+      padding: 14px 16px;
+      border-radius: 14px;
+      margin-top: 14px;
+      text-align: center;
+      font-weight: 700;
+      display: none;
+    }
+
+    .scanner-status.active {
+      display: block;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .quantity-input-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 2px solid #e2e8f0;
+      /* Mobile optimization */
+      min-height: 52px;
+      touch-action: manipulation;
+      transition: border-color 0.2s ease;
+    }
+
+    .quantity-controls:focus-within {
+      border-color: var(--primary-color);
+    }
+
+    .quantity-btn {
+      background: none;
+      border: none;
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      /* Better touch targets */
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(37, 99, 235, 0.2);
+      border-radius: 12px;
+    }
+
+    .quantity-btn:hover {
+      background: rgba(37, 99, 235, 0.1);
+    }
+
+    .quantity-btn:disabled {
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .quantity-input {
+      width: 100px;
+      height: 52px;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      /* Mobile input optimization */
+      -webkit-appearance: none;
+      -moz-appearance: textfield;
+      appearance: none;
+    }
+
+    .quantity-input:focus {
+      outline: none;
+    }
+
+    /* Hide number input spinners */
+    .quantity-input::-webkit-outer-spin-button,
+    .quantity-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+    }
+
+    .unit-selector {
+      display: flex;
+      gap: 10px;
+    }
+
+    .unit-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 22px;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      color: white;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      min-height: 48px;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+
+    .unit-label {
+      font-weight: 700;
+    }    .unit-option {
+      padding: 14px 22px;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      background: white;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
+      font-weight: 600;
+      /* Mobile touch optimization */
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(37, 99, 235, 0.2);
+    }
+
+    .unit-option:hover {
+      border-color: var(--primary-color);
+    }
+
+    .unit-option.active {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      border-color: var(--primary-color);
+      color: white;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+
+    .notes-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 18px;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      background: white;
+      font-family: inherit;
+      font-size: 1rem;
+      color: var(--text-primary);
+      resize: vertical;
+      /* Mobile optimization */
+      -webkit-appearance: none;
+      appearance: none;
+      touch-action: manipulation;
+      transition: all 0.2s ease;
+    }
+
+    .notes-textarea:hover {
+      border-color: #cbd5e1;
+    }
+
+    .notes-textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    }
+
+    .photo-upload-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .upload-area {
+      border: 2px dashed #cbd5e1;
+      border-radius: 20px;
+      padding: 48px 24px;
+      text-align: center;
+      background: #f8fafc;
+      transition: all 0.25s ease;
+      cursor: pointer;
+      /* Mobile touch optimization */
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(37, 99, 235, 0.1);
+    }
+
+    .upload-area:hover {
+      border-color: var(--primary-color);
+      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+    }
+
+    .upload-area.dragover {
+      border-color: var(--primary-color);
+      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      border-style: solid;
+    }
+
+    .upload-icon {
+      font-size: 2.5rem;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+
+    .upload-text {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .upload-text strong {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
+    .photo-preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .photo-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #f1f5f9;
+      border: 1px solid rgba(226, 232, 240, 0.6);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .photo-remove {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 28px;
+      height: 28px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    .photo-remove:hover {
+      background: rgba(239, 68, 68, 0.9);
+      transform: scale(1.1);
+    }
+
+    .submit-section {
+      margin-top: 36px;
+      padding-top: 28px;
+      border-top: 1px solid rgba(226, 232, 240, 0.6);
+    }
+
+    .submit-actions {
+      display: flex;
+      gap: 14px;
+      flex-direction: column;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      color: white;
+      border: none;
+      padding: 20px 28px;
+      border-radius: 16px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      /* Mobile optimization */
+      min-height: 60px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+      letter-spacing: -0.01em;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-submit:active {
+      transform: translateY(-1px);
+    }
+
+    .btn-submit:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-cancel {
+      background: white;
+      color: var(--text-secondary);
+      border: 2px solid #e2e8f0;
+      padding: 16px 28px;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      /* Mobile optimization */
+      min-height: 52px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-cancel:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .validation-message {
+      color: #ef4444;
+      font-size: 0.9rem;
+      margin-top: 10px;
+      display: none;
+      font-weight: 500;
+    }
+
+    .validation-message.show {
+      display: block;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-spinner {
+      width: 22px;
+      height: 22px;
+      border: 3px solid transparent;
+      border-top: 3px solid currentColor;
+      border-radius: 50%;
+      animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    /* Certificate Modal Styles */
+    .certificate-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .certificate-modal.show {
+      display: flex;
+    }
+
+    .certificate-container {
+      background: white;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-radius: 24px;
+      position: relative;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    }
+
+    .certificate {
+      padding: 48px;
+      text-align: center;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border: 3px solid var(--primary-color);
+      position: relative;
+      border-radius: 20px;
+    }
+
+    .certificate::before {
+      content: '';
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      border: 2px solid var(--primary-color);
+      border-radius: 14px;
+    }
+
+    .certificate-header {
+      margin-bottom: 36px;
+    }
+
+    .certificate-logo {
+      width: 90px;
+      height: 90px;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      color: white;
+      font-size: 2.2rem;
+      font-weight: bold;
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
+    }
+
+    .certificate-title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    .certificate-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+
+    .certificate-body {
+      margin: 36px 0;
+      line-height: 1.9;
+    }
+
+    .certificate-statement {
+      font-size: 1.05rem;
+      color: var(--text-primary);
+      margin-bottom: 36px;
+    }
+
+    .certificate-details {
+      background: white;
+      border-radius: 18px;
+      padding: 28px;
+      margin: 28px 0;
+      border: 1px solid rgba(226, 232, 240, 0.6);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px dotted #e2e8f0;
+    }
+
+    .detail-row:last-child {
+      margin-bottom: 0;
+      border-bottom: none;
+    }
+
+    .detail-label {
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .detail-value {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .certificate-signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .signature-block {
+      text-align: center;
+      flex: 1;
+    }
+
+    .signature-line {
+      border-bottom: 2px solid var(--text-primary);
+      margin-bottom: 10px;
+      height: 55px;
+      position: relative;
+    }
+
+    .signature-text {
+      font-style: italic;
+      color: var(--primary-color);
+      font-weight: 700;
+      margin-top: 12px;
+    }
+
+    .signature-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    .certificate-footer {
+      margin-top: 36px;
+      padding-top: 24px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .certificate-date {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .certificate-id {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-family: monospace;
+    }
+
+    .certificate-actions {
+      padding: 24px;
+      background: #f8fafc;
+      border-top: 1px solid rgba(226, 232, 240, 0.6);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .cert-action-btn {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-download {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .btn-download:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-share {
+      background: #0066cc;
+      color: white;
+      border: 2px solid #0052a3;
+      transition: all 0.3s ease;
+    }
+
+    .btn-share:hover {
+      background: #0052a3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+    }
+
+    .btn-share:disabled {
+      background: #6B7280;
+      border-color: #4B5563;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-close-cert {
+      background: var(--background-light);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-close-cert:hover {
+      background: var(--border-color);
+    }
+
+    /* Mobile certificate optimizations */
+    @media (max-width: 768px) {
+      .certificate-modal {
+        padding: 10px;
+      }
+
+      .certificate {
+        padding: 20px;
+      }
+
+      .certificate-title {
+        font-size: 1.5rem;
+        letter-spacing: 1px;
+      }
+
+      .certificate-subtitle {
+        font-size: 1rem;
+      }
+
+      .certificate-logo {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+      }
+
+      .certificate-details {
+        padding: 15px;
+      }
+
+      .detail-row {
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+      }
+
+      .certificate-signatures {
+        flex-direction: column;
+        gap: 30px;
+      }
+
+      .certificate-actions {
+        flex-direction: column;
+      }
+
+      .cert-action-btn {
+        min-width: 100%;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .submit-actions {
+        flex-direction: row;
+        justify-content: space-between;
+      }
+
+      .btn-submit {
+        flex: 1;
+      }
+
+      .btn-cancel {
+        min-width: 120px;
+      }
+    }
+
+    /* Mobile-specific optimizations */
+    @media (max-width: 768px) {
+      .container {
+        padding: 0 16px;
+      }
+
+      .collection-header {
+        padding: 16px 0;
+      }
+
+      .header-title {
+        font-size: 1.1rem;
+      }
+
+      .collection-content {
+        padding: 16px 0;
+      }
+
+      .job-summary,
+      .collection-form {
+        margin-bottom: 20px;
+        padding: 20px 16px;
+        border-radius: var(--radius-sm);
+      }
+
+      .form-section {
+        margin-bottom: 28px;
+      }
+
+      .section-title {
+        font-size: 1rem;
+        margin-bottom: 14px;
+      }
+
+      .quantity-input-group {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+      }
+
+      .quantity-controls {
+        justify-content: center;
+        max-width: 200px;
+        margin: 0 auto;
+      }
+
+      .unit-selector {
+        justify-content: center;
+      }
+
+      .unit-option {
+        flex: 1;
+        min-width: 80px;
+      }
+
+      .upload-area {
+        padding: 32px 16px;
+        min-height: 100px;
+      }
+
+      .upload-text {
+        font-size: 0.9rem;
+      }
+
+      .photo-preview {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 8px;
+      }
+
+      .submit-section {
+        margin-top: 24px;
+        padding-top: 20px;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+      }
+
+      .submit-actions {
+        gap: 16px;
+      }
+
+      .btn-submit {
+        font-size: 1rem;
+        padding: 16px 20px;
+      }
+    }
+
+    /* Small mobile devices */
+    @media (max-width: 480px) {
+      .container {
+        padding: 0 12px;
+      }
+
+      .collection-header {
+        padding: 12px 0;
+      }
+
+      .header-content {
+        gap: 12px;
+      }
+
+      .back-button {
+        font-size: 0.9rem;
+      }
+
+      .header-title {
+        font-size: 1rem;
+      }
+
+      .job-summary,
+      .collection-form {
+        padding: 16px 12px;
+        margin-bottom: 16px;
+      }
+
+      .job-title {
+        font-size: 1rem;
+      }
+
+      .job-payment {
+        font-size: 1rem;
+      }
+
+      .form-section {
+        margin-bottom: 24px;
+      }
+
+      .section-title {
+        font-size: 0.95rem;
+        margin-bottom: 12px;
+      }
+
+      .quantity-controls {
+        max-width: 180px;
+      }
+
+      .quantity-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.3rem;
+      }
+
+      .quantity-input {
+        width: 90px;
+        height: 44px;
+        font-size: 1rem;
+      }
+
+      .notes-textarea {
+        min-height: 80px;
+        padding: 12px;
+        font-size: 0.95rem;
+      }
+
+      .upload-area {
+        padding: 24px 12px;
+        min-height: 80px;
+      }
+
+      .upload-icon {
+        font-size: 1.5rem;
+      }
+
+      .upload-text {
+        font-size: 0.85rem;
+      }
+
+      .photo-preview {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .btn-submit {
+        font-size: 0.95rem;
+        padding: 14px 16px;
+        min-height: 50px;
+      }
+
+      .btn-cancel {
+        font-size: 0.9rem;
+        padding: 12px 20px;
+        min-height: 44px;
+      }
+    }
+
+    /* Landscape mobile optimization */
+    @media (max-width: 768px) and (orientation: landscape) {
+      .oil-collection-container {
+        padding-bottom: 40px;
+      }
+
+      .collection-header {
+        padding: 12px 0;
+      }
+
+      .collection-content {
+        padding: 12px 0;
+      }
+
+      .form-section {
+        margin-bottom: 20px;
+      }
+
+      .notes-textarea {
+        min-height: 60px;
+      }
+    }
+
+    /* Touch and accessibility improvements */
+    @media (hover: none) and (pointer: coarse) {
+      .quantity-btn:hover,
+      .unit-option:hover,
+      .btn-submit:hover,
+      .btn-cancel:hover,
+      .upload-area:hover {
+        transform: none;
+      }
+
+      .quantity-btn:active {
+        background: var(--border-color);
+        transform: scale(0.95);
+      }
+
+      .unit-option:active {
+        transform: scale(0.98);
+      }
+
+      .btn-submit:active {
+        transform: scale(0.98);
+      }
+
+      .btn-cancel:active {
+        background: var(--border-color);
+        transform: scale(0.98);
+      }
+
+      .upload-area:active {
+        transform: scale(0.99);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Hamburger Menu -->
+  <div id="hamburger-menu"></div>
+  
+  <div class="oil-collection-container">
+    <!-- Header -->
+    <header class="collection-header">
+      <div class="container">
+        <div class="header-content">
+          <a href="map.html" class="back-button">
+            <span class="icon icon-arrow-left icon-sm" aria-hidden="true"></span>
+            Back to Map
+          </a>
+          <h1 class="header-title">Oil Collection</h1>
+          <div></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="collection-content">
+      <div class="container">
+        <!-- Job Summary -->
+        <section class="job-summary" id="jobSummary">
+          <div class="job-title" id="jobTitle">
+            <span class="icon icon-car icon-md" aria-hidden="true"></span>
+            Loading job details...
+          </div>
+          <div class="job-address" id="jobAddress">
+            <span class="icon icon-location icon-sm" aria-hidden="true"></span>
+            Loading address...
+          </div>
+          <div class="job-payment" id="jobPayment">Loading payment...</div>
+        </section>
+
+        <!-- QR/Barcode Scanner Section -->
+        <section class="scanner-section">
+          <h2 class="section-title">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;">
+              <circle cx="12" cy="12" r="3.2"/>
+              <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+            </svg>
+            Scan Bin QR Code
+          </h2>
+          <button type="button" class="scanner-button" id="scannerButton" onclick="toggleScanner()">
+            <span id="scannerButtonIcon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="3.2"/>
+                <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+              </svg>
+            </span>
+            <span id="scannerButtonText">Add Bin to Collection</span>
+          </button>
+          <div id="qr-reader"></div>
+          <div class="scanner-status" id="scannerStatus">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 6px;">
+              <circle cx="12" cy="12" r="3.2"/>
+              <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+            </svg>
+            Camera Active - Point at QR Code
+          </div>
+          <div class="scanner-info">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 6px;">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+            Scan each bin's QR code. After scanning, you'll enter collection details for that bin.
+          </div>
+          <div class="scanned-bins-list" id="scannedBinsList"></div>
+          <div style="margin-top: 20px; text-align: center;" id="doneButtonContainer">
+            <button type="button" class="btn-submit" onclick="showCompletionSummary()" style="max-width: 300px; margin: 0 auto;">
+              <span class="icon icon-check icon-sm" aria-hidden="true"></span> Done - Complete Pickup
+            </button>
+          </div>
+        </section>
+
+        <!-- Collection Form -->
+        <form class="collection-form" id="collectionForm">
+          <!-- Oil Quantity Section -->
+          <div class="form-section">
+            <h2 class="section-title">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;">
+                <path d="M18 10V6c0-3.31-2.69-6-6-6S6 2.69 6 6v4H3v14h18V10h-3zm-5 7.5h-2v-3h2v3zm3-7.5H8V6c0-2.21 1.79-4 4-4s4 1.79 4 4v4z"/>
+              </svg>
+              Oil Quantity Collected
+            </h2>
+            
+            <div class="quantity-input-group">
+              <div class="quantity-controls">
+                <button type="button" class="quantity-btn" id="decreaseBtn" onclick="adjustQuantity(-1)">−</button>
+                <input type="number" class="quantity-input" id="quantityInput" value="0" min="0" step="0.1" onchange="validateQuantity()">
+                <button type="button" class="quantity-btn" id="increaseBtn" onclick="adjustQuantity(1)">+</button>
+              </div>
+              
+              <div class="unit-display">
+                <span class="unit-label">Litres</span>
+              </div>
+            </div>
+            
+            <div class="validation-message" id="quantityValidation">
+              Please enter a valid quantity greater than 0
+            </div>
+          </div>
+
+          <!-- Notes Section -->
+          <div class="form-section">
+            <h2 class="section-title">
+              <span class="icon icon-notes icon-md" aria-hidden="true">📝</span>
+              Collection Notes (Optional)
+            </h2>
+            
+            <textarea 
+              class="notes-textarea" 
+              id="collectionNotes" 
+              placeholder="Add any relevant notes about the oil collection, condition, client interaction, etc."
+              rows="4"
+            ></textarea>
+          </div>
+
+          <!-- Photo Upload Sections -->
+          <div class="form-section">
+            <h2 class="section-title">
+              <span class="icon icon-camera icon-md" aria-hidden="true">📷</span>
+              Proof of Oil Collection (Optional)
+            </h2>
+            
+            <div class="photo-upload-section">
+              <div class="upload-area" id="oilUploadArea" onclick="triggerFileInput('oilPhotoInput')">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text">
+                  <strong>Click to upload photos</strong><br>
+                  or drag and drop files here<br>
+                  <small>Oil containers, collection process, etc.</small>
+                </div>
+              </div>
+              
+              <input 
+                type="file" 
+                class="file-input" 
+                id="oilPhotoInput" 
+                multiple 
+                accept="image/*" 
+                onchange="handleFileSelect(event, 'oil')"
+              >
+              
+              <div class="photo-preview" id="oilPhotoPreview"></div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h2 class="section-title">
+              <span class="icon icon-receipt icon-md" aria-hidden="true">🧾</span>
+              Proof of Payment Slip (Optional)
+            </h2>
+            
+            <div class="photo-upload-section">
+              <div class="upload-area" id="paymentUploadArea" onclick="triggerFileInput('paymentPhotoInput')">
+                <div class="upload-icon">🧾</div>
+                <div class="upload-text">
+                  <strong>Click to upload photos</strong><br>
+                  or drag and drop files here<br>
+                  <small>Signed payment slip, receipt, etc.</small>
+                </div>
+              </div>
+              
+              <input 
+                type="file" 
+                class="file-input" 
+                id="paymentPhotoInput" 
+                multiple 
+                accept="image/*" 
+                onchange="handleFileSelect(event, 'payment')"
+              >
+              
+              <div class="photo-preview" id="paymentPhotoPreview"></div>
+            </div>
+          </div>
+
+          <!-- Submit Section -->
+          <div class="submit-section">
+            <div class="submit-actions">
+              <button type="submit" class="btn-submit" id="submitBtn">
+                <span class="icon icon-check icon-sm" aria-hidden="true"></span>
+                Save This Bin
+              </button>
+              <button type="button" class="btn-cancel" onclick="cancelBinEntry()">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Green Oil Index Section -->
+        <section class="green-oil-index-section" style="background: var(--background-light); border-radius: var(--radius-md); padding: 20px; margin-bottom: 24px; box-shadow: var(--shadow-light); border: 1px solid var(--border-color);">
+          <h2 class="section-title" style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.5rem;">🌿</span>
+            Green Oil Index
+          </h2>
+          <button onclick="openGreenOilIndex()" class="green-oil-button" style="display: inline-flex; align-items: center; gap: 8px; background: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: var(--radius-md); font-size: 1rem; font-weight: 600; transition: all 0.2s ease; box-shadow: var(--shadow-light); margin-bottom: 16px; cursor: pointer;">
+            <span style="font-size: 1.2rem;">🌿</span>
+            Visit Green Oil Index Website
+          </button>
+          <iframe 
+            src="https://greenoilindex.com/" 
+            style="width: 100%; height: 800px; border: none; border-radius: var(--radius-sm); background: white;"
+            title="Green Oil Index"
+            loading="lazy">
+          </iframe>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Certificate Modal -->
+  <div class="certificate-modal" id="certificateModal">
+    <div class="certificate-container">
+      <div class="certificate" id="certificateContent">
+        <div class="certificate-header">
+          <h1 class="certificate-title">Collection Confirmation</h1>
+          <p class="certificate-subtitle">Environmental Waste Management</p>
+        </div>
+
+        <div class="certificate-body">
+          <p class="certificate-statement">
+            This is to certify that <strong id="certDriverName">Driver Name</strong> has successfully completed the collection of used cooking oil from the specified location in accordance with environmental regulations and best practices.
+          </p>
+
+          <div class="certificate-details">
+            <div class="detail-row">
+              <span class="detail-label">Collection Date:</span>
+              <span class="detail-value" id="certDate">Date</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Customer:</span>
+              <span class="detail-value" id="certCustomer">Customer Name</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Location:</span>
+              <span class="detail-value" id="certLocation">Collection Address</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Volume Collected:</span>
+              <span class="detail-value" id="certVolume">0 Litres</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Collection Status:</span>
+              <span class="detail-value" style="color: var(--accent-blue);">✓ Completed</span>
+            </div>
+          </div>
+
+          <div class="certificate-signatures">
+            <div class="signature-block">
+              <div class="signature-line">
+                <div class="signature-text" id="certDriverSignature">Digital Signature</div>
+              </div>
+              <div class="signature-label">Authorized Collector</div>
+            </div>
+            <div class="signature-block">
+              <div class="signature-line">
+                <div class="signature-text">Apex Oil Services</div>
+              </div>
+              <div class="signature-label">Service Provider</div>
+            </div>
+          </div>
+
+          <div class="certificate-footer">
+            <div class="certificate-date" id="certIssuedDate">
+              Issued on: Current Date
+            </div>
+            <div class="certificate-id" id="certId">
+              Certificate ID: CERT-000000
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="certificate-actions">
+        <button class="cert-action-btn btn-download" onclick="downloadCertificate()">
+          📄 Download Certificate
+        </button>
+        <button class="cert-action-btn btn-share" onclick="shareCertificate()">
+          📤 Share via
+        </button>
+        <button class="cert-action-btn btn-history" onclick="viewCollectionHistory()">
+          📋 View Collection History
+        </button>
+        <button class="cert-action-btn btn-close-cert" onclick="goToDashboard()">
+          ➤ Continue to Dashboard
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentJob = null;
+    let oilPhotos = [];
+    let paymentPhotos = [];
+    
+    // QR Scanner variables
+    let html5QrCode = null;
+    let isScanning = false;
+    let scannedBins = []; // Array of completed bin collections
+    let jobBinSerialNumbers = [];
+    let currentBinData = null; // Currently scanned bin awaiting data entry
+    let isCollectingBinData = false; // Flag to track if we're in data entry mode
+    
+    // Certificate generation variables
+    let currentCertificateData = null;
+    let generatedCertificateDataUrl = null;
+    let generatedCertificateBlob = null;
+    let generatedPdfBlob = null;
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', async function() {
+      // Initialize services
+      oilCollectionService = new OilCollectionService();
+      
+      // Initialize page components
+      await loadJobDetails();
+      setupEventListeners();
+      optimizeForMobile();
+      
+      // Initialize hamburger menu
+      new HamburgerMenu();
+      
+      // Auto-open scanner on page load
+      setTimeout(() => {
+        if (!isScanning) {
+          toggleScanner();
+        }
+      }, 500);
+    });
+
+    // Load job details from localStorage
+    async function loadJobDetails() {
+      console.log('Loading job details...');
+      
+      const acceptedJob = localStorage.getItem('acceptedJob');
+      const activeJob = localStorage.getItem('activeJob');
+      
+      console.log('acceptedJob from localStorage:', acceptedJob);
+      console.log('activeJob from localStorage:', activeJob);
+
+      if (acceptedJob) {
+        try {
+          currentJob = JSON.parse(acceptedJob);
+          console.log('Loaded job from acceptedJob:', currentJob);
+        } catch (error) {
+          console.error('Error parsing acceptedJob:', error);
+        }
+      } else if (activeJob) {
+        try {
+          currentJob = JSON.parse(activeJob);
+          console.log('Loaded job from activeJob:', currentJob);
+        } catch (error) {
+          console.error('Error parsing activeJob:', error);
+        }
+      }
+
+      if (currentJob) {
+        console.log('Job loaded successfully:', currentJob);
+        displayJobDetails();
+      } else {
+        // Redirect back to jobs if no job found
+        console.warn('No active job found');
+        alert('No active job found. Redirecting to jobs page.');
+        window.location.href = 'jobs.html';
+      }
+    }    // Display job details in the summary section
+    function displayJobDetails() {
+      const jobTitle = document.getElementById('jobTitle');
+      const jobAddress = document.getElementById('jobAddress');
+      const jobPayment = document.getElementById('jobPayment');
+
+      const jobTypeEmoji = getJobTypeEmoji(currentJob.jobType || 'Oil Collection');
+      
+      jobTitle.innerHTML = `${jobTypeEmoji} ${currentJob.name || 'Oil Collection Job'}`;
+      jobAddress.innerHTML = `<span class="icon icon-location icon-sm" aria-hidden="true"></span> ${currentJob.address || 'Unknown location'}`;
+      jobPayment.textContent = currentJob.payment || 'Payment TBD';
+      
+      // Extract bin serial numbers from job notes if available
+      if (currentJob.notes) {
+        const binSerialMatch = currentJob.notes.match(/Bin Serial Numbers?: ([^\n]+)/i);
+        if (binSerialMatch) {
+          jobBinSerialNumbers = binSerialMatch[1].split(',').map(s => s.trim());
+          console.log('Job bin serial numbers:', jobBinSerialNumbers);
+        }
+      }
+    }
+
+    // ========== QR SCANNER FUNCTIONS ==========
+
+    async function toggleScanner() {
+      const reader = document.getElementById('qr-reader');
+      const button = document.getElementById('scannerButton');
+      const buttonText = document.getElementById('scannerButtonText');
+      const buttonIcon = document.getElementById('scannerButtonIcon');
+      const scannerStatus = document.getElementById('scannerStatus');
+      
+      if (isScanning) {
+        // Stop scanning
+        try {
+          if (html5QrCode) {
+            await html5QrCode.stop();
+          }
+          reader.classList.remove('active');
+          buttonText.textContent = scannedBins.length > 0 ? 'Add Another Bin to Collection' : 'Add Bin to Collection';
+          buttonIcon.textContent = '📷';
+          isScanning = false;
+          
+          // Hide status indicator
+          if (scannerStatus) {
+            scannerStatus.classList.remove('active');
+          }
+        } catch (err) {
+          console.error('Error stopping scanner:', err);
+        }
+      } else {
+        // Start scanning
+        try {
+          button.disabled = true;
+          buttonText.textContent = 'Initializing Camera...';
+          
+          if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("qr-reader");
+          }
+          
+          const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+          };
+          
+          await html5QrCode.start(
+            { facingMode: "environment" }, // Use back camera
+            config,
+            onScanSuccess,
+            onScanError
+          );
+          
+          reader.classList.add('active');
+          buttonText.textContent = 'Stop Scanning';
+          buttonIcon.textContent = '⏸️';
+          isScanning = true;
+          button.disabled = false;
+          
+          // Show status indicator
+          if (scannerStatus) {
+            scannerStatus.classList.add('active');
+          }
+          
+        } catch (err) {
+          console.error('Error starting scanner:', err);
+          alert('Camera access denied or not available. Please ensure camera permissions are granted.');
+          buttonText.textContent = scannedBins.length > 0 ? 'Add Another Bin to Collection' : 'Add Bin to Collection';
+          buttonIcon.textContent = '📷';
+          button.disabled = false;
+          
+          // Hide status indicator on error
+          if (scannerStatus) {
+            scannerStatus.classList.remove('active');
+          }
+        }
+      }
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+      console.log('QR Code scanned:', decodedText);
+      
+      // Stop scanner IMMEDIATELY to prevent multiple scans
+      if (html5QrCode && isScanning) {
+        html5QrCode.stop().then(() => {
+          const reader = document.getElementById('qr-reader');
+          const button = document.getElementById('scannerButton');
+          const buttonText = document.getElementById('scannerButtonText');
+          const buttonIcon = document.getElementById('scannerButtonIcon');
+          const scannerStatus = document.getElementById('scannerStatus');
+          
+          reader.classList.remove('active');
+          buttonText.textContent = scannedBins.length > 0 ? 'Add Another Bin to Collection' : 'Add Bin to Collection';
+          buttonIcon.textContent = '📷';
+          isScanning = false;
+          
+          if (scannerStatus) {
+            scannerStatus.classList.remove('active');
+          }
+        }).catch(err => {
+          console.error('Error stopping scanner:', err);
+        });
+      }
+      
+      // Prevent multiple scans while processing
+      if (isCollectingBinData) {
+        console.log('Already processing a bin, ignoring scan');
+        return;
+      }
+      
+      // Vibrate if supported
+      if ('vibrate' in navigator) {
+        navigator.vibrate(200);
+      }
+      
+      // Validate and start bin data collection
+      validateAndStartBinCollection(decodedText);
+    }
+
+    function onScanError(error) {
+      // Ignore scan errors (they happen constantly while scanning)
+      // console.warn('Scan error:', error);
+    }
+
+    async function validateAndStartBinCollection(qrData) {
+      try {
+        // Parse QR data (could be JSON or plain serial number)
+        let serialNumber;
+        let binInfo = {};
+        
+        try {
+          const parsed = JSON.parse(qrData);
+          serialNumber = parsed.serial || parsed.bin_serial_number || parsed.binSerialNumber;
+          binInfo = parsed;
+        } catch (e) {
+          // Plain text serial number
+          serialNumber = qrData.trim();
+        }
+        
+        if (!serialNumber) {
+          alert('Invalid QR code format!');
+          return;
+        }
+        
+        // Check if already collected
+        if (scannedBins.find(b => b.binSerialNumber === serialNumber)) {
+          alert(`Bin ${serialNumber} has already been collected!`);
+          // Restart scanner
+          if (!isScanning) toggleScanner();
+          return;
+        }
+        
+        // Query Supabase for bin details
+        if (!window.supabaseClient && !window.supabase) {
+          throw new Error('Supabase not available');
+        }
+        
+        const supabase = window.supabaseClient || window.supabase;
+        
+        const { data: bin, error } = await supabase
+          .from('bins')
+          .select('*, customers(*)')
+          .eq('bin_serial_number', serialNumber)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching bin:', error);
+          const useAnyway = confirm(`Bin ${serialNumber} not found in database. Continue anyway?`);
+          if (!useAnyway) {
+            if (!isScanning) toggleScanner();
+            return;
+          }
+          // Create minimal bin data
+          currentBinData = {
+            binSerialNumber: serialNumber,
+            bin_type: 'unknown',
+            bin_size_liters: 0,
+            customer_name: 'Unknown',
+            ...binInfo
+          };
+        } else {
+          // Check if bin belongs to this job (if we have bin serial numbers)
+          if (jobBinSerialNumbers.length > 0 && !jobBinSerialNumbers.includes(serialNumber)) {
+            const addAnyway = confirm(`Bin ${serialNumber} is not in the job request list. Add it anyway?`);
+            if (!addAnyway) {
+              if (!isScanning) toggleScanner();
+              return;
+            }
+          }
+          
+          currentBinData = {
+            ...bin,
+            binSerialNumber: bin.bin_serial_number,
+            customer_name: bin.customers?.full_name || 'Unknown'
+          };
+        }
+        
+        // Show bin data collection form
+        isCollectingBinData = true;
+        showBinDataForm();
+        
+      } catch (error) {
+        console.error('Error validating bin:', error);
+        alert(`Error: ${error.message}`);
+        if (!isScanning) toggleScanner();
+      }
+    }
+
+    function updateScannedBinsList() {
+      const listElement = document.getElementById('scannedBinsList');
+      
+      if (scannedBins.length === 0) {
+        listElement.innerHTML = '';
+        return;
+      }
+      
+      listElement.innerHTML = `
+        <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">
+          Scanned Bins (${scannedBins.length})
+        </h3>
+        ${scannedBins.map((bin, index) => `
+          <div class="scanned-bin-item">
+            <div class="bin-info">
+              <div class="bin-serial">🏷️ ${bin.bin_serial_number}</div>
+              <div class="bin-details">
+                ${bin.bin_size_liters || 0}L • ${bin.bin_type || 'Standard'} • ${bin.location_notes || 'No location'}
+              </div>
+            </div>
+            <button type="button" class="bin-remove" onclick="removeBin(${index})">
+              Remove
+            </button>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    function removeBin(index) {
+      const bin = scannedBins[index];
+      if (confirm(`Remove bin ${bin.binSerialNumber} collection data?`)) {
+        scannedBins.splice(index, 1);
+        updateScannedBinsList();
+      }
+    }
+    
+    // Show per-bin data collection form
+    function showBinDataForm() {
+      const form = document.getElementById('collectionForm');
+      
+      // Hide scanner section
+      document.querySelector('.scanner-section').style.display = 'none';
+      
+      // Reset per-bin photos (only oil photos needed per bin)
+      oilPhotos = [];
+      paymentPhotos = []; // Keep this for compatibility but won't be used per bin
+      updatePhotoPreview('oil');
+      
+      // Hide payment section for individual bins (it's the section containing "Proof of Payment Slip")
+      const formSections = document.querySelectorAll('.form-section');
+      formSections.forEach(section => {
+        const title = section.querySelector('.section-title');
+        if (title && title.textContent.includes('Proof of Payment Slip')) {
+          section.style.display = 'none';
+        }
+      });
+      
+      // Update form title
+      const formTitle = document.querySelector('.collection-form .form-section:first-child .section-title');
+      if (formTitle) {
+        formTitle.innerHTML = `
+          <span class="icon icon-oil icon-md" aria-hidden="true">🗑️</span>
+          Bin ${currentBinData.binSerialNumber} - ${currentBinData.customer_name}
+        `;
+      }
+      
+      // Clear quantity input
+      document.getElementById('quantityInput').value = '0.0';
+      document.getElementById('collectionNotes').value = '';
+      
+      // Update submit button text
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.innerHTML = '<span class="icon icon-check" aria-hidden="true">✓</span> Save This Bin';
+      
+      // Show form
+      form.style.display = 'block';
+      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    // Hide bin data form and show scanner
+    function hideBinDataForm() {
+      document.querySelector('.scanner-section').style.display = 'block';
+      const form = document.getElementById('collectionForm');
+      form.style.display = 'none';
+      
+      // Restore all form sections visibility (in case they were hidden for payment)
+      const formSections = document.querySelectorAll('.form-section');
+      formSections.forEach(section => {
+        const title = section.querySelector('.section-title');
+        if (title && title.textContent.includes('Proof of Payment Slip')) {
+          section.style.display = 'none'; // Keep payment hidden for individual bins
+        } else {
+          section.style.display = 'block'; // Show all other sections
+        }
+      });
+      
+      // Remove payment info if it exists
+      const paymentInfo = document.getElementById('paymentInfo');
+      if (paymentInfo) paymentInfo.remove();
+      
+      // Restore normal submit button behavior
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
+        submitBtn.onclick = null; // Remove custom handler
+        submitBtn.innerHTML = '<span class="icon icon-check" aria-hidden="true">✓</span> Save This Bin';
+      }
+      
+      isCollectingBinData = false;
+      currentBinData = null;
+    }
+    
+    // Save current bin data and decide next action
+    async function saveCurrentBinData() {
+      // Validate quantity
+      if (!validateQuantity()) {
+        alert('Please enter a valid quantity greater than 0.');
+        return;
+      }
+      
+      if (oilPhotos.length === 0) {
+        alert('Please upload at least one proof of oil collection photo.');
+        return;
+      }
+      
+      // Compile bin collection data (no payment photos per bin)
+      const binCollection = {
+        ...currentBinData,
+        quantity: parseFloat(document.getElementById('quantityInput').value),
+        unit: 'litres',
+        notes: document.getElementById('collectionNotes').value.trim(),
+        oilPhotos: oilPhotos.map(photo => ({
+          name: photo.name,
+          dataUrl: photo.dataUrl,
+          type: 'oil'
+        })),
+        // No payment photos per bin - will be collected at the end
+        timestamp: new Date().toISOString()
+      };
+      
+      // Add to collected bins
+      scannedBins.push(binCollection);
+      updateScannedBinsList();
+      
+      // Update scanner button text for subsequent scans
+      const scannerButton = document.getElementById('scannerButtonText');
+      if (scannerButton) {
+        scannerButton.textContent = 'Add Another Bin to Collection';
+      }
+      
+      // Reset form
+      hideBinDataForm();
+      
+      // Ask user what to do next
+      const choice = confirm(`✅ Bin ${currentBinData.binSerialNumber} saved!\n\n• Click OK to scan another bin\n• Click Cancel to complete pickup`);
+      
+      if (choice) {
+        // Scan another bin
+        if (!isScanning) {
+          setTimeout(() => toggleScanner(), 300);
+        }
+      } else {
+        // Done - show completion summary
+        showCompletionSummary();
+      }
+    }
+    
+    // Show payment collection step after all bins are scanned
+    function showPaymentCollection(totalLitres, expectedPayment) {
+      // Reset payment photos for collection
+      paymentPhotos = [];
+      updatePhotoPreview('payment');
+      
+      // Show the form again but only for payment
+      const form = document.getElementById('collectionForm');
+      document.querySelector('.scanner-section').style.display = 'none';
+      
+      // Hide all sections except payment
+      const formSections = document.querySelectorAll('.form-section');
+      formSections.forEach(section => {
+        const title = section.querySelector('.section-title');
+        if (title) {
+          if (title.textContent.includes('Proof of Payment Slip')) {
+            section.style.display = 'block'; // Show payment section
+          } else if (title.textContent.includes('Oil Collection Job') || title.textContent.includes('Bin ')) {
+            section.style.display = 'block'; // Keep the header visible but will update it
+          } else {
+            section.style.display = 'none'; // Hide quantity, notes, oil photos sections
+          }
+        }
+      });
+      
+      // Update form title for payment collection
+      const formTitle = document.querySelector('.collection-form .form-section:first-child .section-title');
+      if (formTitle) {
+        formTitle.innerHTML = `
+          <span class="icon icon-payment icon-md" aria-hidden="true">💰</span>
+          Payment Collection - R${expectedPayment.toFixed(2)}
+        `;
+      }
+      
+      // Add payment summary info
+      let existingInfo = document.getElementById('paymentInfo');
+      if (!existingInfo) {
+        existingInfo = document.createElement('div');
+        existingInfo.id = 'paymentInfo';
+        existingInfo.style.cssText = 'background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4CAF50;';
+        const firstSection = document.querySelector('.collection-form .form-section:first-child');
+        if (firstSection) {
+          firstSection.appendChild(existingInfo);
+        }
+      }
+      
+      existingInfo.innerHTML = `
+        <h4 style="margin: 0 0 10px 0; color: #2e7d32;">💰 Payment Summary</h4>
+        <div style="display: grid; gap: 8px; font-size: 14px;">
+          <div><strong>Total Volume:</strong> ${totalLitres.toFixed(1)} litres</div>
+          <div><strong>Rate:</strong> R${3}/litre</div>
+          <div style="font-size: 16px; font-weight: bold; color: #2e7d32;"><strong>Expected Payment: R${expectedPayment.toFixed(2)}</strong></div>
+        </div>
+        <p style="margin: 10px 0 0 0; font-size: 13px; color: #555;">Please upload proof of payment (slip/receipt) below:</p>
+      `;
+      
+      // Update submit button for final submission
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
+        submitBtn.innerHTML = '<span class="icon icon-check" aria-hidden="true">✓</span> Complete Collection';
+        // Change the form submit handler temporarily
+        submitBtn.onclick = function(e) {
+          e.preventDefault();
+          finalizeCollection(totalLitres, expectedPayment);
+        };
+      }
+      
+      // Show form
+      form.style.display = 'block';
+      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    // Finalize collection with payment proof
+    async function finalizeCollection(totalLitres, expectedPayment) {
+      if (paymentPhotos.length === 0) {
+        alert('Please upload proof of payment before completing the collection.');
+        return;
+      }
+      
+      // Show confirmation with final details
+      const confirmMessage = `✅ Final Confirmation\n\n📦 Bins Collected: ${scannedBins.length}\n🛢️ Total Volume: ${totalLitres.toFixed(1)} litres\n💰 Expected Payment: R${expectedPayment.toFixed(2)}\n📸 Payment Proof: ${paymentPhotos.length} photo(s)\n\nSubmit collection?`;
+      
+      if (confirm(confirmMessage)) {
+        await submitAllCollections();
+      }
+    }
+
+    // Show completion summary with payment calculation with payment calculation
+    function showCompletionSummary() {
+      if (scannedBins.length === 0) {
+        alert('No bins collected yet!');
+        if (!isScanning) toggleScanner();
+        return;
+      }
+      
+      const totalLitres = scannedBins.reduce((sum, bin) => sum + bin.quantity, 0);
+      const ratePerLitre = 3; // R3 per litre
+      const expectedPayment = totalLitres * ratePerLitre;
+      const binList = scannedBins.map(b => `• ${b.binSerialNumber}: ${b.quantity}L`).join('\n');
+      
+      const message = `📦 Collection Summary\n\nTotal Bins: ${scannedBins.length}\nTotal Volume: ${totalLitres.toFixed(1)} litres\n\n${binList}\n\n💰 Expected Payment: R${expectedPayment.toFixed(2)}\n(${totalLitres.toFixed(1)}L × R${ratePerLitre}/L)\n\nProceed to payment collection?`;
+      
+      if (confirm(message)) {
+        showPaymentCollection(totalLitres, expectedPayment);
+      } else {
+        // Let user scan more
+        if (!isScanning) toggleScanner();
+      }
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+      const form = document.getElementById('collectionForm');
+      const oilUploadArea = document.getElementById('oilUploadArea');
+      const paymentUploadArea = document.getElementById('paymentUploadArea');
+      
+      form.addEventListener('submit', handleFormSubmit);
+      
+      // Drag and drop for oil photo upload
+      if (oilUploadArea) {
+        oilUploadArea.addEventListener('dragover', (e) => handleDragOver(e, 'oil'));
+        oilUploadArea.addEventListener('dragleave', (e) => handleDragLeave(e, 'oil'));
+        oilUploadArea.addEventListener('drop', (e) => handleDrop(e, 'oil'));
+      }
+      
+      // Drag and drop for payment photo upload
+      if (paymentUploadArea) {
+        paymentUploadArea.addEventListener('dragover', (e) => handleDragOver(e, 'payment'));
+        paymentUploadArea.addEventListener('dragleave', (e) => handleDragLeave(e, 'payment'));
+        paymentUploadArea.addEventListener('drop', (e) => handleDrop(e, 'payment'));
+      }
+    }
+
+    // Quantity adjustment functions
+    function adjustQuantity(change) {
+      const input = document.getElementById('quantityInput');
+      const currentValue = parseFloat(input.value) || 0;
+      const newValue = Math.max(0, currentValue + change);
+      input.value = newValue.toFixed(1);
+      validateQuantity();
+    }
+
+    function validateQuantity() {
+      const input = document.getElementById('quantityInput');
+      const validation = document.getElementById('quantityValidation');
+      const value = parseFloat(input.value) || 0;
+      
+      if (value <= 0) {
+        validation.classList.add('show');
+        return false;
+      } else {
+        validation.classList.remove('show');
+        return true;
+      }
+    }
+
+    // File upload functions
+    function triggerFileInput(inputId) {
+      document.getElementById(inputId).click();
+    }
+
+    function handleFileSelect(event, type) {
+      const files = Array.from(event.target.files);
+      processFiles(files, type);
+    }
+
+    function handleDragOver(event, type) {
+      event.preventDefault();
+      const uploadArea = type === 'oil' ? document.getElementById('oilUploadArea') : document.getElementById('paymentUploadArea');
+      uploadArea.classList.add('dragover');
+    }
+
+    function handleDragLeave(event, type) {
+      const uploadArea = type === 'oil' ? document.getElementById('oilUploadArea') : document.getElementById('paymentUploadArea');
+      uploadArea.classList.remove('dragover');
+    }
+
+    function handleDrop(event, type) {
+      event.preventDefault();
+      const uploadArea = type === 'oil' ? document.getElementById('oilUploadArea') : document.getElementById('paymentUploadArea');
+      uploadArea.classList.remove('dragover');
+      
+      const files = Array.from(event.dataTransfer.files);
+      processFiles(files, type);
+    }
+
+    function processFiles(files, type) {
+      const imageFiles = files.filter(file => file.type.startsWith('image/'));
+      const photoArray = type === 'oil' ? oilPhotos : paymentPhotos;
+      
+      imageFiles.forEach(file => {
+        if (photoArray.length < 6) { // Limit to 6 photos per section
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const photoData = {
+              file: file,
+              dataUrl: e.target.result,
+              name: file.name,
+              type: type
+            };
+            photoArray.push(photoData);
+            updatePhotoPreview(type);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+
+    function updatePhotoPreview(type) {
+      const previewId = type === 'oil' ? 'oilPhotoPreview' : 'paymentPhotoPreview';
+      const photoArray = type === 'oil' ? oilPhotos : paymentPhotos;
+      const preview = document.getElementById(previewId);
+      
+      preview.innerHTML = photoArray.map((photo, index) => `
+        <div class="photo-item">
+          <img src="${photo.dataUrl}" alt="${photo.name}">
+          <button type="button" class="photo-remove" onclick="removePhoto(${index}, '${type}')">×</button>
+        </div>
+      `).join('');
+    }
+
+    function removePhoto(index, type) {
+      if (type === 'oil') {
+        oilPhotos.splice(index, 1);
+      } else {
+        paymentPhotos.splice(index, 1);
+      }
+      updatePhotoPreview(type);
+    }
+
+    // Form submission - now saves current bin
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      
+      // If we're in bin data collection mode, save the current bin
+      if (isCollectingBinData && currentBinData) {
+        await saveCurrentBinData();
+        return;
+      }
+      
+      // Otherwise this shouldn't be called
+      alert('Please scan a bin first!');
+      if (!isScanning) toggleScanner();
+    }
+    
+    // Submit all collected bins
+    async function submitAllCollections() {
+      if (scannedBins.length === 0) {
+        alert('No bins to submit!');
+        return;
+      }
+
+      // Show loading
+      const loadingMsg = document.createElement('div');
+      loadingMsg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:9999;text-align:center;';
+      loadingMsg.innerHTML = '<div class="loading-spinner" style="margin:0 auto 10px;"></div><p>Submitting collections...</p>';
+      document.body.appendChild(loadingMsg);
+      
+      try {
+        // Get current user from AuthService
+        if (!window.AuthService) {
+          alert('Authentication service not loaded. Please refresh the page.');
+          return;
+        }
+        
+        const currentUser = window.AuthService.getCurrentUser();
+        if (!currentUser) {
+          alert('Authentication required. Please log in again.');
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        // Check if job data is loaded
+        if (!currentJob || !currentJob.id) {
+          alert('Job information not loaded. Please go back and select a job again.');
+          window.location.href = 'jobs.html';
+          return;
+        }
+
+        console.log('Creating collection data for job:', currentJob);
+        
+        // Calculate totals from all collected bins
+        const totalQuantity = scannedBins.reduce((sum, bin) => sum + bin.quantity, 0);
+        const allOilPhotos = scannedBins.flatMap(bin => bin.oilPhotos || []);
+        // Payment photos are now collected once at the end, not per bin
+        const allPaymentPhotos = paymentPhotos || []; // Use the global paymentPhotos array
+
+        const collectionData = {
+          jobId: currentJob.id,
+          jobName: currentJob.name,
+          jobAddress: currentJob.address,
+          quantity: totalQuantity,
+          unit: 'litres',
+          notes: `Multi-bin collection: ${scannedBins.length} bins`,
+          scannedBins: scannedBins,
+          binCount: scannedBins.length,
+          binSerialNumbers: scannedBins.map(b => b.binSerialNumber).join(', '),
+          oilPhotos: allOilPhotos,
+          paymentPhotos: allPaymentPhotos,
+          timestamp: new Date().toISOString(),
+          driverId: currentUser.id,
+          driverEmail: currentUser.email, // Add driver email for fallback lookup
+          status: 'completed',
+          // Oil collection specific fields
+          oilType: 'Used Cooking Oil',
+          oilCondition: 'Good',
+          collectionMethod: 'Multi-Bin Collection',
+          paymentMethod: 'Cash'
+        };
+
+        // Save to Supabase database via OilCollectionService
+        console.log('🔄 Multi-bin collection - Saving with job_id:', collectionData.jobId, 'and driver_id:', collectionData.driverId);
+        await saveCollectionData(collectionData);
+        
+        // If we reach here, saveCollectionData was successful
+        // Clear job data
+        localStorage.removeItem('acceptedJob');
+        localStorage.removeItem('activeJob');
+        
+        // Store lightweight collection summary (without photo data to avoid quota issues)
+        const lightCollectionData = {
+          jobId: collectionData.jobId,
+          jobName: collectionData.jobName,
+          jobAddress: collectionData.jobAddress,
+          quantity: collectionData.quantity,
+          unit: collectionData.unit,
+          notes: collectionData.notes,
+          timestamp: collectionData.timestamp,
+          binCount: collectionData.binCount,
+          binSerialNumbers: collectionData.binSerialNumbers,
+          status: collectionData.status,
+          oilType: collectionData.oilType,
+          collectionMethod: collectionData.collectionMethod,
+          paymentMethod: collectionData.paymentMethod,
+          // Store counts instead of actual photo data
+          oilPhotoCount: collectionData.oilPhotos ? collectionData.oilPhotos.length : 0,
+          paymentPhotoCount: collectionData.paymentPhotos ? collectionData.paymentPhotos.length : 0
+        };
+        localStorage.setItem('lastCollection', JSON.stringify(lightCollectionData));
+        
+        // Note: saveCollectionData handles success message and redirect
+        
+      } catch (error) {
+        console.error('Error submitting collection:', error);
+        
+        // Remove loading
+        const loadingMsg = document.querySelector('body > div[style*="position:fixed"]');
+        if (loadingMsg && loadingMsg.parentNode) {
+          loadingMsg.parentNode.removeChild(loadingMsg);
+        }
+        
+        // Error message is handled by saveCollectionData, but show fallback if needed
+        if (!error.message.includes('User not authenticated')) {
+          alert(`Error submitting: ${error.message}`);
+        }
+      }
+    }
+
+    // Helper function to validate or generate UUID
+    function ensureValidUUID(value, fallbackName = 'unknown') {
+      // Check if it's already a valid UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      
+      if (value && uuidRegex.test(value)) {
+        return value; // Already a valid UUID
+      }
+      
+      // Generate a proper UUID v4
+      console.warn(`Invalid UUID format for: ${value}, generating new UUID`);
+      return generateUUID();
+    }
+
+    // Helper function to generate a valid UUID v4
+    function generateUUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0;
+        var v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    // Helper function to create a valid job UUID from job data
+    function createJobUUID(jobData) {
+      // Check if the job already has a valid UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      
+      if (jobData.id && uuidRegex.test(jobData.id)) {
+        return jobData.id; // Already valid
+      }
+      
+      // Generate a new proper UUID for the job
+      console.warn('Job ID was not valid, generating new UUID. Original:', jobData.id);
+      return generateUUID();
+    }
+
+    // Initialize services
+    let oilCollectionService;
+
+    // Save collection data to Supabase
+    async function saveCollectionData(data) {
+      try {
+        console.log('Starting saveCollectionData with:', data);
+        
+        // Show loading state
+        const submitBtn = document.querySelector('button[type="submit"]') || document.getElementById('submitBtn');
+        if (!submitBtn) {
+          throw new Error('Submit button not found');
+        }
+        
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving to Database...';
+        
+        // Get current user - check if AuthService exists
+        if (!window.AuthService) {
+          throw new Error('AuthService not available. Please refresh the page.');
+        }
+        
+        const currentUser = window.AuthService.getCurrentUser();
+        if (!currentUser) {
+          throw new Error('User not authenticated');
+        }
+        
+        console.log('Current user:', currentUser);
+        
+        // Check if OilCollectionService is available
+        if (!oilCollectionService) {
+          throw new Error('OilCollectionService not initialized');
+        }
+        
+        // Check if Supabase client is available
+        if (!oilCollectionService.supabase) {
+          console.warn('Supabase client not available, will use fallback storage');
+        }
+        
+        // Prepare data for Supabase with proper UUID formatting
+        const validJobId = createJobUUID({ id: data.jobId, ...data });
+        const validDriverId = ensureValidUUID(currentUser.id, currentUser.email);
+        
+        console.log('🔍 ID Preparation:');
+        console.log('  Original job ID:', data.jobId);
+        console.log('  Valid job ID:', validJobId);
+        console.log('  Original driver ID:', currentUser.id);
+        console.log('  Valid driver ID:', validDriverId);
+        console.log('  Current user object:', currentUser);
+        
+        // Check what job data we have
+        const acceptedJob = localStorage.getItem('acceptedJob');
+        const activeJob = localStorage.getItem('activeJob');
+        console.log('🔍 Job context:');
+        console.log('  Accepted job data:', acceptedJob);
+        console.log('  Active job data:', activeJob);
+        console.log('  Full data object:', data);
+        
+        const collectionData = {
+          jobId: validJobId,
+          driverId: validDriverId,
+          driverEmail: currentUser.email, // Add driver email for fallback lookup
+          quantity: parseFloat(data.quantity),
+          unit: data.unit,
+          notes: data.notes,
+          timestamp: data.timestamp,
+          oilPhotos: data.oilPhotos || [],
+          paymentPhotos: data.paymentPhotos || [],
+          // Additional data for job creation if needed
+          customerName: data.jobName || 'Oil Collection Customer',
+          jobAddress: data.jobAddress || 'Unknown Address',
+          // Oil collection specific fields
+          oilType: data.oilType || 'Used Cooking Oil',
+          oilCondition: data.oilCondition || 'Good',
+          collectionMethod: data.collectionMethod || 'Manual Collection',
+          paymentMethod: data.paymentMethod || 'Cash',
+          binSerialNumbers: data.binSerialNumbers || ''
+        };
+        
+        // Explicit verification that required IDs are present
+        if (!collectionData.jobId || !collectionData.driverId) {
+          throw new Error(`Missing required IDs - jobId: ${collectionData.jobId}, driverId: ${collectionData.driverId}`);
+        }
+        
+        console.log('🔄 Saving oil collection with required IDs:');
+        console.log('  📋 job_id:', collectionData.jobId);
+        console.log('  👤 driver_id:', collectionData.driverId);
+        console.log('  📧 driver_email:', collectionData.driverEmail);
+        console.log('  📦 bin_count:', data.binCount);
+        console.log('  🛢️ total_quantity:', collectionData.quantity);
+        
+        console.log('Saving collection data to Supabase:', collectionData);
+        console.log('Service has Supabase client:', !!oilCollectionService.supabase);
+        
+        // Save to database using OilCollectionService (directly to oil_collections table)
+        // Handle potential foreign key constraint issues with oil_collection_jobs table
+        let result;
+        try {
+          result = await oilCollectionService.saveCollection(collectionData);
+          console.log('Collection saved successfully:', result);
+          console.log('✅ Saved with job_id:', validJobId, 'and driver_id:', validDriverId);
+        } catch (constraintError) {
+          // Check if this is the oil_collection_jobs foreign key constraint error
+          if (constraintError.message && constraintError.message.includes('oil_collection_jobs') && constraintError.message.includes('foreign key constraint')) {
+            console.warn('Foreign key constraint detected, saving without problematic job_id reference:', constraintError.message);
+            
+            // Save without the job_id that has foreign key constraint, use a different field
+            const collectionDataNoFK = {
+              ...collectionData,
+              job_reference: collectionData.jobId, // Store job ID as reference instead
+              source_job_id: collectionData.jobId, // Alternative field name
+              jobId: undefined // Remove the problematic field
+            };
+            
+            delete collectionDataNoFK.jobId; // Ensure it's completely removed
+            
+            console.log('Retrying save without foreign key constraint field:', collectionDataNoFK);
+            result = await oilCollectionService.saveCollection(collectionDataNoFK);
+            console.log('Collection saved successfully without FK constraint:', result);
+            console.log('✅ Saved with job_reference:', collectionDataNoFK.job_reference, 'and driver_id:', validDriverId);
+          } else {
+            // Re-throw other errors
+            throw constraintError;
+          }
+        }
+        
+        // Verify the data was actually saved to oil_collections table
+        if (result && result.id) {
+          console.log('✅ oil_collections record created with ID:', result.id);
+          console.log('✅ Confirmed job_id and driver_id saved to database');
+        } else {
+          console.warn('⚠️ Save result unclear - please verify database entry');
+        }
+        
+        // Update job status to completed in regular jobs table
+        if (validJobId && oilCollectionService.supabase) {
+          try {
+            // Update the regular jobs table status
+            const { error: jobError } = await oilCollectionService.supabase
+              .from('jobs')
+              .update({ 
+                status: 'completed',
+                completed_at: new Date().toISOString()
+              })
+              .eq('id', validJobId);
+              
+            if (jobError) {
+              console.warn('Failed to update job status:', jobError);
+            } else {
+              console.log('✅ Job status updated to completed in jobs table');
+            }
+            
+            // Also try ApexDriverService if available as fallback
+            if (window.ApexDriverService) {
+              await window.ApexDriverService.updateJobStatus(validJobId, 'completed');
+              console.log('✅ Job status also updated via ApexDriverService');
+            }
+          } catch (jobError) {
+            console.warn('Failed to update job status:', jobError);
+            // Don't fail the whole operation for this
+          }
+        }
+        
+        // Remove loading spinner
+        const loadingMsg = document.querySelector('body > div[style*="position:fixed"]');
+        if (loadingMsg && loadingMsg.parentNode) {
+          loadingMsg.parentNode.removeChild(loadingMsg);
+        }
+        
+        // Show success message
+        alert('✅ Oil collection saved successfully to database!');
+        
+        // Generate and show certificate (pass collection result for database storage)
+        await generateCertificate(collectionData, result);
+        
+        // Auto-redirect to my-jobs.html after certificate is shown briefly
+        setTimeout(() => {
+          goToDashboard();
+        }, 3000); // 3 second delay to show certificate briefly
+        
+      } catch (error) {
+        console.error('Error saving collection:', error);
+        
+        // Restore button state
+        const submitBtn = document.querySelector('button[type="submit"]') || document.getElementById('submitBtn');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Complete Collection';
+        }
+        
+        // Show error message with more details
+        let errorMessage = `❌ Error saving collection: ${error.message}`;
+        
+        if (error.message.includes('not authenticated')) {
+          errorMessage += '\n\nPlease log in again.';
+          alert(errorMessage);
+          setTimeout(() => {
+            window.location.href = 'auth.html';
+          }, 2000);
+        } else if (error.message.includes('AuthService not available')) {
+          errorMessage += '\n\nPlease refresh the page and try again.';
+          alert(errorMessage);
+        } else {
+          errorMessage += '\n\nData has been saved locally as backup. Please try again or contact support.';
+          
+          // Fallback: save to localStorage
+          try {
+            const collections = JSON.parse(localStorage.getItem('oilCollections') || '[]');
+            // Store lightweight version to avoid quota issues
+            const lightData = {
+              jobId: data.jobId,
+              jobName: data.jobName,
+              jobAddress: data.jobAddress,
+              quantity: data.quantity,
+              unit: data.unit,
+              notes: data.notes,
+              timestamp: data.timestamp,
+              binCount: data.binCount,
+              binSerialNumbers: data.binSerialNumbers,
+              savedAt: new Date().toISOString(), 
+              status: 'pending_sync',
+              error: error.message,
+              oilPhotoCount: data.oilPhotos ? data.oilPhotos.length : 0,
+              paymentPhotoCount: data.paymentPhotos ? data.paymentPhotos.length : 0
+            };
+            collections.push(lightData);
+            localStorage.setItem('oilCollections', JSON.stringify(collections));
+            console.log('Collection saved to localStorage as backup');
+          } catch (storageError) {
+            console.error('Failed to save to localStorage:', storageError);
+          }
+          
+          alert(errorMessage);
+        }
+        
+        throw error;
+      }
+    }
+
+    // Cancel bin entry
+    function cancelBinEntry() {
+      if (confirm('Discard data for this bin?')) {
+        hideBinDataForm();
+        // Restart scanner
+        if (!isScanning) {
+          setTimeout(() => toggleScanner(), 300);
+        }
+      }
+    }
+    
+    // Cancel entire collection
+    function cancelCollection() {
+      if (scannedBins.length > 0) {
+        if (!confirm(`You have ${scannedBins.length} bin(s) collected. Discard all and go back?`)) {
+          return;
+        }
+      }
+      window.history.back();
+    }
+
+    // Helper function for job type emoji
+    function getJobTypeEmoji(jobType) {
+      switch(jobType) {
+        case 'Food Delivery': return '<span class="icon icon-food icon-md" aria-hidden="true"></span>';
+        case 'Grocery Delivery': return '<span class="icon icon-grocery icon-md" aria-hidden="true"></span>';
+        case 'Pharmacy Delivery': return '<span class="icon icon-pharmacy icon-md" aria-hidden="true"></span>';
+        case 'Document Delivery': return '<span class="icon icon-document icon-md" aria-hidden="true"></span>';
+        case 'Package Delivery': return '<span class="icon icon-package icon-md" aria-hidden="true"></span>';
+        case 'Oil Collection': return '<span class="icon icon-oil icon-md" aria-hidden="true">🛢️</span>';
+        default: return '<span class="icon icon-car icon-md" aria-hidden="true"></span>';
+      }
+    }
+
+    // Mobile optimization function
+    function optimizeForMobile() {
+      // Prevent zoom on input focus for iOS
+      const inputs = document.querySelectorAll('input, textarea');
+      inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+          if (window.innerWidth < 768) {
+            document.querySelector('meta[name="viewport"]').setAttribute(
+              'content', 
+              'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
+            );
+          }
+        });
+
+        input.addEventListener('blur', () => {
+          if (window.innerWidth < 768) {
+            document.querySelector('meta[name="viewport"]').setAttribute(
+              'content', 
+              'width=device-width, initial-scale=1.0'
+            );
+          }
+        });
+      });
+
+      // Add haptic feedback for mobile interactions (if supported)
+      const interactiveElements = document.querySelectorAll('.quantity-btn, .unit-option, .btn-submit, .btn-cancel');
+      interactiveElements.forEach(element => {
+        element.addEventListener('click', () => {
+          if ('vibrate' in navigator && window.innerWidth < 768) {
+            navigator.vibrate(50); // Light haptic feedback
+          }
+        });
+      });
+
+      // Optimize photo upload for mobile
+      const photoInput = document.getElementById('photoInput');
+      if (photoInput && window.innerWidth < 768) {
+        photoInput.setAttribute('capture', 'environment'); // Use back camera
+      }
+
+      // Improve scroll behavior on mobile
+      if (window.innerWidth < 768) {
+        document.body.style.overscrollBehavior = 'contain';
+        document.documentElement.style.overscrollBehavior = 'contain';
+      }
+
+      // Add visual feedback for touch interactions
+      addTouchFeedback();
+    }
+
+    // Add touch feedback for better mobile experience
+    function addTouchFeedback() {
+      const touchElements = document.querySelectorAll('.quantity-btn, .unit-option, .upload-area, .btn-submit, .btn-cancel');
+      
+      touchElements.forEach(element => {
+        element.addEventListener('touchstart', function() {
+          this.style.transform = 'scale(0.98)';
+          this.style.transition = 'transform 0.1s ease';
+        }, { passive: true });
+
+        element.addEventListener('touchend', function() {
+          this.style.transform = '';
+          this.style.transition = 'transform 0.2s ease';
+        }, { passive: true });
+
+        element.addEventListener('touchcancel', function() {
+          this.style.transform = '';
+          this.style.transition = 'transform 0.2s ease';
+        }, { passive: true });
+      });
+    }
+
+    // Handle orientation changes
+    window.addEventListener('orientationchange', function() {
+      setTimeout(() => {
+        // Recalculate layout after orientation change
+        const container = document.querySelector('.oil-collection-container');
+        if (container) {
+          container.style.minHeight = window.innerHeight + 'px';
+        }
+      }, 500);
+    });
+
+    // Certificate Generation Functions
+
+    async function generateCertificate(collectionData, savedCollectionResult = null) {
+      try {
+        const currentUser = window.AuthService ? window.AuthService.getCurrentUser() : null;
+        let driverName = 'Authorized Driver'; // Default fallback
+        
+        if (currentUser) {
+          // Prioritize full_name, then fall back to name, then to a generic title
+          if (currentUser.full_name && currentUser.full_name.trim()) {
+            driverName = currentUser.full_name.trim();
+          } else if (currentUser.name && currentUser.name.trim()) {
+            driverName = currentUser.name.trim();
+          } else {
+            driverName = 'Authorized Driver';
+          }
+        }
+        
+        // Generate certificate ID
+        const certId = generateCertificateId();
+        const currentDate = new Date();
+        
+        // Prepare certificate data
+        currentCertificateData = {
+          id: certId,
+          driverName: driverName,
+          customerName: collectionData.jobName || 'Oil Collection Customer',
+          location: collectionData.jobAddress || 'Collection Location',
+          volume: `${collectionData.quantity} ${collectionData.unit}`,
+          date: formatCertificateDate(new Date(collectionData.timestamp)),
+          issuedDate: formatCertificateDate(currentDate),
+          collectionData: collectionData
+        };
+        
+        // Populate certificate modal
+        populateCertificate(currentCertificateData);
+        
+        // Show certificate modal first
+        showCertificate();
+        
+        // Generate certificate image for database storage after it's shown
+        if (savedCollectionResult && savedCollectionResult.id) {
+          // Wait a moment for the modal to fully render
+          setTimeout(async () => {
+            await generateAndStoreCertificateInDatabase(savedCollectionResult.id, currentCertificateData);
+          }, 500);
+        }
+        
+      } catch (error) {
+        console.error('Error generating certificate:', error);
+        alert('Certificate generated locally. You can still share the collection details.');
+      }
+    }
+
+    // Generate certificate image and store in database
+    async function generateAndStoreCertificateInDatabase(collectionId, certificateData) {
+      try {
+        console.log('🖼️ Generating certificate image for database storage...');
+        
+        // Check if required libraries are available
+        if (typeof html2canvas === 'undefined') {
+          console.warn('html2canvas not available, skipping certificate database storage');
+          return;
+        }
+        
+        // Get the certificate element (ensure modal is shown temporarily if needed)
+        const certificateElement = document.getElementById('certificateContent');
+        const modal = document.getElementById('certificateModal');
+        
+        if (!certificateElement) {
+          console.warn('Certificate element not found, skipping database storage');
+          return;
+        }
+        
+        // Ensure certificate is visible for rendering
+        const wasVisible = modal.classList.contains('show');
+        if (!wasVisible) {
+          console.warn('Certificate modal not visible - this may result in blank image');
+          return;
+        }
+        
+        // Wait a moment to ensure full rendering
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Generate certificate image
+        const canvas = await html2canvas(certificateElement, {
+          scale: 2, // Higher scale for better quality
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          foreignObjectRendering: false,
+          width: certificateElement.offsetWidth,
+          height: certificateElement.offsetHeight
+        });
+        
+        // Validate that we captured something
+        if (canvas.width === 0 || canvas.height === 0) {
+          console.error('Certificate canvas has zero dimensions - capture failed');
+          return;
+        }
+        
+        // Restore visibility if we changed it
+        if (!wasVisible) {
+          modal.style.display = '';
+          modal.style.visibility = '';
+        }
+        
+        // Convert to blob and data URL
+        const certificateDataUrl = canvas.toDataURL('image/png', 0.8);
+        
+        // Convert data URL to blob for database storage
+        const response = await fetch(certificateDataUrl);
+        const certificateBlob = await response.blob();
+        
+        // Save certificate to database
+        if (oilCollectionService && oilCollectionService.supabase) {
+          console.log('📸 Saving certificate to oil_collection_photos table...');
+          
+          const certificatePhoto = {
+            collection_id: collectionId, // Fixed: was oil_collection_id
+            photo_type: 'certificate',
+            file_name: `certificate_${certificateData.id}.png`, // Fixed: was photo_name
+            file_path: null,
+            file_url: null,
+            file_size: certificateBlob.size,
+            mime_type: 'image/png',
+            photo_data: certificateDataUrl,
+            caption: `Oil Collection Certificate for ${certificateData.customerName}`, // Fixed: was description
+            taken_at: new Date().toISOString(), // Fixed: was uploaded_at
+            gps_location: null,
+            sequence_number: 0,
+            is_primary: false,
+            created_at: new Date().toISOString()
+          };
+          
+          const { data: photoResult, error: photoError } = await oilCollectionService.supabase
+            .from('oil_collection_photos')
+            .insert([certificatePhoto])
+            .select()
+            .single();
+            
+          if (photoError) {
+            console.error('Failed to save certificate to database:', photoError);
+          } else {
+            console.log('✅ Certificate saved to database:', photoResult);
+            console.log('📋 Certificate details:', {
+              id: photoResult.id,
+              certificate_id: certificateData.id,
+              driver_name: certificateData.driverName,
+              collection_volume: certificateData.volume,
+              collection_date: certificateData.date,
+              issued_date: certificateData.issuedDate
+            });
+            
+            // Store reference to the saved certificate
+            if (certificateData.collectionData) {
+              certificateData.collectionData.certificatePhotoId = photoResult.id;
+            }
+          }
+        } else {
+          console.warn('Supabase not available, certificate not saved to database');
+        }
+        
+        // Add a small delay then trigger navigation (as backup to the main timeout)
+        console.log('🎯 Certificate generation complete, navigation will occur shortly...');
+        
+      } catch (error) {
+        console.error('Error generating and storing certificate in database:', error);
+        // Don't throw error - certificate generation for UI should still work
+        // Even if certificate storage fails, still proceed with navigation
+        console.log('⚠️ Certificate storage failed but proceeding with navigation');
+      }
+    }
+
+    function generateCertificateId() {
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      return `CERT-${year}${month}${day}-${random}`;
+    }
+
+    function formatCertificateDate(date) {
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function populateCertificate(data) {
+      document.getElementById('certDriverName').textContent = data.driverName;
+      document.getElementById('certDate').textContent = data.date;
+      document.getElementById('certCustomer').textContent = data.customerName;
+      document.getElementById('certLocation').textContent = data.location;
+      document.getElementById('certVolume').textContent = data.volume;
+      document.getElementById('certIssuedDate').textContent = `Issued on: ${data.issuedDate}`;
+      document.getElementById('certId').textContent = `Certificate ID: ${data.id}`;
+      document.getElementById('certDriverSignature').textContent = data.driverName;
+    }
+
+    function showCertificate() {
+      const modal = document.getElementById('certificateModal');
+      modal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeCertificate() {
+      const modal = document.getElementById('certificateModal');
+      modal.classList.remove('show');
+      document.body.style.overflow = '';
+      
+      // Don't auto-redirect, let user choose
+    }
+
+    function goToDashboard() {
+      closeCertificate();
+      setTimeout(() => {
+        window.location.href = 'my-jobs.html';
+      }, 300);
+    }
+
+    function viewCollectionHistory() {
+      closeCertificate();
+      setTimeout(() => {
+        // Navigate to my jobs page
+        window.location.href = 'my-jobs.html';
+      }, 300);
+    }
+
+    // Certificate sharing functions
+
+    async function downloadCertificate() {
+      try {
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '⏳ Generating...';
+        button.disabled = true;
+        
+        // Check if we're on mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        
+        // Mobile-optimized certificate generation
+        if (isMobile) {
+          // For mobile, create a simple image download
+          try {
+            if (typeof html2canvas !== 'undefined') {
+              const certificateElement = document.getElementById('certificateContent');
+              
+              // Ensure modal is visible for rendering
+              const modal = document.getElementById('certificateModal');
+              const wasVisible = modal.classList.contains('show');
+              if (!wasVisible) {
+                modal.classList.add('show');
+                await new Promise(resolve => setTimeout(resolve, 200));
+              }
+              
+              const canvas = await html2canvas(certificateElement, {
+                scale: 1,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                foreignObjectRendering: false
+              });
+              
+              if (!wasVisible) {
+                modal.classList.remove('show');
+              }
+              
+              const dataUrl = canvas.toDataURL('image/png', 0.9);
+              generatedCertificateDataUrl = dataUrl;
+              
+              canvas.toBlob(function(blob) {
+                generatedCertificateBlob = blob;
+                
+                // Try simple download first
+                try {
+                  const link = document.createElement('a');
+                  link.href = dataUrl;
+                  link.download = 'Oil_Certificate_' + currentCertificateData.id + '.png';
+                  link.style.display = 'none';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  
+                  button.innerHTML = originalText;
+                  button.disabled = false;
+                  alert('📱 Certificate download started!\n\nCheck your Downloads folder or Gallery.');
+                  
+                } catch (downloadError) {
+                  // Fallback: open image in new tab
+                  const newWindow = window.open(dataUrl, '_blank');
+                  button.innerHTML = originalText;
+                  button.disabled = false;
+                  
+                  if (newWindow) {
+                    alert('📱 Certificate opened in new tab!\n\nLong-press the image and select "Save Image".');
+                  } else {
+                    alert('📱 Please allow popups and try again, or use "Share via" button.');
+                  }
+                }
+              }, 'image/png', 0.9);
+              
+            } else {
+              await generateTextCertificate(button, originalText);
+            }
+            
+          } catch (mobileError) {
+            console.error('Mobile certificate generation failed:', mobileError);
+            await generateTextCertificate(button, originalText);
+          }
+          
+          return;
+        }
+        
+        // Desktop certificate generation
+        if (typeof html2canvas !== 'undefined' && typeof jsPDF !== 'undefined') {
+          const certificateElement = document.getElementById('certificateContent');
+          
+          // Ensure the certificate is visible and properly sized
+          const modal = document.getElementById('certificateModal');
+          const wasVisible = modal.classList.contains('show');
+          if (!wasVisible) {
+            modal.style.display = 'block';
+            modal.style.visibility = 'hidden';
+          }
+          
+          const canvas = await html2canvas(certificateElement, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            width: certificateElement.offsetWidth,
+            height: certificateElement.offsetHeight,
+            logging: false,
+            onclone: function(clonedDoc) {
+              // Ensure fonts are loaded in cloned document
+              const clonedElement = clonedDoc.getElementById('certificateContent');
+              if (clonedElement) {
+                clonedElement.style.fontFamily = 'Arial, sans-serif';
+              }
+            }
+          });
+          
+          if (!wasVisible) {
+            modal.style.display = '';
+            modal.style.visibility = '';
+          }
+          
+          // Create PDF
+          const imgData = canvas.toDataURL('image/png', 1.0);
+          const pdf = new jsPDF.jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+          });
+          
+          // Calculate dimensions to fit A4
+          const imgWidth = 190; // A4 width minus margins
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+          
+          // Store for sharing and download PDF
+          generatedPdfBlob = pdf.output('blob');
+          generatedCertificateDataUrl = imgData;
+          
+          pdf.save(`Oil_Certificate_${currentCertificateData.id}.pdf`);
+          
+          button.innerHTML = originalText;
+          button.disabled = false;
+          alert('📄 Certificate downloaded successfully as PDF!');
+          
+        } else {
+          // Fallback for when libraries aren't available
+          await generateTextCertificate(button, originalText);
+        }
+        
+      } catch (error) {
+        console.error('Error downloading certificate:', error);
+        const button = event.target;
+        button.innerHTML = '📄 Download Certificate';
+        button.disabled = false;
+        
+        // Mobile fallback
+        await generateTextCertificate(button, '📄 Download Certificate');
+      }
+    }
+
+    async function generateMobileCertificate(button, originalText) {
+      try {
+        // For mobile, prioritize text-based sharing over complex rendering
+        if (typeof html2canvas !== 'undefined') {
+          const certificateElement = document.getElementById('certificateContent');
+          
+          // Mobile-specific html2canvas options
+          const canvas = await html2canvas(certificateElement, {
+            scale: 1, // Lower scale for mobile performance
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            width: certificateElement.offsetWidth,
+            height: certificateElement.offsetHeight,
+            logging: false,
+            foreignObjectRendering: false, // Better mobile compatibility
+            removeContainer: true,
+            onclone: function(clonedDoc) {
+              // Simplify styles for mobile rendering
+              const clonedElement = clonedDoc.getElementById('certificateContent');
+              if (clonedElement) {
+                clonedElement.style.fontFamily = 'Arial, sans-serif';
+                clonedElement.style.transform = 'none';
+                clonedElement.style.webkitTransform = 'none';
+              }
+            }
+          });
+          
+          // Generate image
+          generatedCertificateDataUrl = canvas.toDataURL('image/png', 0.9);
+          
+          // For mobile, save as image (simpler than PDF)
+          canvas.toBlob(function(blob) {
+            generatedCertificateBlob = blob;
+            
+            // Try to download the image
+            try {
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `Oil_Certificate_${currentCertificateData.id}.png`;
+              a.style.display = 'none';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              
+              button.innerHTML = originalText;
+              button.disabled = false;
+              alert('� Certificate downloaded as image!\n\nCheck your Downloads folder or Gallery.');
+            } catch (downloadError) {
+              console.warn('Mobile download failed, using fallback');
+              generateTextCertificate(button, originalText);
+            }
+          }, 'image/png', 0.9);
+          
+        } else {
+          // Text fallback for mobile
+          await generateTextCertificate(button, originalText);
+        }
+      } catch (error) {
+        console.error('Mobile certificate generation failed:', error);
+        await generateTextCertificate(button, originalText);
+      }
+    }
+
+    async function generateTextCertificate(button, originalText) {
+      try {
+        // Generate text-based certificate
+        const certificateText = generateCertificateText();
+        const blob = new Blob([certificateText], { type: 'text/plain' });
+        
+        // Try to download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Oil_Certificate_${currentCertificateData.id}.txt`;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        button.innerHTML = originalText;
+        button.disabled = false;
+        alert('📝 Certificate downloaded as text file!\n\nYou can copy and share the text content.');
+        
+      } catch (error) {
+        console.error('Text certificate generation failed:', error);
+        
+        // Final fallback: copy to clipboard
+        const message = generateShareMessage();
+        copyToClipboard(message);
+        
+        button.innerHTML = originalText;
+        button.disabled = false;
+        alert('📋 Certificate details copied to clipboard!\n\nYou can paste and share the text.');
+      }
+    }
+
+    async function shareCertificate() {
+      if (!currentCertificateData) {
+        alert('No certificate data available to share!');
+        return;
+      }
+      
+      // Show sharing options menu
+      showSharingMenu();
+    }
+
+    function showSharingMenu() {
+      // Create sharing menu overlay
+      const menuOverlay = document.createElement('div');
+      menuOverlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+      `;
+      
+      // Create sharing menu
+      const sharingMenu = document.createElement('div');
+      sharingMenu.style.cssText = `
+        background: white;
+        border-radius: 20px 20px 8px 8px;
+        max-width: 400px;
+        width: 100%;
+        padding: 20px;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+      `;
+      
+      // Add CSS animation if not exists
+      if (!document.getElementById('sharingMenuStyles')) {
+        const style = document.createElement('style');
+        style.id = 'sharingMenuStyles';
+        style.textContent = `
+          @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+      
+      sharingMenu.innerHTML = `
+        <h3 style="margin: 0 0 20px 0; text-align: center; color: #333;">Share Certificate</h3>
+        <div style="display: grid; gap: 12px;">
+          <button onclick="shareViaEmail()" style="display: flex; align-items: center; padding: 15px; border: none; border-radius: 12px; background: #f5f5f5; cursor: pointer; font-size: 16px; transition: all 0.2s;">
+            <span style="font-size: 20px; margin-right: 12px;">📧</span>
+            <span>Share via Email</span>
+          </button>
+          
+          <button onclick="shareViaWhatsApp()" style="display: flex; align-items: center; padding: 15px; border: none; border-radius: 12px; background: #f5f5f5; cursor: pointer; font-size: 16px; transition: all 0.2s;">
+            <span style="font-size: 20px; margin-right: 12px;">💬</span>
+            <span>Share via WhatsApp</span>
+          </button>
+          
+          <button onclick="shareViaSMS()" style="display: flex; align-items: center; padding: 15px; border: none; border-radius: 12px; background: #f5f5f5; cursor: pointer; font-size: 16px; transition: all 0.2s;">
+            <span style="font-size: 20px; margin-right: 12px;">💬</span>
+            <span>Share via SMS</span>
+          </button>
+          
+          <button onclick="shareViaWebAPI()" style="display: flex; align-items: center; padding: 15px; border: none; border-radius: 12px; background: #f5f5f5; cursor: pointer; font-size: 16px; transition: all 0.2s;">
+            <span style="font-size: 20px; margin-right: 12px;">📱</span>
+            <span>Share via Apps</span>
+          </button>
+          
+          <button onclick="copyToClipboardAndClose()" style="display: flex; align-items: center; padding: 15px; border: none; border-radius: 12px; background: #f5f5f5; cursor: pointer; font-size: 16px; transition: all 0.2s;">
+            <span style="font-size: 20px; margin-right: 12px;">📋</span>
+            <span>Copy to Clipboard</span>
+          </button>
+          
+          <button onclick="closeSharingMenu()" style="display: flex; align-items: center; justify-content: center; padding: 15px; border: none; border-radius: 12px; background: #e0e0e0; cursor: pointer; font-size: 16px; margin-top: 10px;">
+            Cancel
+          </button>
+        </div>
+      `;
+      
+      // Add hover effects
+      const buttons = sharingMenu.querySelectorAll('button:not(:last-child)');
+      buttons.forEach(button => {
+        button.addEventListener('mouseenter', () => {
+          button.style.background = '#e8e8e8';
+          button.style.transform = 'translateY(-2px)';
+        });
+        button.addEventListener('mouseleave', () => {
+          button.style.background = '#f5f5f5';
+          button.style.transform = 'translateY(0)';
+        });
+      });
+      
+      // Close menu when clicking overlay
+      menuOverlay.onclick = function(e) {
+        if (e.target === menuOverlay) {
+          closeSharingMenu();
+        }
+      };
+      
+      menuOverlay.appendChild(sharingMenu);
+      document.body.appendChild(menuOverlay);
+      
+      // Store reference for closing
+      window.currentSharingMenu = menuOverlay;
+    }
+
+    function closeSharingMenu() {
+      if (window.currentSharingMenu) {
+        document.body.removeChild(window.currentSharingMenu);
+        window.currentSharingMenu = null;
+      }
+    }
+
+    async function shareViaEmail() {
+      try {
+        const subject = encodeURIComponent(`Oil Collection Certificate - ${currentCertificateData.id}`);
+        const body = encodeURIComponent(generateEmailBody());
+        
+        // Try to generate and attach certificate image
+        let attachmentNote = '';
+        if (typeof html2canvas !== 'undefined') {
+          try {
+            await generateCertificateImageForSharing();
+            attachmentNote = '\n\nNote: You can attach the certificate image by downloading it first using the "Download Certificate" button.';
+          } catch (e) {
+            console.warn('Could not generate certificate image:', e);
+          }
+        }
+        
+        const emailUrl = `mailto:?subject=${subject}&body=${body}${encodeURIComponent(attachmentNote)}`;
+        
+        // Open email client
+        window.location.href = emailUrl;
+        
+        closeSharingMenu();
+        
+      } catch (error) {
+        console.error('Error sharing via email:', error);
+        alert('Could not open email client. Please copy the certificate details instead.');
+        await copyToClipboard(generateShareMessage());
+      }
+    }
+
+    async function shareViaWhatsApp() {
+      try {
+        const message = generateWhatsAppMessage();
+        const encodedMessage = encodeURIComponent(message);
+        
+        // WhatsApp URL scheme
+        const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+        
+        // Open WhatsApp
+        window.open(whatsappUrl, '_blank');
+        
+        closeSharingMenu();
+        
+      } catch (error) {
+        console.error('Error sharing via WhatsApp:', error);
+        alert('Could not open WhatsApp. Please copy the certificate details instead.');
+        await copyToClipboard(generateShareMessage());
+      }
+    }
+
+    async function shareViaSMS() {
+      try {
+        const message = generateSMSMessage();
+        const encodedMessage = encodeURIComponent(message);
+        
+        // SMS URL scheme
+        const smsUrl = `sms:?body=${encodedMessage}`;
+        
+        // Open SMS app
+        window.location.href = smsUrl;
+        
+        closeSharingMenu();
+        
+      } catch (error) {
+        console.error('Error sharing via SMS:', error);
+        alert('Could not open SMS app. Please copy the certificate details instead.');
+        await copyToClipboard(generateShareMessage());
+      }
+    }
+
+    async function shareViaWebAPI() {
+      try {
+        if (navigator.share) {
+          const shareData = {
+            title: `Oil Collection Certificate - ${currentCertificateData.id}`,
+            text: generateShareMessage(),
+            url: window.location.href
+          };
+          
+          // Try to add image if available
+          if (generatedCertificateBlob) {
+            try {
+              shareData.files = [
+                new File([generatedCertificateBlob], `certificate_${currentCertificateData.id}.png`, {
+                  type: 'image/png'
+                })
+              ];
+            } catch (e) {
+              console.warn('Could not add file to share:', e);
+            }
+          }
+          
+          await navigator.share(shareData);
+          closeSharingMenu();
+          
+        } else {
+          // Fallback to copy to clipboard
+          throw new Error('Web Share API not supported');
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') { // User cancelled sharing
+          console.error('Error sharing via Web API:', error);
+          alert('Native sharing not available. Please use one of the other sharing options.');
+        }
+      }
+    }
+
+    function copyToClipboardAndClose() {
+      copyToClipboard(generateShareMessage());
+      closeSharingMenu();
+      alert('📋 Certificate details copied to clipboard!\n\nYou can now paste this in any messaging app or email.');
+    }
+
+    function generateEmailBody() {
+      return `Dear Recipient,
+
+Please find the Oil Collection Certificate details below for our recent service.
+
+CERTIFICATE DETAILS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Certificate ID: ${currentCertificateData.id}
+Collection Date: ${currentCertificateData.date}
+Driver: ${currentCertificateData.driverName}
+
+Customer: ${currentCertificateData.customerName}
+Location: ${currentCertificateData.location}
+Volume Collected: ${currentCertificateData.volume}
+
+Issued: ${currentCertificateData.issuedDate}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This certificate confirms the successful collection of used cooking oil as per our environmental compliance standards.
+
+Thank you for choosing our eco-friendly oil collection service.
+
+Best regards,
+Apex Oil Collection Services`;
+    }
+
+    function generateWhatsAppMessage() {
+      return `🛢️ *OIL COLLECTION CERTIFICATE* ✅
+
+📋 *Certificate ID:* ${currentCertificateData.id}
+📅 *Collection Date:* ${currentCertificateData.date}
+👤 *Driver:* ${currentCertificateData.driverName}
+
+🏢 *Customer:* ${currentCertificateData.customerName}
+📍 *Location:* ${currentCertificateData.location}
+🗂️ *Volume:* ${currentCertificateData.volume}
+
+⏰ *Issued:* ${currentCertificateData.issuedDate}
+
+✅ *This certificate confirms successful oil collection as per environmental standards.*
+
+🌱 Thank you for choosing eco-friendly oil collection! 🌍`;
+    }
+
+    function generateSMSMessage() {
+      return `OIL COLLECTION CERTIFICATE
+
+ID: ${currentCertificateData.id}
+Date: ${currentCertificateData.date}
+Driver: ${currentCertificateData.driverName}
+Customer: ${currentCertificateData.customerName}
+Volume: ${currentCertificateData.volume}
+
+Successful collection completed.
+- Apex Oil Collection Services`;
+    }
+
+    function generateShareMessage() {
+      return `🛢️ OIL COLLECTION CERTIFICATE
+
+Certificate ID: ${currentCertificateData.id}
+Collection Date: ${currentCertificateData.date}
+Driver: ${currentCertificateData.driverName}
+
+Customer: ${currentCertificateData.customerName}
+Location: ${currentCertificateData.location}
+Volume Collected: ${currentCertificateData.volume}
+
+Issued: ${currentCertificateData.issuedDate}
+
+This certificate confirms the successful collection of used cooking oil as per our environmental compliance standards.
+
+Thank you for choosing our eco-friendly oil collection service.
+
+- Apex Oil Collection Services`;
+    }
+
+    async function generateCertificateImageForSharing() {
+      if (!currentCertificateData || typeof html2canvas === 'undefined') {
+        return null;
+      }
+      
+      try {
+        const certificateElement = document.getElementById('certificateContent');
+        if (!certificateElement) {
+          return null;
+        }
+        
+        const canvas = await html2canvas(certificateElement, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false
+        });
+        
+        // Convert to blob
+        return new Promise((resolve) => {
+          canvas.toBlob((blob) => {
+            generatedCertificateBlob = blob;
+            resolve(blob);
+          }, 'image/png', 0.8);
+        });
+        
+      } catch (error) {
+        console.error('Error generating certificate image:', error);
+        return null;
+      }
+    }
+
+    async function generatePdfFromCertificate() {
+      if (typeof jsPDF === 'undefined' || typeof html2canvas === 'undefined') {
+        console.warn('PDF libraries not loaded');
+        return null;
+      }
+      
+      try {
+        const certificateElement = document.getElementById('certificateContent');
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        
+        // Ensure the certificate modal is visible for rendering
+        const modal = document.getElementById('certificateModal');
+        const wasVisible = modal.classList.contains('show');
+        if (!wasVisible) {
+          modal.style.display = 'block';
+          modal.style.visibility = 'hidden';
+        }
+        
+        const canvas = await html2canvas(certificateElement, {
+          scale: isMobile ? 1 : 2, // Lower scale for mobile
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          width: certificateElement.offsetWidth,
+          height: certificateElement.offsetHeight,
+          logging: false,
+          foreignObjectRendering: false, // Better mobile compatibility
+          onclone: function(clonedDoc) {
+            const clonedElement = clonedDoc.getElementById('certificateContent');
+            if (clonedElement) {
+              clonedElement.style.fontFamily = 'Arial, sans-serif';
+              clonedElement.style.transform = 'none';
+              clonedElement.style.webkitTransform = 'none';
+            }
+          }
+        });
+        
+        // Restore modal visibility
+        if (!wasVisible) {
+          modal.style.display = '';
+          modal.style.visibility = '';
+        }
+        
+        const imgData = canvas.toDataURL('image/png', 0.9);
+        const pdf = new jsPDF.jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        
+        // Get PDF as blob
+        generatedPdfBlob = pdf.output('blob');
+        return generatedPdfBlob;
+        
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        return null;
+      }
+    }
+
+    async function generateCertificateImage() {
+      if (typeof html2canvas !== 'undefined') {
+        try {
+          const certificateElement = document.getElementById('certificateContent');
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+          
+          // Ensure the certificate modal is visible for rendering
+          const modal = document.getElementById('certificateModal');
+          const wasVisible = modal.classList.contains('show');
+          if (!wasVisible) {
+            modal.style.display = 'block';
+            modal.style.visibility = 'hidden';
+          }
+          
+          const canvas = await html2canvas(certificateElement, {
+            scale: isMobile ? 1 : 2, // Lower scale for mobile performance
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            width: certificateElement.offsetWidth,
+            height: certificateElement.offsetHeight,
+            logging: false,
+            foreignObjectRendering: false, // Better mobile compatibility
+            removeContainer: true,
+            onclone: function(clonedDoc) {
+              // Ensure fonts are properly set for mobile
+              const clonedElement = clonedDoc.getElementById('certificateContent');
+              if (clonedElement) {
+                clonedElement.style.fontFamily = 'Arial, sans-serif';
+                clonedElement.style.transform = 'none';
+                clonedElement.style.webkitTransform = 'none';
+              }
+            }
+          });
+          
+          // Restore modal visibility
+          if (!wasVisible) {
+            modal.style.display = '';
+            modal.style.visibility = '';
+          }
+          
+          generatedCertificateDataUrl = canvas.toDataURL('image/png', 0.9);
+          
+          return new Promise(resolve => {
+            canvas.toBlob(function(blob) {
+              generatedCertificateBlob = blob;
+              resolve(blob);
+            }, 'image/png', 0.9);
+          });
+        } catch (error) {
+          console.error('Certificate image generation failed:', error);
+          return null;
+        }
+      }
+      return null;
+    }
+
+    function generateCertificateText() {
+      if (!currentCertificateData) return '';
+      
+      return `
+CERTIFICATE OF OIL COLLECTION
+Environmental Waste Management
+═══════════════════════════════════════
+
+This is to certify that ${currentCertificateData.driverName} has successfully completed the collection of used cooking oil from the specified location in accordance with environmental regulations and best practices.
+
+COLLECTION DETAILS:
+═══════════════════
+Collection Date: ${currentCertificateData.date}
+Customer: ${currentCertificateData.customerName}
+Location: ${currentCertificateData.location}
+Volume Collected: ${currentCertificateData.volume}
+Collection Status: ✓ Completed
+
+AUTHORIZATION:
+═══════════════
+Authorized Collector: ${currentCertificateData.driverName}
+Service Provider: Apex Oil Services
+Issued on: ${currentCertificateData.issuedDate}
+Certificate ID: ${currentCertificateData.id}
+
+This certificate serves as official documentation of the completed oil collection service.
+
+═══════════════════════════════════════
+Apex Oil Collection Services
+Environmental Waste Management Solutions
+      `;
+    }
+
+    function generateShareMessage() {
+      if (!currentCertificateData) return '';
+      
+      return `🛢️ *OIL COLLECTION COMPLETED* ✅
+
+📋 *Certificate Details:*
+• Customer: ${currentCertificateData.customerName}
+• Location: ${currentCertificateData.location}
+• Volume: ${currentCertificateData.volume}
+• Date: ${new Date(currentCertificateData.collectionData.timestamp).toLocaleDateString()}
+• Collector: ${currentCertificateData.driverName}
+
+🆔 Certificate ID: ${currentCertificateData.id}
+
+✅ Collection completed successfully in accordance with environmental regulations.
+
+_Apex Oil Collection Services_
+_Environmental Waste Management Solutions_`;
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'absolute';
+        textArea.style.left = '-999999px';
+        document.body.prepend(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+        } catch (error) {
+          console.error('Could not copy text: ', error);
+        } finally {
+          textArea.remove();
+        }
+      }
+    }
+
+    // Close certificate modal when clicking outside
+    document.addEventListener('click', function(event) {
+      const modal = document.getElementById('certificateModal');
+      if (event.target === modal) {
+        closeCertificate();
+      }
+    });
+
+    // Close certificate modal with escape key
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        const modal = document.getElementById('certificateModal');
+        if (modal.classList.contains('show')) {
+          closeCertificate();
+        }
+      }
+    });
+
+    // Function to open Green Oil Index with user confirmation
+    function openGreenOilIndex() {
+      if (confirm('This will open the Green Oil Index website in a new browser tab. Continue?')) {
+        window.open('https://greenoilindex.com/', '_blank');
+      }
+    }
+  </script>
+</body>
+</html>
