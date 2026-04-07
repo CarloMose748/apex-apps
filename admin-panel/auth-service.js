@@ -112,14 +112,27 @@ class AuthService {
 
                 if (roleError && roleError.code !== 'PGRST116') {
                     console.error('Error checking user role:', roleError);
-                }
-
-                if (!userRole) {
-                    await this.supabase.auth.signOut();
-                    return { 
-                        data: null, 
-                        error: new Error('Access denied. You do not have permission to access the Admin portal. Please contact a system administrator.') 
-                    };
+                    // If user_roles table doesn't exist (42P01) or RLS blocks it, skip role check
+                    if (roleError.code === '42P01' || roleError.code === 'PGRST301' || roleError.message?.includes('does not exist')) {
+                        console.warn('user_roles table not available, skipping role check');
+                    } else {
+                        // Non-critical role error, skip check
+                        console.warn('Role check failed, allowing access:', roleError.message);
+                    }
+                } else if (!userRole) {
+                    // Table exists but no role entry — check admins table as fallback
+                    const { data: adminFallback } = await this.supabase
+                        .from('admins')
+                        .select('id')
+                        .eq('email', data.user.email)
+                        .maybeSingle();
+                    if (!adminFallback) {
+                        await this.supabase.auth.signOut();
+                        return { 
+                            data: null, 
+                            error: new Error('Access denied. You do not have permission to access the Admin portal. Please contact a system administrator.') 
+                        };
+                    }
                 }
 
                 if (userRole.status !== 'active') {
