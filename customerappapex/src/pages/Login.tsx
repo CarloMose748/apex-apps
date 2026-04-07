@@ -34,10 +34,10 @@ export function Login() {
           name: data.user.user_metadata?.name || 'Demo User',
           role: data.user.user_metadata?.role || 'manager'
         }));
-        // Force redirect to dashboard instead of reload
-        window.location.href = '/';
-        return;
       }
+      // Role validation passed — reload to pick up session cleanly
+      window.location.href = '/';
+      return;
     }
     
     setIsLoading(false);

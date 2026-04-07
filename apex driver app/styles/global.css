@@ -1371,7 +1371,7 @@ body {
 
 /* Landing Page Styles - Stunning Gradient Design */
 .landing-container {
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+  background: linear-gradient(135deg, #134e4a 0%, #0d9488 50%, #14b8a6 100%);
   color: var(--text-white);
   position: relative;
   overflow: hidden;
@@ -1385,7 +1385,7 @@ body {
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(13, 148, 136, 0.3) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.2) 0%, transparent 50%),
     radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
   pointer-events: none;

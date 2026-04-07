@@ -919,7 +919,7 @@
 
 .btn:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
 }
 
 .btn--primary {
@@ -1150,7 +1150,7 @@
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .account-profile__info {
@@ -1326,7 +1326,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(99, 102, 241, 0.1);
   border-radius: var(--border-radius-lg);
   color: var(--primary);
   flex-shrink: 0;
@@ -1468,7 +1468,7 @@
 .certificates-search__input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   background: white;
 }
 
@@ -1490,7 +1490,7 @@
 .certificates-date-range__input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   background: white;
 }
 
@@ -1516,8 +1516,8 @@
   display: none;
   margin-top: var(--space-xl);
   padding: var(--space-lg);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.1);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.1);
   border-radius: var(--border-radius-xl);
 }
 
@@ -1530,7 +1530,7 @@
 .certificates-help__icon {
   width: 48px;
   height: 48px;
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(99, 102, 241, 0.1);
   border-radius: 50%;
   display: flex;
   align-items: center;

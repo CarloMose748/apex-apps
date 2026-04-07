@@ -24,6 +24,11 @@ const getSupabaseClient = () => {
 
 export const supabase = getSupabaseClient();
 
+// Flag to suppress onAuthStateChange during role validation
+let _suppressAuthEvents = false;
+export const setSuppressAuthEvents = (val: boolean) => { _suppressAuthEvents = val; };
+export const isSuppressingAuthEvents = () => _suppressAuthEvents;
+
 // Auth helper functions
 export const getSession = async () => {
   if (!supabase) return null;
@@ -57,6 +62,7 @@ export const signInWithPassword = async (email: string, password: string) => {
   }
   
   try {
+    _suppressAuthEvents = true;
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -118,8 +124,10 @@ export const signInWithPassword = async (email: string, password: string) => {
       }
     }
 
+    _suppressAuthEvents = false;
     return { data, error: null };
   } catch (error) {
+    _suppressAuthEvents = false;
     console.error('Error signing in:', error);
     return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
   }
@@ -364,7 +372,10 @@ export const useAuthState = (): AuthState => {
     // The listener will fire immediately with the current session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event: any, session: any) => {
-        console.log('[Auth] Auth state changed:', _event, !!session);
+        console.log('[Auth] Auth state changed:', _event, !!session, 'suppressed:', _suppressAuthEvents);
+        if (_suppressAuthEvents && _event === 'SIGNED_IN') {
+          return; // Skip - role validation in progress
+        }
         if (!session) {
           setAuthState({ user: null, session: null, loading: false });
           return;

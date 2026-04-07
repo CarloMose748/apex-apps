@@ -547,7 +547,7 @@ body {
 
 /* Landing Page Styles - Modern Gradient Design */
 .landing-container {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #00d174 100%);
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 50%, #00d174 100%);
   background-size: 200% 200%;
   animation: gradientFlow 15s ease infinite;
   color: white;
@@ -2374,7 +2374,7 @@ button[onclick*="logout"]:focus, button[onclick*="Logout"]:focus {
   right: 24px;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
   color: white;
   border: none;
   border-radius: 50%;
