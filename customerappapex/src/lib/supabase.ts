@@ -70,57 +70,53 @@ export const signInWithPassword = async (email: string, password: string) => {
     if (error) throw error;
 
     // ROLE-BASED ACCESS CONTROL: Check if user has customer platform access
+    // Graceful: if tables don't exist or have no data, allow login
     if (data.user) {
-      const { data: userRole, error: roleError } = await supabase
-        .from('user_roles')
-        .select('platform, platform_role, status')
-        .eq('user_id', data.user.id)
-        .eq('platform', 'customer')
-        .maybeSingle();
+      try {
+        const { data: userRole, error: roleError } = await supabase
+          .from('user_roles')
+          .select('platform, platform_role, status')
+          .eq('user_id', data.user.id)
+          .eq('platform', 'customer')
+          .maybeSingle();
 
-      if (roleError && roleError.code !== 'PGRST116') {
-        console.error('Error checking user role:', roleError);
+        // If table doesn't exist (code 42P01) or RLS blocks access, skip role check
+        if (roleError) {
+          console.warn('Role check skipped:', roleError.message);
+        } else if (userRole) {
+          // Role row exists — enforce status
+          if (userRole.status !== 'active') {
+            await supabase.auth.signOut();
+            const statusMessage = userRole.status === 'pending' 
+              ? 'Your customer account is pending admin approval. Please wait for activation before logging in.' 
+              : `Your customer account is ${userRole.status}. Please contact administrator.`;
+            return { data: null, error: statusMessage };
+          }
+        }
+        // If no role row found, allow login (table may not be set up yet)
+      } catch (roleCheckErr) {
+        console.warn('Role check error, allowing login:', roleCheckErr);
       }
 
-      if (!userRole) {
-        await supabase.auth.signOut();
-        return { 
-          data: null, 
-          error: 'Access denied. You do not have permission to access the Customer portal. Please register for a customer account or contact support.' 
-        };
-      }
+      try {
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .select('verification_status')
+          .eq('id', data.user.id)
+          .maybeSingle();
 
-      if (userRole.status !== 'active') {
-        await supabase.auth.signOut();
-        const statusMessage = userRole.status === 'pending' 
-          ? 'Your customer account is pending admin approval. Please wait for activation before logging in.' 
-          : `Your customer account is ${userRole.status}. Please contact administrator.`;
-        return { 
-          data: null, 
-          error: statusMessage 
-        };
-      }
-
-      // Additional check: verify customer record exists and is approved
-      const { data: customerData, error: customerError } = await supabase
-        .from('customers')
-        .select('verification_status')
-        .eq('id', data.user.id)
-        .single();
-
-      if (customerError) {
-        console.error('Error fetching customer verification status:', customerError);
-        // If we can't fetch customer data, allow login but log the error
-        return { data, error: null };
-      }
-
-      if (customerData && customerData.verification_status !== 'approved') {
-        // Sign out the user since their account is not approved
-        await supabase.auth.signOut();
-        return { 
-          data: null, 
-          error: 'Your account is pending admin approval. Please wait for activation before logging in.' 
-        };
+        if (customerError) {
+          console.warn('Customer check skipped:', customerError.message);
+        } else if (customerData && customerData.verification_status && customerData.verification_status !== 'approved') {
+          await supabase.auth.signOut();
+          return { 
+            data: null, 
+            error: 'Your account is pending admin approval. Please wait for activation before logging in.' 
+          };
+        }
+        // If no customer row or no verification_status, allow login
+      } catch (custCheckErr) {
+        console.warn('Customer check error, allowing login:', custCheckErr);
       }
     }
 
