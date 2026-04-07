@@ -819,6 +819,70 @@ input, textarea, select { font-family: inherit; }
   grid-template-columns: repeat(2, 1fr);
   gap: 2rem;
   max-width: 800px;
+  margin: 0 auto;
+}
+.app-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.app-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(27,27,47,.1);
+}
+.app-card h3 {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  margin-bottom: .75rem;
+  color: var(--ink);
+}
+.app-card p {
+  color: var(--text-soft);
+  font-size: .95rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+.app-card__icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+}
+.app-card__icon--driver {
+  background: linear-gradient(135deg, #0d9488, #0f766e);
+  color: #fff;
+}
+.app-card__icon--customer {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+}
+.app-install-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+}
+@media (max-width: 600px) {
+  .app-download-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .app-card { padding: 2rem 1.5rem; }
+}
+
+/* ── App Download Section ── */
+.app-download-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  max-width: 800px;
   margin: 3rem auto 0;
 }
 @media (max-width: 640px) {
