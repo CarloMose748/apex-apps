@@ -135,12 +135,13 @@ footer { text-align: center; padding: 16px; color: #52525b; font-size: 12px; bor
 
 /* Scanner Modal */
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 100; justify-content: center; align-items: center; }
-.modal-content { background: #1e2030; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; width: 90%; max-width: 480px; }
+.modal.show { display: flex; }
+.modal-content { background: #1e2030; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .modal-header h3 { color: #f4f4f5; font-size: 18px; }
 .close-btn { background: none; border: none; color: #71717a; font-size: 20px; cursor: pointer; padding: 4px 8px; }
 .close-btn:hover { color: #f4f4f5; }
-.qr-reader { width: 100%; border-radius: 10px; overflow: hidden; }
+.qr-reader { width: 100%; min-height: 300px; border-radius: 10px; overflow: hidden; background: #000; }
 
 /* Bin list items */
 .bin-item { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
