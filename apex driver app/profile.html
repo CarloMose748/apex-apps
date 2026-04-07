@@ -17,7 +17,7 @@
     
     <style>
         body {
-            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            background: #171412;
             min-height: 100vh;
         }
 
@@ -32,12 +32,12 @@
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
             padding: 40px 32px;
-            border-radius: 24px;
+            border-radius: 6px;
             text-align: center;
             margin-bottom: 28px;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 8px 32px rgba(37, 99, 235, 0.25);
+            box-shadow: 0 8px 32px rgba(13, 148, 136, 0.25);
         }
 
         .profile-header::before {
@@ -81,12 +81,12 @@
         }
 
         .profile-section {
-            background: white;
-            border-radius: 20px;
+            background: #292524;
+            border-radius: 6px;
             padding: 28px;
             margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
-            border: 1px solid rgba(226, 232, 240, 0.6);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(63, 63, 63, 0.6);
         }
 
         .profile-section h3 {
@@ -125,13 +125,13 @@
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 16px 18px;
-            border: 2px solid #e2e8f0;
-            border-radius: 14px;
+            border: 1px solid #3f3f3f;
+            border-radius: 4px;
             font-size: 15px;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
             color: var(--text-primary);
-            background: white;
+            background: #292524;
         }
 
         .form-group input:hover, .form-group select:hover, .form-group textarea:hover {
@@ -141,19 +141,19 @@
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
         }
 
         .form-group input:disabled {
-            background: #f8fafc;
-            color: #64748b;
+            background: #1c1917;
+            color: #a8a29e;
             cursor: not-allowed;
         }
 
         .btn {
             padding: 14px 24px;
             border: none;
-            border-radius: 14px;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 15px;
             font-weight: 600;
@@ -168,12 +168,12 @@
         .btn-primary {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+            box-shadow: 0 4px 14px rgba(13, 148, 136, 0.25);
         }
 
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+            box-shadow: 0 6px 20px rgba(13, 148, 136, 0.35);
         }
 
         .btn-secondary {
@@ -216,17 +216,17 @@
         }
 
         .status-active { 
-            background: #ecfdf5; 
+            background: rgba(22, 163, 74, 0.15); 
             color: #059669;
             box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
         }
         .status-busy { 
-            background: #fff7ed; 
+            background: rgba(234, 88, 12, 0.15); 
             color: #ea580c;
             box-shadow: 0 2px 8px rgba(234, 88, 12, 0.15);
         }
         .status-offline { 
-            background: #fef2f2; 
+            background: rgba(220, 38, 38, 0.15); 
             color: #dc2626;
             box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
         }
@@ -287,7 +287,7 @@
 
         .success-message, .error-message {
             padding: 16px 20px;
-            border-radius: 14px;
+            border-radius: 4px;
             margin-bottom: 24px;
             font-size: 14px;
             text-align: center;
@@ -295,15 +295,15 @@
         }
 
         .success-message {
-            background: #ecfdf5;
+            background: rgba(22, 163, 74, 0.15);
             color: #059669;
             border: 1px solid #a7f3d0;
         }
 
         .error-message {
-            background: #fef2f2;
+            background: rgba(220, 38, 38, 0.15);
             color: #dc2626;
-            border: 1px solid #fecaca;
+            border: 1px solid rgba(220, 38, 38, 0.3);
         }
 
         @media (max-width: 768px) {
@@ -317,12 +317,12 @@
 
             .profile-header {
                 padding: 32px 24px;
-                border-radius: 20px;
+                border-radius: 6px;
             }
 
             .profile-section {
                 padding: 24px 20px;
-                border-radius: 16px;
+                border-radius: 6px;
             }
 
             .stats-grid {

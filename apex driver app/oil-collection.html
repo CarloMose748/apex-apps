@@ -30,7 +30,7 @@
   
   <style>
     body {
-      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      background: #171412;
     }
 
     .oil-collection-container {
@@ -44,7 +44,7 @@
     .collection-header {
       background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
       padding: 20px 0;
-      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.2);
+      box-shadow: 0 4px 20px rgba(13, 148, 136, 0.2);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -89,12 +89,12 @@
     }
 
     .job-summary {
-      background: white;
-      border-radius: 20px;
+      background: #292524;
+      border-radius: 6px;
       padding: 24px;
       margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
-      border: 1px solid rgba(226, 232, 240, 0.6);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      border: 1px solid rgba(63, 63, 63, 0.6);
     }
 
     .job-title {
@@ -116,7 +116,7 @@
       align-items: center;
       gap: 8px;
       padding: 12px 16px;
-      background: #f8fafc;
+      background: #1c1917;
       border-radius: 12px;
     }
 
@@ -130,11 +130,11 @@
     }
 
     .collection-form {
-      background: white;
-      border-radius: 20px;
+      background: #292524;
+      border-radius: 6px;
       padding: 28px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
-      border: 1px solid rgba(226, 232, 240, 0.6);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      border: 1px solid rgba(63, 63, 63, 0.6);
     }
 
     .form-section {
@@ -158,8 +158,8 @@
 
     /* QR Scanner Styles */
     .scanner-section {
-      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
-      border-radius: 20px;
+      background: rgba(13, 148, 136, 0.1);
+      border-radius: 6px;
       padding: 24px;
       margin-bottom: 24px;
       border: 2px solid var(--primary-color);
@@ -171,7 +171,7 @@
       background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
       color: white;
       border: none;
-      border-radius: 16px;
+      border-radius: 6px;
       font-size: 1rem;
       font-weight: 700;
       cursor: pointer;
@@ -181,12 +181,12 @@
       gap: 10px;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       min-height: 56px;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.25);
     }
 
     .scanner-button:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+      box-shadow: 0 6px 20px rgba(13, 148, 136, 0.35);
     }
 
     .scanner-button:disabled {
@@ -198,7 +198,7 @@
 
     #qr-reader {
       width: 100%;
-      border-radius: 16px;
+      border-radius: 6px;
       overflow: hidden;
       margin-top: 16px;
       display: none;
@@ -214,7 +214,7 @@
     #qr-reader video {
       width: 100% !important;
       height: auto !important;
-      border-radius: 16px;
+      border-radius: 6px;
     }
 
     #qr-reader__scan_region {
@@ -243,9 +243,9 @@
     }
 
     .scanned-bin-item {
-      background: white;
+      background: #292524;
       padding: 16px 18px;
-      border-radius: 14px;
+      border-radius: 4px;
       margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
@@ -293,9 +293,9 @@
     }
 
     .scanner-info {
-      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
-      border: 1px solid rgba(37, 99, 235, 0.2);
-      border-radius: 14px;
+      background: rgba(13, 148, 136, 0.1);
+      border: 1px solid rgba(13, 148, 136, 0.2);
+      border-radius: 4px;
       padding: 14px 16px;
       margin-top: 14px;
       font-size: 0.9rem;
@@ -306,7 +306,7 @@
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       color: white;
       padding: 14px 16px;
-      border-radius: 14px;
+      border-radius: 4px;
       margin-top: 14px;
       text-align: center;
       font-weight: 700;
@@ -333,9 +333,9 @@
     .quantity-controls {
       display: flex;
       align-items: center;
-      background: #f8fafc;
-      border-radius: 14px;
-      border: 2px solid #e2e8f0;
+      background: #1c1917;
+      border-radius: 4px;
+      border: 1px solid #3f3f3f;
       /* Mobile optimization */
       min-height: 52px;
       touch-action: manipulation;
@@ -361,12 +361,12 @@
       transition: all 0.2s ease;
       /* Better touch targets */
       touch-action: manipulation;
-      -webkit-tap-highlight-color: rgba(37, 99, 235, 0.2);
+      -webkit-tap-highlight-color: rgba(13, 148, 136, 0.2);
       border-radius: 12px;
     }
 
     .quantity-btn:hover {
-      background: rgba(37, 99, 235, 0.1);
+      background: rgba(13, 148, 136, 0.1);
     }
 
     .quantity-btn:disabled {
@@ -413,20 +413,20 @@
       padding: 14px 22px;
       background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
       color: white;
-      border-radius: 14px;
+      border-radius: 4px;
       font-weight: 700;
       font-size: 0.95rem;
       min-height: 48px;
-      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
     }
 
     .unit-label {
       font-weight: 700;
     }    .unit-option {
       padding: 14px 22px;
-      border: 2px solid #e2e8f0;
-      border-radius: 14px;
-      background: white;
+      border: 1px solid #3f3f3f;
+      border-radius: 4px;
+      background: #292524;
       color: var(--text-secondary);
       cursor: pointer;
       transition: all 0.2s ease;
@@ -438,7 +438,7 @@
       align-items: center;
       justify-content: center;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: rgba(37, 99, 235, 0.2);
+      -webkit-tap-highlight-color: rgba(13, 148, 136, 0.2);
     }
 
     .unit-option:hover {
@@ -449,16 +449,16 @@
       background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
       border-color: var(--primary-color);
       color: white;
-      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
     }
 
     .notes-textarea {
       width: 100%;
       min-height: 120px;
       padding: 18px;
-      border: 2px solid #e2e8f0;
-      border-radius: 16px;
-      background: white;
+      border: 1px solid #3f3f3f;
+      border-radius: 6px;
+      background: #292524;
       font-family: inherit;
       font-size: 1rem;
       color: var(--text-primary);
@@ -477,7 +477,7 @@
     .notes-textarea:focus {
       outline: none;
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+      box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
     }
 
     .photo-upload-section {
@@ -488,10 +488,10 @@
 
     .upload-area {
       border: 2px dashed #cbd5e1;
-      border-radius: 20px;
+      border-radius: 6px;
       padding: 48px 24px;
       text-align: center;
-      background: #f8fafc;
+      background: #1c1917;
       transition: all 0.25s ease;
       cursor: pointer;
       /* Mobile touch optimization */
@@ -501,17 +501,17 @@
       align-items: center;
       justify-content: center;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: rgba(37, 99, 235, 0.1);
+      -webkit-tap-highlight-color: rgba(13, 148, 136, 0.1);
     }
 
     .upload-area:hover {
       border-color: var(--primary-color);
-      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      background: rgba(13, 148, 136, 0.1);
     }
 
     .upload-area.dragover {
       border-color: var(--primary-color);
-      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      background: rgba(13, 148, 136, 0.1);
       border-style: solid;
     }
 
@@ -542,10 +542,10 @@
     .photo-item {
       position: relative;
       aspect-ratio: 1;
-      border-radius: 14px;
+      border-radius: 4px;
       overflow: hidden;
-      background: #f1f5f9;
-      border: 1px solid rgba(226, 232, 240, 0.6);
+      background: #1c1917;
+      border: 1px solid rgba(63, 63, 63, 0.6);
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
 
@@ -596,7 +596,7 @@
       color: white;
       border: none;
       padding: 20px 28px;
-      border-radius: 16px;
+      border-radius: 6px;
       font-size: 1.1rem;
       font-weight: 700;
       cursor: pointer;
@@ -609,13 +609,13 @@
       min-height: 60px;
       touch-action: manipulation;
       -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+      box-shadow: 0 4px 16px rgba(13, 148, 136, 0.3);
       letter-spacing: -0.01em;
     }
 
     .btn-submit:hover {
       transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+      box-shadow: 0 8px 24px rgba(13, 148, 136, 0.4);
     }
 
     .btn-submit:active {
@@ -630,11 +630,11 @@
     }
 
     .btn-cancel {
-      background: white;
+      background: #292524;
       color: var(--text-secondary);
-      border: 2px solid #e2e8f0;
+      border: 1px solid #3f3f3f;
       padding: 16px 28px;
-      border-radius: 16px;
+      border-radius: 6px;
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
@@ -646,7 +646,7 @@
     }
 
     .btn-cancel:hover {
-      background: #f8fafc;
+      background: #1c1917;
       border-color: #cbd5e1;
     }
 
@@ -700,12 +700,12 @@
     }
 
     .certificate-container {
-      background: white;
+      background: #292524;
       max-width: 600px;
       width: 100%;
       max-height: 90vh;
       overflow-y: auto;
-      border-radius: 24px;
+      border-radius: 6px;
       position: relative;
       box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
     }
@@ -716,7 +716,7 @@
       background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
       border: 3px solid var(--primary-color);
       position: relative;
-      border-radius: 20px;
+      border-radius: 6px;
     }
 
     .certificate::before {
@@ -727,7 +727,7 @@
       right: 12px;
       bottom: 12px;
       border: 2px solid var(--primary-color);
-      border-radius: 14px;
+      border-radius: 4px;
     }
 
     .certificate-header {
@@ -746,7 +746,7 @@
       color: white;
       font-size: 2.2rem;
       font-weight: bold;
-      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
+      box-shadow: 0 8px 24px rgba(13, 148, 136, 0.3);
     }
 
     .certificate-title {
@@ -780,11 +780,11 @@
     }
 
     .certificate-details {
-      background: white;
+      background: #292524;
       border-radius: 18px;
       padding: 28px;
       margin: 28px 0;
-      border: 1px solid rgba(226, 232, 240, 0.6);
+      border: 1px solid rgba(63, 63, 63, 0.6);
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
 
@@ -866,7 +866,7 @@
 
     .certificate-actions {
       padding: 24px;
-      background: #f8fafc;
+      background: #1c1917;
       border-top: 1px solid rgba(226, 232, 240, 0.6);
       display: flex;
       gap: 12px;
@@ -1434,7 +1434,7 @@
           </button>
           <iframe 
             src="https://greenoilindex.com/" 
-            style="width: 100%; height: 800px; border: none; border-radius: var(--radius-sm); background: white;"
+            style="width: 100%; height: 800px; border: none; border-radius: var(--radius-sm); background: #292524;"
             title="Green Oil Index"
             loading="lazy">
           </iframe>
@@ -3269,8 +3269,8 @@
       // Create sharing menu
       const sharingMenu = document.createElement('div');
       sharingMenu.style.cssText = `
-        background: white;
-        border-radius: 20px 20px 8px 8px;
+        background: #292524;
+        border-radius: 6px 20px 8px 8px;
         max-width: 400px;
         width: 100%;
         padding: 20px;

@@ -135,7 +135,7 @@
 
     <style>
         body {
-            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            background: #171412;
             min-height: 100vh;
         }
 
@@ -192,9 +192,9 @@
 
         .filter-tab {
             padding: 12px 20px;
-            border: 2px solid #e2e8f0;
-            background: white;
-            border-radius: 14px;
+            border: 1px solid #3f3f3f;
+            background: #292524;
+            border-radius: 4px;
             cursor: pointer;
             font-weight: 600;
             font-size: 14px;
@@ -212,7 +212,7 @@
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
             border-color: transparent;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
         }
 
         .stats-grid {
@@ -223,12 +223,12 @@
         }
 
         .stat-card {
-            background: white;
+            background: #292524;
             padding: 24px 20px;
-            border-radius: 20px;
+            border-radius: 6px;
             text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
-            border: 1px solid rgba(226, 232, 240, 0.6);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(63, 63, 63, 0.6);
             transition: all 0.25s ease;
         }
 
@@ -255,11 +255,11 @@
         }
 
         .jobs-section {
-            background: white;
-            border-radius: 24px;
+            background: #292524;
+            border-radius: 6px;
             padding: 28px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
-            border: 1px solid rgba(226, 232, 240, 0.6);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(63, 63, 63, 0.6);
             margin-bottom: 24px;
         }
 
@@ -269,7 +269,7 @@
             align-items: center;
             margin-bottom: 24px;
             padding-bottom: 20px;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid #3f3f3f;
         }
 
         .jobs-header h2 {
@@ -303,9 +303,9 @@
         .empty-state {
             text-align: center;
             padding: 64px 24px;
-            background: #f8fafc;
-            border-radius: 20px;
-            border: 2px dashed #e2e8f0;
+            background: #1c1917;
+            border-radius: 6px;
+            border: 1px dashed #3f3f3f;
         }
 
         .empty-icon {
@@ -336,8 +336,8 @@
         }
 
         .job-card {
-            background: white;
-            border: 1px solid rgba(226, 232, 240, 0.6);
+            background: #292524;
+            border: 1px solid rgba(63, 63, 63, 0.6);
             border-radius: 18px;
             padding: 24px;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -359,7 +359,7 @@
 
         .job-card:hover {
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            border-color: rgba(37, 99, 235, 0.2);
+            border-color: rgba(13, 148, 136, 0.2);
             transform: translateY(-2px);
         }
 
@@ -397,37 +397,37 @@
         }
 
         .job-status.in-progress {
-            background: #fff7ed;
+            background: rgba(234, 88, 12, 0.15);
             color: #ea580c;
         }
 
         .job-status.completed {
-            background: #ecfdf5;
+            background: rgba(22, 163, 74, 0.15);
             color: #059669;
         }
 
         .job-status.cancelled {
-            background: #fef2f2;
+            background: rgba(220, 38, 38, 0.15);
             color: #dc2626;
         }
         
         .job-status.available {
-            background: #faf5ff;
+            background: rgba(139, 92, 246, 0.15);
             color: #7c3aed;
         }
         
         .job-status.collected {
-            background: #f0fdfa;
+            background: rgba(13, 148, 136, 0.15);
             color: #0d9488;
         }
         
         .job-status.pending-verification {
-            background: #fff7ed;
+            background: rgba(234, 88, 12, 0.15);
             color: #ea580c;
         }
         
         .job-status.verified {
-            background: #ecfdf5;
+            background: rgba(22, 163, 74, 0.15);
             color: #059669;
         }
         
@@ -443,7 +443,7 @@
         }
         
         .job-instructions {
-            background: #f8fafc;
+            background: #1c1917;
             padding: 12px 16px;
             border-radius: 12px;
             margin: 16px 0;
@@ -1257,7 +1257,7 @@
             // Create modal content
             const modalContent = document.createElement('div');
             modalContent.style.cssText = `
-                background: white;
+                background: #292524;
                 border-radius: 12px;
                 max-width: 90vw;
                 max-height: 90vh;
@@ -1394,8 +1394,8 @@
             // Create sharing menu
             const sharingMenu = document.createElement('div');
             sharingMenu.style.cssText = `
-                background: white;
-                border-radius: 20px 20px 8px 8px;
+                background: #292524;
+                border-radius: 6px 20px 8px 8px;
                 max-width: 400px;
                 width: 100%;
                 padding: 20px;
