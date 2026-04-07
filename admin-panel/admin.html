@@ -21,1135 +21,393 @@
     <script src="auth-service.js"></script>
     <script src="admin-service.js"></script>
     
-    <style>
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
         :root {
-            --primary-blue: #1e40af;
-            --secondary-blue: #3b82f6;
-            --accent-blue: #60a5fa;
-            --light-blue: #93c5fd;
-            --deep-blue: #1e3a8a;
-            --navy-blue: #1e293b;
-            --text-primary: #1e293b;
-            --text-secondary: #475569;
-            --text-light: #ffffff;
-            --success-color: #059669;
-            --error-color: #dc2626;
-            --warning-color: #d97706;
-            --border-light: #e2e8f0;
-            --background-light: #f8fafc;
+            --bg-primary: #0f1117;
+            --bg-secondary: #1a1d2e;
+            --bg-card: rgba(30,32,44,0.85);
+            --bg-card-hover: rgba(30,32,44,0.95);
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border-color: rgba(255,255,255,0.06);
+            --border-hover: rgba(255,255,255,0.12);
+            --accent: #10b981;
+            --accent-light: #34d399;
+            --accent-dark: #059669;
+            --accent-glow: rgba(16,185,129,0.15);
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #cbd5e1 100%);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
             min-height: 100vh;
             color: var(--text-primary);
-            font-size: 14px; /* slightly smaller base font for denser UI */
+            font-size: 14px;
         }
 
         .admin-container {
-            max-width: 1200px;
+            max-width: 1280px;
             margin: 0 auto;
             padding: 20px;
             min-height: 100vh;
         }
 
         .admin-header {
-            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 50%, var(--accent-blue) 100%);
-            color: white;
-            padding: 30px;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, #252838 100%);
+            color: var(--text-primary);
+            padding: 24px 28px;
             border-radius: 16px;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
             position: relative;
-            box-shadow: 0 20px 40px rgba(30, 64, 175, 0.15), 0 10px 20px rgba(30, 64, 175, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
             overflow: hidden;
         }
-
         .admin-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            transition: left 0.5s ease;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent), #06b6d4, var(--accent));
         }
+        .admin-header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+        .header-content { position: relative; z-index: 2; }
+        .header-title { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 6px; }
+        .header-logo { height: 48px; width: auto; filter: brightness(0) invert(1); opacity: 0.9; }
+        .header-logo:hover { opacity: 1; }
 
-        .admin-header:hover::before {
-            left: 100%;
-        }
-
-        .admin-header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .header-content {
-            position: relative;
-            z-index: 2;
-        }
-
-        .header-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 8px;
-        }
-
-        .header-logo {
-            height: 60px;
-            width: auto;
-            filter: brightness(0) invert(1);
-            opacity: 0.95;
-            transition: all 0.3s ease;
-        }
-
-        .header-logo:hover {
-            opacity: 1;
-            transform: scale(1.05);
-        }
-
-        /* Dropdown Styles */
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
-
-        .dropdown-btn {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .dropdown-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-1px);
-        }
-
-        .dropdown-btn i:last-child {
-            transition: transform 0.3s ease;
-            margin-left: 8px;
-            font-size: 12px;
-            opacity: 0.8;
-        }
-
-        .dropdown-arrow {
-            margin-left: 8px !important;
-            font-size: 14px !important;
-            opacity: 1 !important;
-            color: #ffffff !important;
-            display: inline-block !important;
-            filter: none !important;
-        }
-
-        .nav-dropdown .dropdown-btn .dropdown-arrow {
-            color: #ffffff !important;
-        }
-
-        .dropdown:hover .dropdown-btn i:last-child,
-        .dropdown:hover .dropdown-arrow {
-            transform: rotate(180deg);
-            opacity: 1;
-        }
-
-        .dropdown-content {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-            min-width: 280px;
-            border-radius: 12px;
-            box-shadow: 0 15px 35px rgba(30, 64, 175, 0.15), 0 5px 15px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(30, 64, 175, 0.1);
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
-            margin-top: 8px;
-        }
-
-        .dropdown:hover .dropdown-content {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 15px 20px;
-            color: var(--text-primary);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            border-radius: 12px;
-            margin: 4px;
-        }
-
-        .dropdown-item:first-child {
-            margin-top: 8px;
-        }
-
-        .dropdown-item:last-child {
-            margin-bottom: 8px;
-        }
-
-        .dropdown-item:hover {
-            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
-            color: white;
-            transform: translateX(5px);
-        }
-
-        .dropdown-item i {
-            font-size: 16px;
-            width: 20px;
-            text-align: center;
-        }
-
-        .dropdown-item span {
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        /* Navigation dropdown specific styles */
-        .nav-dropdown {
-            position: relative;
-        }
-
-        .nav-dropdown .dropdown-btn {
-            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 15px rgba(30, 64, 175, 0.2);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .nav-dropdown .dropdown-btn::after {
-            content: '';
-            position: absolute;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
-        }
-
-        .nav-dropdown .dropdown-btn::before {
-            content: '▼';
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: rgba(255,255,255,0.8);
-            font-size: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-dropdown .dropdown-btn:hover::before {
-            transform: translateY(-50%) rotate(180deg);
-            color: rgba(255,255,255,1);
-        }
-
-        .nav-dropdown .dropdown-btn:hover {
-            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--light-blue) 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(96, 165, 250, 0.4);
-        }
-
-        .nav-dropdown .dropdown-content {
-            right: 0;
-        }
-
+        /* Navigation */
+        .admin-nav-wrapper { margin: 0 0 20px 0; }
         .admin-nav {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
+            display: flex; gap: 8px; flex-wrap: wrap;
         }
-
         .nav-btn {
-            padding: 10px 16px;
-            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
-            color: white;
-            border: none;
-            border-radius: 999px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.25s ease;
-            text-decoration: none;
-            display: inline-block;
-            box-shadow: 0 4px 15px rgba(30, 64, 175, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            white-space: nowrap;
-        }
-
-        .nav-btn:hover, .nav-btn.active {
-            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--light-blue) 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(96, 165, 250, 0.4);
-        }
-
-        .nav-btn.secondary {
-            background: linear-gradient(135deg, var(--navy-blue) 0%, var(--text-secondary) 100%);
-        }
-
-        .nav-btn.secondary:hover {
-            background: linear-gradient(135deg, var(--text-secondary) 0%, var(--navy-blue) 100%);
-            box-shadow: 0 6px 20px rgba(71, 85, 105, 0.3);
-        }
-
-        /* Individual tab color schemes */
-        .nav-btn.tab-dashboard {
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-            box-shadow: 0 4px 15px rgba(30, 64, 175, 0.2);
-        }
-        
-        .nav-btn.tab-dashboard:hover, .nav-btn.tab-dashboard.active {
-            background: linear-gradient(135deg, #60a5fa 0%, #93c5fd 100%);
-            box-shadow: 0 8px 25px rgba(96, 165, 250, 0.4);
-        }
-
-        .nav-btn.tab-pending {
-            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
-            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.2);
-        }
-        
-        .nav-btn.tab-pending:hover, .nav-btn.tab-pending.active {
-            background: linear-gradient(135deg, #fbbf24 0%, #fcd34d 100%);
-            box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
-        }
-
-        .nav-btn.tab-drivers {
-            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-            box-shadow: 0 4px 15px rgba(5, 150, 105, 0.2);
-        }
-        
-        .nav-btn.tab-drivers:hover, .nav-btn.tab-drivers.active {
-            background: linear-gradient(135deg, #34d399 0%, #6ee7b7 100%);
-            box-shadow: 0 8px 25px rgba(52, 211, 153, 0.4);
-        }
-
-        .nav-btn.tab-smartbins {
-            background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
-            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2);
-        }
-        
-        .nav-btn.tab-smartbins:hover, .nav-btn.tab-smartbins.active {
-            background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 100%);
-            box-shadow: 0 8px 25px rgba(167, 139, 250, 0.4);
-        }
-
-        .nav-btn.tab-collections {
-            background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
-            box-shadow: 0 4px 15px rgba(8, 145, 178, 0.2);
-        }
-        
-        .nav-btn.tab-collections:hover, .nav-btn.tab-collections.active {
-            background: linear-gradient(135deg, #22d3ee 0%, #67e8f9 100%);
-            box-shadow: 0 8px 25px rgba(34, 211, 238, 0.4);
-        }
-
-        .nav-btn.tab-search {
-            background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
-            box-shadow: 0 4px 15px rgba(225, 29, 72, 0.2);
-        }
-        
-        .nav-btn.tab-search:hover, .nav-btn.tab-search.active {
-            background: linear-gradient(135deg, #fb7185 0%, #fda4af 100%);
-            box-shadow: 0 8px 25px rgba(251, 113, 133, 0.4);
-        }
-
-        .nav-btn.tab-bins {
-            background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
-            box-shadow: 0 4px 15px rgba(67, 56, 202, 0.2);
-        }
-        
-        .nav-btn.tab-bins:hover, .nav-btn.tab-bins.active {
-            background: linear-gradient(135deg, #818cf8 0%, #a5b4fc 100%);
-            box-shadow: 0 8px 25px rgba(129, 140, 248, 0.4);
-        }
-
-        .nav-btn.tab-highaggregators {
-            background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
-            box-shadow: 0 4px 15px rgba(21, 128, 61, 0.2);
-        }
-        
-        .nav-btn.tab-highaggregators:hover, .nav-btn.tab-highaggregators.active {
-            background: linear-gradient(135deg, #22c55e 0%, #86efac 100%);
-            box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
-        }
-
-        .nav-btn.tab-qrcodes {
-            background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
-            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2);
-        }
-        
-        .nav-btn.tab-qrcodes:hover, .nav-btn.tab-qrcodes.active {
-            background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 100%);
-            box-shadow: 0 8px 25px rgba(167, 139, 250, 0.4);
-        }
-
-        .nav-btn.tab-other {
-            background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
-            box-shadow: 0 4px 15px rgba(107, 114, 128, 0.2);
-        }
-        
-        .nav-btn.tab-other:hover, .nav-btn.tab-other.active {
-            background: linear-gradient(135deg, #d1d5db 0%, #e5e7eb 100%);
-            color: #374151;
-            box-shadow: 0 8px 25px rgba(209, 213, 219, 0.4);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 24px;
-            margin-bottom: 30px;
-        }
-        
-
-        .stat-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
-            padding: 30px 25px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(30, 64, 175, 0.08), 0 4px 20px rgba(30, 64, 175, 0.04);
-            text-align: center;
-            border: 1px solid rgba(30, 64, 175, 0.1);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card:before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue), var(--accent-blue));
-        }
-
-        .stat-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 60px rgba(30, 64, 175, 0.15), 0 8px 30px rgba(30, 64, 175, 0.08);
-            border-color: rgba(96, 165, 250, 0.2);
-        }
-
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue), var(--accent-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 12px;
-            line-height: 1;
-        }
-
-        .stat-label {
+            padding: 8px 16px;
+            background: var(--bg-secondary);
             color: var(--text-secondary);
-            font-size: 0.95rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer; font-size: 13px; font-weight: 600;
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--accent-glow);
+            color: var(--accent-light);
+            border-color: var(--accent);
+        }
+        /* Remove per-tab color schemes — unified dark nav */
+        .nav-btn.tab-dashboard, .nav-btn.tab-pending, .nav-btn.tab-drivers,
+        .nav-btn.tab-smartbins, .nav-btn.tab-collections, .nav-btn.tab-search,
+        .nav-btn.tab-bins, .nav-btn.tab-highaggregators, .nav-btn.tab-qrcodes,
+        .nav-btn.tab-other {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: none;
+        }
+        .nav-btn.tab-dashboard:hover, .nav-btn.tab-dashboard.active,
+        .nav-btn.tab-pending:hover, .nav-btn.tab-pending.active,
+        .nav-btn.tab-drivers:hover, .nav-btn.tab-drivers.active,
+        .nav-btn.tab-smartbins:hover, .nav-btn.tab-smartbins.active,
+        .nav-btn.tab-collections:hover, .nav-btn.tab-collections.active,
+        .nav-btn.tab-search:hover, .nav-btn.tab-search.active,
+        .nav-btn.tab-bins:hover, .nav-btn.tab-bins.active,
+        .nav-btn.tab-highaggregators:hover, .nav-btn.tab-highaggregators.active,
+        .nav-btn.tab-qrcodes:hover, .nav-btn.tab-qrcodes.active,
+        .nav-btn.tab-other:hover, .nav-btn.tab-other.active {
+            background: var(--accent-glow);
+            color: var(--accent-light);
+            border-color: var(--accent);
+            box-shadow: 0 0 12px var(--accent-glow);
+            transform: none;
+        }
+        .nav-btn.secondary {
+            background: rgba(255,255,255,0.04);
         }
 
+        /* Dropdown */
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-btn {
+            background: var(--bg-secondary); color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px; border-radius: 10px;
+            cursor: pointer; font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+        }
+        .dropdown-btn:hover { border-color: var(--accent); color: var(--accent-light); }
+        .dropdown-btn i:last-child { font-size: 12px; opacity: 0.7; margin-left: 6px; }
+        .dropdown-arrow { margin-left: 6px !important; font-size: 12px !important; color: var(--text-secondary) !important; display: inline-block !important; }
+        .dropdown-content {
+            position: absolute; top: 100%; right: 0;
+            background: var(--bg-secondary); border: 1px solid var(--border-hover);
+            min-width: 240px; border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+            z-index: 1000; opacity: 0; visibility: hidden;
+            transform: translateY(-8px); transition: all 0.2s; margin-top: 6px;
+        }
+        .dropdown:hover .dropdown-content { opacity: 1; visibility: visible; transform: translateY(0); }
+        .dropdown-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px; color: var(--text-secondary);
+            text-decoration: none; transition: all 0.15s; border-radius: 8px; margin: 4px;
+        }
+        .dropdown-item:first-child { margin-top: 6px; }
+        .dropdown-item:last-child { margin-bottom: 6px; }
+        .dropdown-item:hover { background: var(--accent-glow); color: var(--accent-light); }
+        .dropdown-item i { font-size: 15px; width: 20px; text-align: center; }
+        .dropdown-item span { font-weight: 500; font-size: 13px; }
+        .nav-dropdown { position: relative; }
+        .nav-dropdown .dropdown-btn {
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            box-shadow: none; position: relative; overflow: hidden;
+        }
+        .nav-dropdown .dropdown-btn::after { display: none; }
+        .nav-dropdown .dropdown-btn::before { display: none; }
+        .nav-dropdown .dropdown-btn:hover {
+            border-color: var(--accent); color: var(--accent-light);
+            transform: none; box-shadow: 0 0 12px var(--accent-glow);
+        }
+        .nav-dropdown .dropdown-content { right: 0; }
+        .nav-dropdown .dropdown-btn .dropdown-arrow { color: var(--text-secondary) !important; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px; margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--bg-card); backdrop-filter: blur(12px);
+            padding: 24px 20px; border-radius: 14px;
+            border: 1px solid var(--border-color);
+            text-align: center; transition: all 0.2s; position: relative; overflow: hidden;
+        }
+        .stat-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent), #06b6d4);
+        }
+        .stat-card:hover { border-color: var(--accent-glow); transform: translateY(-2px); }
+        .stat-value {
+            font-size: 2.2rem; font-weight: 700; color: var(--accent-light);
+            margin-bottom: 8px; line-height: 1;
+        }
+        .stat-label { color: var(--text-muted); font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Section Cards */
         .section-card {
-            background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
-            border-radius: 24px;
-            padding: 32px;
-            margin-bottom: 32px;
-            box-shadow: 0 16px 50px rgba(30, 64, 175, 0.08), 0 6px 25px rgba(30, 64, 175, 0.04);
-            border: 1px solid rgba(30, 64, 175, 0.08);
-            transition: all 0.3s ease;
+            background: var(--bg-card); backdrop-filter: blur(12px);
+            border-radius: 16px; padding: 28px;
+            margin-bottom: 24px; border: 1px solid var(--border-color);
+            transition: border-color 0.2s;
         }
-
-        .section-card:hover {
-            box-shadow: 0 20px 60px rgba(30, 64, 175, 0.12), 0 8px 30px rgba(30, 64, 175, 0.06);
-            transform: translateY(-2px);
-        }
-
+        .section-card:hover { border-color: var(--border-hover); }
         .section-title {
-            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 3px solid transparent;
-            border-image: linear-gradient(90deg, var(--primary-blue), var(--accent-blue)) 1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.05rem; /* slightly smaller section titles */
-            font-weight: 600;
+            color: var(--text-primary); font-size: 1rem; font-weight: 700;
+            margin-bottom: 18px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
+            -webkit-text-fill-color: unset; background: none; -webkit-background-clip: unset; background-clip: unset; border-image: none;
         }
+        .section-title i { margin-right: 10px; color: var(--accent); font-size: 1rem; }
 
-        .section-title i {
-            margin-right: 12px;
-            color: var(--secondary-blue);
-            font-size: 1.1rem;
+        /* Tables */
+        .user-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .user-table th, .user-table td {
+            padding: 10px 8px; text-align: left;
+            border-bottom: 1px solid var(--border-color); line-height: 1.3;
         }
-
-        .user-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-
-        .user-table th,
-        .user-table td {
-            padding: 8px; /* reduced default padding for denser tables */
-            text-align: left;
-            border-bottom: 1px solid #e1e8ed;
-            line-height: 1.2;
-        }
-
-        /* Compact Smart Bins & Drivers table overrides (no font-size changes) */
-        #smartbinsList .user-table,
-        #driversList .user-table {
-            table-layout: fixed; /* allow controlled column widths */
-            width: 100%;
-        }
-
-        /* Narrower cell padding for compact rows */
-        /* Allow header cells to wrap, but keep ellipsis for data cells */
-        #smartbinsList .user-table th,
-        #driversList .user-table th {
-            padding: 4px;
-            white-space: normal;
-            overflow: visible;
-            text-overflow: unset;
-        }
-        #smartbinsList .user-table td,
-        #driversList .user-table td {
-            padding: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-          /* Smart Bins specific column widths (summary view) - narrower fixed widths */
-          #smartbinsList .user-table th:nth-child(1),
-          #smartbinsList .user-table td:nth-child(1) { width: 90px; min-width: 90px; }
-          #smartbinsList .user-table th:nth-child(2),
-          #smartbinsList .user-table td:nth-child(2) { width: 80px; }
-          #smartbinsList .user-table th:nth-child(3),
-          #smartbinsList .user-table td:nth-child(3) { width: 70px; }
-          #smartbinsList .user-table th:nth-child(4),
-          #smartbinsList .user-table td:nth-child(4) { width: 70px; }
-          #smartbinsList .user-table th:nth-child(5),
-          #smartbinsList .user-table td:nth-child(5) { width: 100px}
-          #smartbinsList .user-table th:nth-child(6),
-          #smartbinsList .user-table td:nth-child(6) { width: 80px; }
-          #smartbinsList .user-table th:nth-child(7),
-          #smartbinsList .user-table td:nth-child(7) { width: 80px; }
-
-        /* Drivers table column widths: Name, Email, Phone, Vehicle, Status, Registered, Actions - narrower fixed widths */
-        #driversList .user-table th:nth-child(1), #driversList .user-table td:nth-child(1) { width: 140px; }
-        #driversList .user-table th:nth-child(2), #driversList .user-table td:nth-child(2) { width: 220px; }
-        #driversList .user-table th:nth-child(3), #driversList .user-table td:nth-child(3) { width: 110px; }
-        #driversList .user-table th:nth-child(4), #driversList .user-table td:nth-child(4) { width: 200px; }
-        #driversList .user-table th:nth-child(5), #driversList .user-table td:nth-child(5) { width: 100px; }
-        #driversList .user-table th:nth-child(6), #driversList .user-table td:nth-child(6) { width: 120px; }
-        #driversList .user-table th:nth-child(7), #driversList .user-table td:nth-child(7) { width: 100px; }
-
-        /* High Aggregators Bins table column widths: Bin ID, Branch, Status, Inbound Litres, Drainage Litres, Last Event, Storage Location, Created */
-        #aggregatorBinsList .user-table {
-            table-layout: fixed;
-            padding: 4px;
-        }
-        #aggregatorBinsList .user-table th,
-        #aggregatorBinsList .user-table td {
-            text-overflow: ellipsis;
-            overflow: hidden;
-            padding: 4px;
-        }
-        #aggregatorBinsList .user-table th:nth-child(1), #aggregatorBinsList .user-table td:nth-child(1) { width: 100px; }
-        #aggregatorBinsList .user-table th:nth-child(2), #aggregatorBinsList .user-table td:nth-child(2) { width: 150px; }
-        #aggregatorBinsList .user-table th:nth-child(3), #aggregatorBinsList .user-table td:nth-child(3) { width: 140px; }
-        #aggregatorBinsList .user-table th:nth-child(4), #aggregatorBinsList .user-table td:nth-child(4) { width: 110px; }
-        #aggregatorBinsList .user-table th:nth-child(5), #aggregatorBinsList .user-table td:nth-child(5) { width: 120px; }
-        #aggregatorBinsList .user-table th:nth-child(6), #aggregatorBinsList .user-table td:nth-child(6) { width: 180px; }
-        #aggregatorBinsList .user-table th:nth-child(7), #aggregatorBinsList .user-table td:nth-child(7) { width: 150px; }
-        #aggregatorBinsList .user-table th:nth-child(8), #aggregatorBinsList .user-table td:nth-child(8) { width: 110px; }
-
-        /* High Aggregators Branches table column widths */
-        #aggregatorBranchesList .user-table {
-            table-layout: fixed;
-            padding: 4px;
-        }
-        #aggregatorBranchesList .user-table th,
-        #aggregatorBranchesList .user-table td {
-            text-overflow: ellipsis;
-            overflow: hidden;
-            padding: 4px;
-        }
-        #aggregatorBranchesList .user-table th:nth-child(1), #aggregatorBranchesList .user-table td:nth-child(1) { width: 100px; }
-        #aggregatorBranchesList .user-table th:nth-child(2), #aggregatorBranchesList .user-table td:nth-child(2) { width: 200px; }
-        #aggregatorBranchesList .user-table th:nth-child(3), #aggregatorBranchesList .user-table td:nth-child(3) { width: 250px; }
-        #aggregatorBranchesList .user-table th:nth-child(4), #aggregatorBranchesList .user-table td:nth-child(4) { width: 180px; }
-        #aggregatorBranchesList .user-table th:nth-child(5), #aggregatorBranchesList .user-table td:nth-child(5) { width: 120px; }
-
-        /* High Aggregators Events table column widths - grouped by bin, STORED events only */
-        #aggregatorEventsList .user-table {
-            table-layout: fixed;
-            padding: 4px;
-        }
-        #aggregatorEventsList .user-table th,
-        #aggregatorEventsList .user-table td {
-            text-overflow: ellipsis;
-            overflow: hidden;
-            padding: 8px;
-        }
-        #aggregatorEventsList .user-table th:nth-child(1), #aggregatorEventsList .user-table td:nth-child(1) { width: 90px; }
-        #aggregatorEventsList .user-table th:nth-child(2), #aggregatorEventsList .user-table td:nth-child(2) { width: 100px; }
-        #aggregatorEventsList .user-table th:nth-child(3), #aggregatorEventsList .user-table td:nth-child(3) { width: 100px; }
-        #aggregatorEventsList .user-table th:nth-child(4), #aggregatorEventsList .user-table td:nth-child(4) { width: 110px; }
-        #aggregatorEventsList .user-table th:nth-child(5), #aggregatorEventsList .user-table td:nth-child(5) { width: 90px; }
-        #aggregatorEventsList .user-table th:nth-child(6), #aggregatorEventsList .user-table td:nth-child(6) { width: 160px; }
-        #aggregatorEventsList .user-table th:nth-child(7), #aggregatorEventsList .user-table td:nth-child(7) { width: 160px; }
-        #aggregatorEventsList .user-table th:nth-child(8), #aggregatorEventsList .user-table td:nth-child(8) { width: 150px; }
-
-        /* High Aggregators Storage Locations table column widths */
-        #aggregatorLocationsList .user-table {
-            table-layout: fixed;
-            padding: 4px;
-        }
-        #aggregatorLocationsList .user-table th,
-        #aggregatorLocationsList .user-table td {
-            text-overflow: ellipsis;
-            overflow: hidden;
-            padding: 4px;
-        }
-        #aggregatorLocationsList .user-table th:nth-child(1), #aggregatorLocationsList .user-table td:nth-child(1) { width: 120px; }
-        #aggregatorLocationsList .user-table th:nth-child(2), #aggregatorLocationsList .user-table td:nth-child(2) { width: 180px; }
-        #aggregatorLocationsList .user-table th:nth-child(3), #aggregatorLocationsList .user-table td:nth-child(3) { width: 120px; }
-        #aggregatorLocationsList .user-table th:nth-child(4), #aggregatorLocationsList .user-table td:nth-child(4) { width: 100px; }
-        #aggregatorLocationsList .user-table th:nth-child(5), #aggregatorLocationsList .user-table td:nth-child(5) { width: 120px; }
-        #aggregatorLocationsList .user-table th:nth-child(6), #aggregatorLocationsList .user-table td:nth-child(6) { width: 110px; }
-        #aggregatorLocationsList .user-table th:nth-child(7), #aggregatorLocationsList .user-table td:nth-child(7) { width: 100px; }
-
-        /* Make small action buttons inside tables compact but keep font unchanged */
-        .user-table .btn-small {
-            padding: 4px 8px;
-        }
-
-        /* Collections table styles */
-        #collectionsList .user-table th,
-        #collectionsList .user-table td {
-            padding: 8px 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Collections table column widths */
-        #collectionsList .user-table th:nth-child(1),
-        #collectionsList .user-table td:nth-child(1) { width: 180px; }
-        #collectionsList .user-table th:nth-child(2),
-        #collectionsList .user-table td:nth-child(2) { width: 140px; }
-        #collectionsList .user-table th:nth-child(3),
-        #collectionsList .user-table td:nth-child(3) { width: 160px; }
-        #collectionsList .user-table th:nth-child(4),
-        #collectionsList .user-table td:nth-child(4) { width: 180px; }
-        #collectionsList .user-table th:nth-child(5),
-        #collectionsList .user-table td:nth-child(5) { width: 140px; }
-        #collectionsList .user-table th:nth-child(6),
-        #collectionsList .user-table td:nth-child(6) { width: 100px; }
-        #collectionsList .user-table th:nth-child(7),
-        #collectionsList .user-table td:nth-child(7) { width: 120px; }
-        #collectionsList .user-table th:nth-child(8),
-        #collectionsList .user-table td:nth-child(8) { width: 120px; }
-        #collectionsList .user-table th:nth-child(9),
-        #collectionsList .user-table td:nth-child(9) { width: 140px; }
-
-        /* Allow customer and driver columns to show more content */
-        #collectionsList .user-table td:nth-child(3),
-        #collectionsList .user-table td:nth-child(5) {
-            white-space: normal;
-            line-height: 1.3;
-        }
-
         .user-table th {
-            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
-            color: white;
-            font-weight: 600;
+            background: var(--bg-secondary); color: var(--text-secondary);
+            font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
         }
+        .user-table tr:hover { background: rgba(255,255,255,0.02); }
 
-        .user-table tr:hover {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-        }
+        /* Existing table-layout overrides stay the same — they only set widths */
 
         .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            text-transform: uppercase;
+            display: inline-block; padding: 4px 10px; border-radius: 8px;
+            font-size: 11px; font-weight: 600; text-transform: uppercase;
         }
+        .status-pending { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+        .status-approved { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+        .status-rejected { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+        .status-under_review { background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.2); }
+        .status-active { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
 
-        .status-pending { 
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); 
-            color: #92400e; 
-            border: 1px solid #f59e0b;
-        }
-        .status-approved { 
-            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); 
-            color: #166534; 
-            border: 1px solid #059669;
-        }
-        .status-rejected { 
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); 
-            color: #991b1b; 
-            border: 1px solid #dc2626;
-        }
-        .status-under_review { 
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); 
-            color: var(--primary-blue); 
-            border: 1px solid var(--secondary-blue);
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
+        .action-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
         .btn-small {
-            padding: 6px 12px;
-            font-size: 12px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
+            padding: 5px 10px; font-size: 12px; border: none; border-radius: 8px;
+            cursor: pointer; font-weight: 600; transition: all 0.15s;
         }
+        .btn-approve { background: rgba(16,185,129,0.15); color: #34d399; }
+        .btn-approve:hover { background: rgba(16,185,129,0.25); }
+        .btn-reject { background: rgba(239,68,68,0.15); color: #fca5a5; }
+        .btn-reject:hover { background: rgba(239,68,68,0.25); }
+        .btn-view { background: rgba(59,130,246,0.15); color: #93c5fd; }
+        .btn-view:hover { background: rgba(59,130,246,0.25); }
 
-        .btn-approve {
-            background: linear-gradient(135deg, var(--success-color) 0%, #10b981 100%);
-            color: white;
-            box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+        .search-filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-group { display: flex; flex-direction: column; gap: 4px; }
+        .filter-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+        .filter-group select, .filter-group input {
+            padding: 10px 14px; border: 1px solid var(--border-color);
+            border-radius: 10px; font-size: 14px; transition: all 0.2s;
+            background: rgba(255,255,255,0.04); color: var(--text-primary);
         }
-
-        .btn-approve:hover {
-            background: linear-gradient(135deg, #047857 0%, var(--success-color) 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
-        }
-
-        .btn-reject {
-            background: linear-gradient(135deg, var(--error-color) 0%, #ef4444 100%);
-            color: white;
-            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
-        }
-
-        .btn-reject:hover {
-            background: linear-gradient(135deg, #b91c1c 0%, var(--error-color) 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
-        }
-
-        .btn-view {
-            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
-            color: white;
-            box-shadow: 0 2px 8px rgba(30, 64, 175, 0.3);
-        }
-
-        .btn-view:hover {
-            background: linear-gradient(135deg, var(--deep-blue) 0%, var(--primary-blue) 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.4);
-        }
-
-        .search-filters {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .filter-group label {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .filter-group select,
-        .filter-group input {
-            padding: 10px 14px;
-            border: 2px solid var(--border-light);
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        .filter-group select:focus,
-        .filter-group input:focus {
-            outline: none;
-            border-color: var(--secondary-blue);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        .filter-group select:focus, .filter-group input:focus {
+            outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
         }
 
         .no-data {
-            text-align: center;
-            padding: 50px 20px;
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-radius: 12px;
-            border: 1px solid var(--border-light);
+            text-align: center; padding: 40px 20px; color: var(--text-muted);
+            background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--border-color);
         }
-
         .loading {
-            text-align: center;
-            padding: 30px 20px;
-            color: var(--secondary-blue);
-            font-size: 1.1rem;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-radius: 12px;
-            border: 1px solid rgba(59, 130, 246, 0.2);
+            text-align: center; padding: 24px; color: var(--accent);
+            background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--border-color);
         }
-
-        /* Ensure no animations on loading content */
-        .loading, .loading *, #pendingDriversList, #pendingCustomersList, #searchResults, #binsResults {
-            animation: none !important;
-            transform: none !important;
-            transition: none !important;
-        }
+        .loading, .loading * { animation: none !important; transform: none !important; }
 
         .success-message, .error-message {
-            padding: 16px 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            font-weight: 500;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 14px 18px; border-radius: 12px; margin-bottom: 16px; font-size: 14px; font-weight: 500;
         }
+        .success-message { background: rgba(16,185,129,0.1); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.2); }
+        .error-message { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
 
-        .success-message {
-            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-            color: #166534;
-            border: 1px solid #059669;
-        }
-
-        .error-message {
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-            color: #991b1b;
-            border: 1px solid #dc2626;
-        }
-
+        /* Modals */
         .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(30, 64, 175, 0.4) 0%, rgba(59, 130, 246, 0.4) 100%);
-            backdrop-filter: blur(8px);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+            z-index: 1000; justify-content: center; align-items: center;
         }
-
         .modal-content {
-            background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
-            padding: 35px;
-            border-radius: 20px;
-            max-width: 550px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 25px 60px rgba(30, 64, 175, 0.15), 0 10px 30px rgba(30, 64, 175, 0.1);
-            border: 1px solid rgba(30, 64, 175, 0.1);
+            background: var(--bg-secondary); border: 1px solid var(--border-hover);
+            padding: 28px; border-radius: 16px;
+            max-width: 550px; width: 92%; max-height: 80vh; overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
-
         .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid transparent;
-            border-image: linear-gradient(90deg, var(--primary-blue), var(--accent-blue)) 1;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);
         }
+        .modal-header h3 { color: var(--text-primary); font-size: 1.2rem; font-weight: 700; -webkit-text-fill-color: unset; background: none; }
+        .close-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); }
+        .close-btn:hover { color: var(--text-primary); }
 
-        .modal-header h3 {
-            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-size: 1.4rem;
-            font-weight: 600;
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-secondary); font-size: 13px; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 10px 14px;
+            border: 1px solid var(--border-color); border-radius: 10px;
+            font-size: 14px; background: rgba(255,255,255,0.04); color: var(--text-primary);
+            transition: border-color 0.2s;
         }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .form-group textarea { resize: vertical; min-height: 70px; }
 
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: var(--text-secondary);
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid var(--border-light);
-            border-radius: 10px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background: #fefefe;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--secondary-blue);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            background: white;
-        }
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        /* Bin Assignment Styles */
         #binAssignmentSection {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border: 1px solid rgba(30, 64, 175, 0.1);
-            border-radius: 12px;
-            padding: 25px;
-            margin: 20px 0;
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 20px; margin: 16px 0;
+        }
+        #binAssignmentSection h4 { color: var(--accent-light); font-size: 1rem; margin-bottom: 16px; -webkit-text-fill-color: unset; background: none; }
+        #binAssignmentSection input, #binAssignmentSection select {
+            border: 1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary);
         }
 
-        #binAssignmentSection h4 {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 0 0 20px 0;
-            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-size: 1.1rem;
+        /* Aggregator tab buttons */
+        .aggregator-tab-btn {
+            padding: 10px 20px !important; background: none !important; border: none !important;
+            border-bottom: 3px solid transparent !important; color: var(--text-muted) !important;
+            font-weight: 600 !important; cursor: pointer !important; transition: all 0.2s !important;
+        }
+        .aggregator-tab-btn.active, .aggregator-tab-btn:hover {
+            border-bottom-color: var(--accent) !important; color: var(--accent-light) !important;
         }
 
-        #binAssignmentSection .form-group {
-            margin-bottom: 12px;
+        /* Lab Results Form */
+        .lab-results-card {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 14px; padding: 24px; margin-bottom: 16px;
         }
+        .lab-results-card h3 { color: var(--text-primary); font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+        .lab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+        .lab-field label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; display: block; font-weight: 600; }
+        .lab-field input {
+            width: 100%; padding: 10px 12px; background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;
+        }
+        .lab-field input:focus { border-color: var(--accent); outline: none; }
+        .threshold-warning { color: #fbbf24; font-size: 12px; margin-top: 4px; }
+        .threshold-ok { color: #34d399; font-size: 12px; margin-top: 4px; }
 
-        #binAssignmentSection input,
-        #binAssignmentSection select {
-            border: 1px solid #ced4da;
-            background: white;
+        /* Purchase Order */
+        .po-section {
+            background: rgba(16,185,129,0.04); border: 1px solid rgba(16,185,129,0.12);
+            border-radius: 14px; padding: 24px; margin-top: 16px;
         }
+        .po-section h3 { color: var(--accent-light); margin-bottom: 16px; font-weight: 700; }
+        .po-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+        .po-total { font-size: 1.5rem; font-weight: 700; color: var(--accent-light); margin-top: 16px; }
+        .po-btn {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: white; border: none; padding: 12px 24px; border-radius: 10px;
+            font-weight: 600; cursor: pointer; font-size: 15px; margin-top: 12px; transition: all 0.2s;
+        }
+        .po-btn:hover { box-shadow: 0 4px 16px var(--accent-glow); transform: translateY(-1px); }
+        .po-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        #binAssignmentSection input:focus,
-        #binAssignmentSection select:focus {
-            border-color: var(--secondary-blue);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        /* Market Prices */
+        .market-prices-card {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 14px; padding: 24px; margin-bottom: 16px;
         }
-        
 
         @media (max-width: 768px) {
-            .admin-container {
-                padding: 12px;
-            }
-            .admin-header {
-                padding: 18px 16px 14px;
-                margin-bottom: 14px;
-            }
-            .header-title h1 { font-size: 1.25rem; }
-            .header-logo { height: 40px; }
-
-            /* Simple scrollable nav - no fixed positioning */
-            .admin-nav-wrapper {
-                margin: 0 -12px 16px -12px;
-                padding: 12px;
-                background: #fff;
-                border-bottom: 1px solid #e2e8f0;
-            }
-            
-            .admin-nav {
-                display: flex;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                gap: 10px;
-                padding-bottom: 4px;
-            }
+            .admin-container { padding: 12px; }
+            .admin-header { padding: 16px; margin-bottom: 14px; }
+            .admin-header h1 { font-size: 1.15rem; }
+            .header-logo { height: 36px; }
+            .admin-nav-wrapper { margin: 0 -12px 14px -12px; padding: 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); }
+            .admin-nav { display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 8px; padding-bottom: 4px; }
             .admin-nav::-webkit-scrollbar { display: none; }
-            
-            .nav-btn {
-                flex-shrink: 0;
-                padding: 10px 16px;
-                font-size: 13px;
-            }
-            
-            /* Keep dropdown visible but style for mobile */
-            .nav-dropdown {
-                flex-shrink: 0;
-            }
-            .nav-dropdown .dropdown-btn {
-                padding: 10px 16px;
-                font-size: 13px;
-            }
-            .nav-dropdown .dropdown-content {
-                position: fixed;
-                top: auto;
-                bottom: auto;
-                left: 12px;
-                right: 12px;
-                min-width: auto;
-                width: calc(100% - 24px);
-                max-height: 60vh;
-                overflow-y: auto;
-                z-index: 2000;
-            }
-            .nav-dropdown .dropdown-item {
-                padding: 14px 16px;
-            }
-
-            .stats-grid { grid-template-columns: 1fr; }
+            .nav-btn { flex-shrink: 0; padding: 8px 14px; font-size: 12px; }
+            .nav-dropdown .dropdown-content { position: fixed; left: 12px; right: 12px; min-width: auto; width: calc(100% - 24px); max-height: 60vh; overflow-y: auto; z-index: 2000; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
             .search-filters { flex-direction: column; }
-            
-            /* Make tables scrollable on mobile */
-            .section-card {
-                padding: 14px;
-                border-radius: 16px;
-                overflow-x: auto;
-            }
-            .user-table {
-                font-size: 12px;
-                min-width: 600px;
-            }
-            .user-table th,
-            .user-table td {
-                padding: 10px 8px;
-                white-space: nowrap;
-            }
-            .action-buttons { 
-                justify-content: center;
-                flex-wrap: nowrap;
-            }
-            .action-buttons .btn-small {
-                padding: 5px 8px;
-                font-size: 11px;
-            }
+            .section-card { padding: 16px; border-radius: 14px; overflow-x: auto; }
+            .user-table { font-size: 12px; min-width: 600px; }
+            .user-table th, .user-table td { padding: 8px 6px; white-space: nowrap; }
+            .action-buttons .btn-small { padding: 4px 8px; font-size: 11px; }
+            .lab-grid, .po-grid { grid-template-columns: 1fr; }
         }
 
-        /* Icon spacing */
         .nav-btn i, .btn-small i, .section-title i, h4 i { margin-right: 6px; }
-        
-        /* Disable all Font Awesome animations */
-        .fa-spin, .fa-pulse {
-            animation: none !important;
-        }
-        
-        /* Disable any rotating animations */
-        i[class*="fa-rotate"], i[class*="fa-spin"], .fa-spinner {
-            animation: none !important;
-            transform: none !important;
-        }
-        
-        /* Prevent any text or element spinning in admin containers */
-        .admin-container, .admin-container * {
-            animation: none !important;
-        }
-        
-        /* Specifically prevent spinning on all text content */
-        div, span, p, h1, h2, h3, h4, h5, h6, td, th, button {
-            animation: none !important;
-            transform: none !important;
+        .fa-spin, .fa-pulse { animation: none !important; }
+        i[class*="fa-rotate"], i[class*="fa-spin"], .fa-spinner { animation: none !important; transform: none !important; }
+        .admin-container *, .admin-container { animation: none !important; }
+        div, span, p, h1, h2, h3, h4, h5, h6, td, th, button { animation: none !important; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #qrCodeGrid, #qrCodeGrid * { visibility: visible; }
+            #qrCodeGrid { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
+            #qrCodeGrid > div { page-break-after: always; page-break-inside: avoid; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px; box-shadow: none !important; border: none !important; }
+            #qrCodeGrid > div:last-child { page-break-after: auto; }
+            #qrCodeGrid h4 { font-size: 2rem !important; margin-bottom: 30px !important; }
+            #qrCodeGrid > div > div { transform: scale(1.5); }
         }
 
-        /* Print Styles - One QR Code Per Page */
+        /* PO document print styles */
         @media print {
-            body * {
-                visibility: hidden;
-            }
-            
-            #qrCodeGrid, #qrCodeGrid * {
-                visibility: visible;
-            }
-            
-            #qrCodeGrid {
-                display: block !important;
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-            
-            #qrCodeGrid > div {
-                page-break-after: always;
-                page-break-inside: avoid;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 100vh;
-                padding: 40px;
-                box-shadow: none !important;
-                border: none !important;
-            }
-            
-            #qrCodeGrid > div:last-child {
-                page-break-after: auto;
-            }
-            
-            #qrCodeGrid h4 {
-                font-size: 2rem !important;
-                margin-bottom: 30px !important;
-            }
-            
-            #qrCodeGrid > div > div {
-                transform: scale(1.5);
-            }
+            .po-document { visibility: visible !important; }
+            .po-document * { visibility: visible !important; }
         }
     </style>
 </head>
@@ -1165,7 +423,7 @@
                 <p id="adminInfo">Loading admin info...</p>
             </div>
             <div style="position: absolute; top: 20px; right: 20px;">
-                <button onclick="handleLogout()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer;">
+                <button onclick="handleLogout()" style="background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); padding: 8px 16px; border-radius: 10px; font-weight: 600; cursor: pointer;">
                     <i class="fa-solid fa-right-from-bracket"></i> Logout
                 </button>
             </div>
@@ -1185,7 +443,7 @@
             <button class="nav-btn tab-qrcodes" onclick="showSection('qrcodes')"><i class="fa-solid fa-qrcode"></i> HA QR Codes</button>
                     <!-- Drivers Section -->
                     <div id="driversSection" class="section" style="display: none; width: 100%; padding: 0;">
-                        <div class="section-card" style="width: 100%; max-width: 100vw; margin: 0 auto 32px auto; border-radius: 32px; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); box-shadow: 0 16px 50px rgba(30, 64, 175, 0.08), 0 6px 25px rgba(30, 64, 175, 0.04); padding: 40px 32px 32px 32px;">
+                        <div class="section-card" style="width: 100%; max-width: 100vw; margin: 0 auto 32px auto; border-radius: 32px; background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.3); padding: 40px 32px 32px 32px;">
                             <h3 class="section-title" style="display: flex; align-items: center; gap: 10px; font-size: 2rem; margin-bottom: 32px;">
                                 <i class="fa-solid fa-id-card"></i> All Drivers
                             </h3>
@@ -1198,14 +456,14 @@
                         try {
                             const container = document.getElementById('driversList');
                             container.classList.add('loading');
-                            container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--primary-blue); font-size: 1.2rem;">Loading drivers...</div>';
+                            container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;">Loading drivers...</div>';
                             const drivers = await AdminService.searchUsers('driver', {});
                             if (!drivers || drivers.length === 0) {
                                 container.innerHTML = '<div class="no-data" style="padding: 32px; text-align: center; color: #888;">No drivers found</div>';
                                 container.classList.remove('loading');
                                 return;
                             }
-                            let html = '<div style="overflow-x:auto; width: 100%;"><table class="user-table" style="margin:0; width:100%; border-radius: 18px; overflow: hidden; background: white;">';
+                            let html = '<div style="overflow-x:auto; width: 100%;"><table class="user-table" style="margin:0; width:100%; border-radius: 18px; overflow: hidden; background: var(--bg-card);">';
                             html += '<thead><tr>';
                             html += '<th>Name</th><th>Email</th><th>Phone</th><th>Vehicle</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead><tbody>';
                             drivers.forEach(driver => {
@@ -1219,7 +477,7 @@
                                     <td>${new Date(formatted.createdAt).toLocaleDateString()}</td>
                                     <td>
                                         <div class="action-buttons">
-                                            <button class="btn-small btn-view" style="background: linear-gradient(135deg, var(--accent-blue) 0%, var(--light-blue) 100%); color: var(--primary-blue);" onclick="viewUserDetails('${driver.id}', 'driver')"><i class='fa-solid fa-eye'></i> View</button>
+                                            <button class="btn-small btn-view" style="background: linear-gradient(135deg, var(--accent-blue) 0%, var(--light-blue) 100%); color: var(--accent);" onclick="viewUserDetails('${driver.id}', 'driver')"><i class='fa-solid fa-eye'></i> View</button>
                                             <button class="btn-small btn-reject" style="background: linear-gradient(135deg, #fca5a5 0%, #dc2626 100%); color: white;" onclick="banDriver('${driver.id}')"><i class='fa-solid fa-ban'></i> Ban</button>
                                             ${formatted.verificationStatus === 'paused' ?
                                                 `<button class="btn-small btn-approve" style="background: linear-gradient(135deg, var(--success-color) 0%, #10b981 100%); color: white;" onclick="unpauseDriver('${driver.id}')"><i class='fa-solid fa-play'></i> Unpause</button>` :
@@ -1331,7 +589,7 @@
 
         <!-- Smart Bins Section -->
         <div id="smartbinsSection" class="section" style="display: none; width: 100%; padding: 0;">
-            <div class="section-card" style="width: 100%; margin: 0 auto 32px auto; border-radius: 32px; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); box-shadow: 0 16px 50px rgba(30, 64, 175, 0.08), 0 6px 25px rgba(30, 64, 175, 0.04); padding: 40px 32px 32px 32px; overflow-x: auto;">
+            <div class="section-card" style="width: 100%; margin: 0 auto 32px auto; border-radius: 32px; background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.3); padding: 40px 32px 32px 32px; overflow-x: auto;">
                 <h3 class="section-title" style="display: flex; align-items: center; gap: 10px; font-size: 2rem; margin-bottom: 24px;">
                     <i class="fa-solid fa-box"></i> Smart Bins
                 </h3>
@@ -1348,7 +606,7 @@
 
         <!-- Collections Section -->
         <div id="collectionsSection" class="section" style="display: none; width: 100%; padding: 0;">
-            <div class="section-card" style="width: 100%; margin: 0 auto 32px auto; border-radius: 32px; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); box-shadow: 0 16px 50px rgba(30, 64, 175, 0.08), 0 6px 25px rgba(30, 64, 175, 0.04); padding: 40px 32px 32px 32px;">
+            <div class="section-card" style="width: 100%; margin: 0 auto 32px auto; border-radius: 32px; background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.3); padding: 40px 32px 32px 32px;">
                 <h3 class="section-title" style="display: flex; align-items: center; gap: 10px; font-size: 2rem; margin-bottom: 32px;">
                     <i class="fa-solid fa-truck"></i> Collections Management
                 </h3>
@@ -1379,14 +637,14 @@
                         <button class="nav-btn" onclick="loadCollectionsData()" style="padding:8px 16px; font-size:14px;">
                             <i class="fa-solid fa-refresh"></i> Refresh Collections
                         </button>
-                        <select id="collectionsFilter" onchange="filterCollections()" style="padding:8px 12px; border-radius:8px; border:1px solid #e2e8f0; background:white; font-size:14px;">
+                        <select id="collectionsFilter" onchange="filterCollections()" style="padding:8px 12px; border-radius:10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary); font-size:14px;">
                             <option value="all">All Status</option>
                             <option value="completed">Completed</option>
                             <option value="pending">Pending</option>
                             <option value="in-progress">In Progress</option>
                             <option value="failed">Failed</option>
                         </select>
-                        <select id="collectionsDateFilter" onchange="toggleDateRange(); filterCollections()" style="padding:8px 12px; border-radius:8px; border:1px solid #e2e8f0; background:white; font-size:14px;">
+                        <select id="collectionsDateFilter" onchange="toggleDateRange(); filterCollections()" style="padding:8px 12px; border-radius:10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary); font-size:14px;">
                             <option value="all">All Time</option>
                             <option value="today">Today</option>
                             <option value="week">This Week</option>
@@ -1395,17 +653,17 @@
                         </select>
                         <div id="dateRangeInputs" style="display:none; gap:8px; align-items:center; flex-wrap:wrap; margin-left:8px;">
                             <label style="font-size:14px; color:#475569; font-weight:500;">From:</label>
-                            <input type="date" id="startDate" onchange="filterCollections()" style="padding:8px 12px; border-radius:8px; border:1px solid #e2e8f0; background:white; font-size:14px; min-width:140px;">
+                            <input type="date" id="startDate" onchange="filterCollections()" style="padding:8px 12px; border-radius:10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary); font-size:14px; min-width:140px;">
                             <label style="font-size:14px; color:#475569; font-weight:500;">To:</label>
-                            <input type="date" id="endDate" onchange="filterCollections()" style="padding:8px 12px; border-radius:8px; border:1px solid #e2e8f0; background:white; font-size:14px; min-width:140px;">
+                            <input type="date" id="endDate" onchange="filterCollections()" style="padding:8px 12px; border-radius:10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary); font-size:14px; min-width:140px;">
                             <button onclick="clearDateRange()" style="padding:6px 10px; background:#6b7280; color:white; border:none; border-radius:6px; font-size:12px; cursor:pointer; transition: all 0.2s;">
                                 <i class="fa-solid fa-xmark"></i> Clear
                             </button>
                         </div>
-                        <select id="collectionsDriverFilter" onchange="filterCollections()" style="padding:8px 12px; border-radius:8px; border:1px solid #e2e8f0; background:white; font-size:14px;">
+                        <select id="collectionsDriverFilter" onchange="filterCollections()" style="padding:8px 12px; border-radius:10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary); font-size:14px;">
                             <option value="all">All Drivers</option>
                         </select>
-                        <select id="collectionsCustomerFilter" onchange="filterCollections()" style="padding:8px 12px; border-radius:8px; border:1px solid #e2e8f0; background:white; font-size:14px;">
+                        <select id="collectionsCustomerFilter" onchange="filterCollections()" style="padding:8px 12px; border-radius:10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary); font-size:14px;">
                             <option value="all">All Customers</option>
                         </select>
                     </div>
@@ -1413,7 +671,7 @@
                 </div>
 
                 <!-- Collections List -->
-                <div id="collectionsList" class="loading" style="margin-top: 0; min-height: 160px; border-radius: 12px; background: white; padding: 20px; overflow-x: auto; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05);"></div>
+                <div id="collectionsList" class="loading" style="margin-top: 0; min-height: 160px; border-radius: 12px; background: var(--bg-card); padding: 20px; overflow-x: auto; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05);"></div>
             </div>
         </div>
         </div>
@@ -1571,7 +829,7 @@
 
         <!-- High Aggregators Section -->
         <div id="highaggregatorsSection" class="section" style="display: none; width: 100%; padding: 0;">
-            <div class="section-card" style="width: 100%; margin: 0 auto 32px auto; border-radius: 32px; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); box-shadow: 0 16px 50px rgba(30, 64, 175, 0.08), 0 6px 25px rgba(30, 64, 175, 0.04); padding: 40px 32px 32px 32px;">
+            <div class="section-card" style="width: 100%; margin: 0 auto 32px auto; border-radius: 32px; background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.3); padding: 40px 32px 32px 32px;">
                 <h3 class="section-title" style="display: flex; align-items: center; gap: 10px; font-size: 2rem; margin-bottom: 32px;">
                     <i class="fa-solid fa-building-wheat"></i> High Aggregators
 </h3>
@@ -1602,10 +860,10 @@
                         <button class="nav-btn" onclick="loadHighAggregators()" style="padding:8px 16px; font-size:14px;">
                             <i class="fa-solid fa-arrows-rotate"></i> Refresh Data
                         </button>
-                        <select id="aggregatorFilter" onchange="filterAggregatorData()" style="padding:8px 12px; border-radius:8px; border:1px solid #e2e8f0; background:white; font-size:14px;">
+                        <select id="aggregatorFilter" onchange="filterAggregatorData()" style="padding:8px 12px; border-radius:10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary); font-size:14px;">
                             <option value="all">All Branches</option>
                         </select>
-                        <select id="binStatusFilter" onchange="filterAggregatorData()" style="padding:8px 12px; border-radius:8px; border:1px solid #e2e8f0; background:white; font-size:14px;">
+                        <select id="binStatusFilter" onchange="filterAggregatorData()" style="padding:8px 12px; border-radius:10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary); font-size:14px;">
                             <option value="all">All Statuses</option>
                             <option value="IN_FIELD">In Field</option>
                             <option value="RECEIVED_AT_DEPOT">Received at Depot</option>
@@ -1617,17 +875,17 @@
                 </div>
 
                 <!-- Tabs for different views -->
-                <div style="display:flex; gap:12px; margin-bottom:24px; border-bottom:2px solid #e2e8f0;">
-                    <button class="aggregator-tab-btn active" onclick="showAggregatorTab('bins')" style="padding:12px 24px; background:none; border:none; border-bottom:3px solid var(--primary-blue); color:var(--primary-blue); font-weight:600; cursor:pointer; transition:all 0.3s;">
+                <div style="display:flex; gap:12px; margin-bottom:24px; border-bottom: 1px solid var(--border-color);">
+                    <button class="aggregator-tab-btn active" onclick="showAggregatorTab('bins')" style="padding:12px 24px; background:none; border:none; border-bottom:3px solid var(--accent); color:var(--accent-light); font-weight:600; cursor:pointer; transition:all 0.3s;">
                         <i class="fa-solid fa-box"></i> Bins
                     </button>
-                    <button class="aggregator-tab-btn" onclick="showAggregatorTab('branches')" style="padding:12px 24px; background:none; border:none; border-bottom:3px solid transparent; color:#6b7280; font-weight:600; cursor:pointer; transition:all 0.3s;">
+                    <button class="aggregator-tab-btn" onclick="showAggregatorTab('branches')" style="padding:12px 24px; background:none; border:none; border-bottom:3px solid transparent; color: var(--text-muted); font-weight:600; cursor:pointer; transition:all 0.3s;">
                         <i class="fa-solid fa-building"></i> Branches
                     </button>
-                    <button class="aggregator-tab-btn" onclick="showAggregatorTab('events')" style="padding:12px 24px; background:none; border:none; border-bottom:3px solid transparent; color:#6b7280; font-weight:600; cursor:pointer; transition:all 0.3s;">
+                    <button class="aggregator-tab-btn" onclick="showAggregatorTab('events')" style="padding:12px 24px; background:none; border:none; border-bottom:3px solid transparent; color: var(--text-muted); font-weight:600; cursor:pointer; transition:all 0.3s;">
                         <i class="fa-solid fa-clock-rotate-left"></i> Events
                     </button>
-                    <button class="aggregator-tab-btn" onclick="showAggregatorTab('locations')" style="padding:12px 24px; background:none; border:none; border-bottom:3px solid transparent; color:#6b7280; font-weight:600; cursor:pointer; transition:all 0.3s;">
+                    <button class="aggregator-tab-btn" onclick="showAggregatorTab('locations')" style="padding:12px 24px; background:none; border:none; border-bottom:3px solid transparent; color: var(--text-muted); font-weight:600; cursor:pointer; transition:all 0.3s;">
                         <i class="fa-solid fa-location-dot"></i> Storage Locations
                     </button>
                 </div>
@@ -1635,14 +893,14 @@
                 <!-- Bins Tab -->
                 <div id="aggregatorBinsTab" class="aggregator-tab-content" style="overflow-x:auto; width:100%;">
                     <div id="aggregatorBinsList" class="loading" style="min-height: 160px;">
-                        <div style="padding: 32px; text-align: center; color: var(--primary-blue); font-size: 1.2rem;">Loading bins...</div>
+                        <div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;">Loading bins...</div>
                     </div>
                 </div>
 
                 <!-- Branches Tab -->
                 <div id="aggregatorBranchesTab" class="aggregator-tab-content" style="display:none; overflow-x:auto; width:100%;">
                     <div id="aggregatorBranchesList" class="loading" style="min-height: 160px;">
-                        <div style="padding: 32px; text-align: center; color: var(--primary-blue); font-size: 1.2rem;">Loading branches...</div>
+                        <div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;">Loading branches...</div>
                     </div>
                 </div>
 
@@ -1651,16 +909,16 @@
                     <!-- Event Filters -->
                     <div style="display:flex; gap:12px; margin-bottom:20px; align-items:center; flex-wrap:wrap;">
                         <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:0.85em; color:#6b7280; font-weight:600;">Event Type:</label>
-                            <select id="eventTypeFilter" onchange="filterAggregatorEvents()" style="padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; background:white; cursor:pointer;">
+                            <label style="font-size:0.85em; color: var(--text-muted); font-weight:600;">Event Type:</label>
+                            <select id="eventTypeFilter" onchange="filterAggregatorEvents()" style="padding:8px 12px; border: 1px solid var(--border-color); border-radius:8px; background: var(--bg-card); cursor:pointer;">
                                 <option value="all">All Events</option>
                                 <option value="RECEIVED">Received Only</option>
                                 <option value="STORED">Stored Only</option>
                             </select>
                         </div>
                         <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:0.85em; color:#6b7280; font-weight:600;">Sort By:</label>
-                            <select id="eventSortFilter" onchange="filterAggregatorEvents()" style="padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; background:white; cursor:pointer;">
+                            <label style="font-size:0.85em; color: var(--text-muted); font-weight:600;">Sort By:</label>
+                            <select id="eventSortFilter" onchange="filterAggregatorEvents()" style="padding:8px 12px; border: 1px solid var(--border-color); border-radius:8px; background: var(--bg-card); cursor:pointer;">
                                 <option value="date-desc">Newest First</option>
                                 <option value="date-asc">Oldest First</option>
                                 <option value="company">Company Name</option>
@@ -1668,14 +926,14 @@
                         </div>
                     </div>
                     <div id="aggregatorEventsList" class="loading" style="min-height: 160px;">
-                        <div style="padding: 32px; text-align: center; color: var(--primary-blue); font-size: 1.2rem;">Loading events...</div>
+                        <div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;">Loading events...</div>
                     </div>
                 </div>
 
                 <!-- Storage Locations Tab -->
                 <div id="aggregatorLocationsTab" class="aggregator-tab-content" style="display:none; overflow-x:auto; width:100%;">
                     <div id="aggregatorLocationsList" class="loading" style="min-height: 160px;">
-                        <div style="padding: 32px; text-align: center; color: var(--primary-blue); font-size: 1.2rem;">Loading locations...</div>
+                        <div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;">Loading locations...</div>
                     </div>
                 </div>
             </div>
@@ -1684,7 +942,7 @@
 
     <!-- HA QR Code Management Section -->
     <div id="qrcodesSection" class="section" style="display: none; width: 100%; padding: 0;">
-        <div class="section-card" style="width: 100%; margin: 0 auto 20px auto; border-radius: 32px; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); box-shadow: 0 16px 50px rgba(30, 64, 175, 0.08), 0 6px 25px rgba(30, 64, 175, 0.04); padding: 24px 24px 24px 24px;">
+        <div class="section-card" style="width: 100%; margin: 0 auto 20px auto; border-radius: 32px; background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.3); padding: 24px 24px 24px 24px;">
             <h3 class="section-title" style="display: flex; align-items: center; gap: 10px; font-size: 2rem; margin-bottom: 16px;">
                 <i class="fa-solid fa-qrcode"></i> HA QR Code Management
             </h3>
@@ -1847,7 +1105,7 @@
 
     <!-- ID Image Modal -->
     <div id="idImageModal" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
-      <div style="background:#fff; border-radius:12px; padding:20px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; align-items:center; position:relative;">
+      <div style="background: var(--bg-card); border-radius:12px; padding:20px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; align-items:center; position:relative;">
         <button onclick="closeIdImageModal()" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:2rem; color:#333; cursor:pointer;">&times;</button>
         <img id="idImageModalImg" src="" alt="ID Document" style="max-width:80vw; max-height:70vh; border-radius:8px; box-shadow:0 2px 16px #0002; margin-bottom:10px;" />
         <div id="idImageModalLabel" style="font-weight:600; color:#222;"></div>
@@ -1966,7 +1224,7 @@
             const statusEl = document.getElementById('smartbinsStatus');
             try {
                 container.classList.add('loading');
-                container.innerHTML = '<div style="padding: 24px; text-align:center; color: var(--primary-blue);">Loading smart bins...</div>';
+                container.innerHTML = '<div style="padding: 24px; text-align:center; color: var(--accent);">Loading smart bins...</div>';
                 if (statusEl) { statusEl.textContent = 'Smart Bins: loading...'; statusEl.style.color = 'var(--primary-blue)'; }
 
                 const { data, error } = await SupabaseUtils.selectRecords('df555_latest_status', {}, { orderBy: { column: 'received_at', ascending: false }, limit: 200 });
@@ -1982,7 +1240,7 @@
                     return;
                 }
                 // Render a compact summary table with a "View" action for details
-                    let html = '<table class="user-table" id="smartbinsTable" style="margin:0; width:100%; background: #fff; border-radius: 18px; overflow: hidden;">';
+                    let html = '<table class="user-table" id="smartbinsTable" style="margin:0; width:100%; background: var(--bg-card); border-radius: 18px; overflow: hidden;">';
                     html += '<thead><tr>';
                     const summaryCols = ['device_imei','height_mm','temperature_c','battery_voltage_v','status','device_timestamp'];
                     summaryCols.forEach(c => html += `<th>${c.replace(/_/g,' ')}</th>`);
@@ -3003,7 +2261,7 @@
                 document.getElementById('collectionsStatus').textContent = 'Collections: Loading...';
                 const container = document.getElementById('collectionsList');
                 container.classList.add('loading');
-                container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--primary-blue); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading collections...</div>';
+                container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading collections...</div>';
                 
                 let collections = [];
                 
@@ -3183,7 +2441,7 @@
                 return;
             }
 
-            let html = '<div style="overflow-x:auto; width: 100%;"><table class="user-table" style="margin:0; width:100%; border-radius: 18px; overflow: hidden; background: white;">';
+            let html = '<div style="overflow-x:auto; width: 100%;"><table class="user-table" style="margin:0; width:100%; border-radius: 18px; overflow: hidden; background: var(--bg-card);">';
             html += '<thead><tr>';
             html += '<th>Actions</th>';
             html += '<th>Collection Date</th>';
@@ -3508,10 +2766,10 @@
                                     const takenAt = photo.taken_at ? new Date(photo.taken_at).toLocaleDateString() : '';
                                     
                                     return `
-                                    <div style="position: relative; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer;" onclick="showIdImageModal('${imageSrc}', '${caption}${takenAt ? ' - ' + takenAt : ''}')">
+                                    <div style="position: relative; background: var(--bg-card); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer;" onclick="showIdImageModal('${imageSrc}', '${caption}${takenAt ? ' - ' + takenAt : ''}')">
                                         <img src="${imageSrc}" 
                                              style="width: 100%; height: 80px; object-fit: cover; display: block;" 
-                                             onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:80px;background:#f1f5f9;color:#6b7280;font-size:12px;\\'>Image not available</div>'"
+                                             onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:80px;background:#f1f5f9;color: var(--text-muted);font-size:12px;\\'>Image not available</div>'"
                                              alt="${caption}" />
                                         <div style="padding: 6px; font-size: 11px; color: #6b7280; text-align: center; line-height: 1.2;">
                                             ${photoType}
@@ -3543,7 +2801,7 @@
                 
                 const html = `
                     <div style="max-width: 700px;">
-                        <h3 style="color: var(--primary-blue); margin-bottom: 20px;">
+                        <h3 style="color: var(--accent); margin-bottom: 20px;">
                             <i class="fa-solid fa-truck"></i> Collection Details
                         </h3>
                         
@@ -3666,7 +2924,7 @@
                         <h3 style="margin-bottom: 20px;">Assign Driver to Collection</h3>
                         <div style="margin-bottom: 16px;">
                             <label style="display: block; margin-bottom: 8px; font-weight: 600;">Select Driver:</label>
-                            <select id="driverSelection" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <select id="driverSelection" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
                                 ${driverOptions}
                             </select>
                         </div>
@@ -3767,7 +3025,7 @@
         async function loadAggregatorBins() {
             try {
                 const container = document.getElementById('aggregatorBinsList');
-                container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--primary-blue); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading bins...</div>';
+                container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading bins...</div>';
                 
                 const client = window.getSupabaseClient();
                 if (!client) {
@@ -3790,7 +3048,7 @@
                 console.error('Error loading aggregator bins:', error);
                 const errorMsg = error.message || 'Unknown error';
                 const helpText = errorMsg.includes('relation') || errorMsg.includes('does not exist') 
-                    ? '<br><br><small style="color:#6b7280;">The database tables may not be set up yet. Please run the aggregator/supabase-schema.sql in your Supabase SQL Editor.</small>'
+                    ? '<br><br><small style="color: var(--text-muted);">The database tables may not be set up yet. Please run the aggregator/supabase-schema.sql in your Supabase SQL Editor.</small>'
                     : '';
                 document.getElementById('aggregatorBinsList').innerHTML = 
                     `<div class="no-data" style="padding: 24px; text-align: center; color: #dc2626;">
@@ -3803,7 +3061,7 @@
         async function loadAggregatorBranches() {
             try {
                 const container = document.getElementById('aggregatorBranchesList');
-                container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--primary-blue); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading branches...</div>';
+                container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading branches...</div>';
                 
                 const client = window.getSupabaseClient();
                 if (!client) {
@@ -3833,7 +3091,7 @@
                 console.error('Error loading aggregator branches:', error);
                 const errorMsg = error.message || 'Unknown error';
                 const helpText = errorMsg.includes('relation') || errorMsg.includes('does not exist') 
-                    ? '<br><br><small style="color:#6b7280;">The database tables may not be set up yet. Please run the aggregator/supabase-schema.sql in your Supabase SQL Editor.</small>'
+                    ? '<br><br><small style="color: var(--text-muted);">The database tables may not be set up yet. Please run the aggregator/supabase-schema.sql in your Supabase SQL Editor.</small>'
                     : '';
                 document.getElementById('aggregatorBranchesList').innerHTML = 
                     `<div class="no-data" style="padding: 24px; text-align: center; color: #dc2626;">
@@ -3846,7 +3104,7 @@
         async function loadAggregatorEvents() {
             try {
                 const container = document.getElementById('aggregatorEventsList');
-                container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--primary-blue); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading events...</div>';
+                container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading events...</div>';
                 
                 const client = window.getSupabaseClient();
                 if (!client) {
@@ -3870,7 +3128,7 @@
                 console.error('Error loading aggregator events:', error);
                 const errorMsg = error.message || 'Unknown error';
                 const helpText = errorMsg.includes('relation') || errorMsg.includes('does not exist') 
-                    ? '<br><br><small style="color:#6b7280;">The database tables may not be set up yet. Please run the aggregator/supabase-schema.sql in your Supabase SQL Editor.</small>'
+                    ? '<br><br><small style="color: var(--text-muted);">The database tables may not be set up yet. Please run the aggregator/supabase-schema.sql in your Supabase SQL Editor.</small>'
                     : '';
                 document.getElementById('aggregatorEventsList').innerHTML = 
                     `<div class="no-data" style="padding: 24px; text-align: center; color: #dc2626;">
@@ -3883,7 +3141,7 @@
         async function loadAggregatorLocations() {
             try {
                 const container = document.getElementById('aggregatorLocationsList');
-                container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--primary-blue); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading locations...</div>';
+                container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading locations...</div>';
                 
                 const client = window.getSupabaseClient();
                 if (!client) {
@@ -3906,7 +3164,7 @@
                 console.error('Error loading aggregator locations:', error);
                 const errorMsg = error.message || 'Unknown error';
                 const helpText = errorMsg.includes('relation') || errorMsg.includes('does not exist') 
-                    ? '<br><br><small style="color:#6b7280;">The database tables may not be set up yet. Please run the aggregator/supabase-schema.sql in your Supabase SQL Editor.</small>'
+                    ? '<br><br><small style="color: var(--text-muted);">The database tables may not be set up yet. Please run the aggregator/supabase-schema.sql in your Supabase SQL Editor.</small>'
                     : '';
                 document.getElementById('aggregatorLocationsList').innerHTML = 
                     `<div class="no-data" style="padding: 24px; text-align: center; color: #dc2626;">
@@ -3935,7 +3193,7 @@
                 return;
             }
 
-            let html = '<table class="user-table" style="width:100%; border-radius: 18px; overflow: hidden; background: white;">';
+            let html = '<table class="user-table" style="width:100%; border-radius: 18px; overflow: hidden; background: var(--bg-card);">';
             html += '<thead><tr>';
             html += '<th>Bin ID</th><th>Branch</th><th>Status</th><th>Inbound Litres</th><th>Drainage Litres</th><th>Last Event</th><th>Storage Location</th><th>Created</th></tr></thead><tbody>';
             
@@ -3967,7 +3225,7 @@
                 return;
             }
 
-            let html = '<table class="user-table" style="width:100%; border-radius: 18px; overflow: hidden; background: white;">';
+            let html = '<table class="user-table" style="width:100%; border-radius: 18px; overflow: hidden; background: var(--bg-card);">';
             html += '<thead><tr>';
             html += '<th>Branch ID</th><th>Name</th><th>Location</th><th>Contact</th><th>Created</th></tr></thead><tbody>';
             
@@ -3976,7 +3234,7 @@
                     <td style="font-weight:600;">${branch.id}</td>
                     <td>${branch.name}</td>
                     <td>${branch.location || 'N/A'}</td>
-                    <td>${branch.contact_person || 'N/A'}<br><small style="color:#6b7280;">${branch.phone || ''}</small></td>
+                    <td>${branch.contact_person || 'N/A'}<br><small style="color: var(--text-muted);">${branch.phone || ''}</small></td>
                     <td>${new Date(branch.created_at).toLocaleDateString()}</td>
                 </tr>`;
             });
@@ -4062,8 +3320,8 @@
                 const storedCount = companyEvents.filter(e => e.event_type === 'STORED').length;
                 
                 html += `
-                    <div style="margin-bottom: 24px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: white;">
-                        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 12px 16px; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="margin-bottom: 24px; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; background: var(--bg-card);">
+                        <div style="background: var(--bg-secondary); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding: 12px 16px; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <i class="fa-solid fa-building"></i> ${companyName} 
                                 <span style="font-weight: 400; opacity: 0.9; margin-left: 12px;">${companyEvents.length} event${companyEvents.length !== 1 ? 's' : ''}</span>
@@ -4123,7 +3381,7 @@
                 return;
             }
 
-            let html = '<table class="user-table" style="width:100%; border-radius: 18px; overflow: hidden; background: white;">';
+            let html = '<table class="user-table" style="width:100%; border-radius: 18px; overflow: hidden; background: var(--bg-card);">';
             html += '<thead><tr>';
             html += '<th>Location ID</th><th>Name</th><th>Type</th><th>Capacity</th><th>Current Count</th><th>Utilization</th><th>Depot</th></tr></thead><tbody>';
             
@@ -4213,10 +3471,10 @@
 
             qrCodeData.forEach((data, index) => {
                 const card = document.createElement('div');
-                card.style.cssText = 'background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center;';
+                card.style.cssText = 'background: var(--bg-card); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center;';
 
                 card.innerHTML = `
-                    <h4 style="color: #374151; font-size: 1.2rem; font-weight: 600; margin: 0 0 16px 0;">${data.id}</h4>
+                    <h4 style="color: var(--text-primary); font-size: 1.2rem; font-weight: 600; margin: 0 0 16px 0;">${data.id}</h4>
                     <div style="display: flex; justify-content: center;">
                         <div id="qr-${data.id}" style="width: 200px; height: 200px;"></div>
                     </div>
@@ -4310,5 +3568,416 @@
             if (e.target === this) closeDetailsModal();
         });
     </script>
+
+    <!-- Lab Results & Purchase Order Modal -->
+    <div id="labResultsModal" class="modal">
+        <div class="modal-content" style="max-width:800px; max-height:90vh; overflow-y:auto;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-flask"></i> Lab Results & Purchase Order</h3>
+                <button class="close-btn" onclick="closeLabResults()">&times;</button>
+            </div>
+
+            <!-- Event Selection -->
+            <div style="margin-bottom:20px;">
+                <label style="font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; font-weight:600; margin-bottom:6px; display:block;">Select Event / Company</label>
+                <select id="labEventSelect" onchange="onLabEventSelected()" style="width:100%; padding:10px 14px; background:rgba(255,255,255,0.04); border:1px solid var(--border-color); border-radius:10px; color:var(--text-primary); font-size:14px;">
+                    <option value="">-- Select an event --</option>
+                </select>
+            </div>
+
+            <!-- Lab Results Form -->
+            <div class="lab-results-card">
+                <h3><i class="fa-solid fa-vial"></i> Lab Test Parameters</h3>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Enter lab analysis results. Values above threshold will trigger a 10% discount.</p>
+                <div class="lab-grid">
+                    <div class="lab-field">
+                        <label>FFA (Free Fatty Acids) %</label>
+                        <input type="number" id="labFFA" step="0.01" min="0" placeholder="e.g. 5.0" oninput="checkThresholds(); calculatePO();" />
+                        <div id="ffaStatus" class="threshold-ok">Threshold: 5%</div>
+                    </div>
+                    <div class="lab-field">
+                        <label>MNI (Moisture & Impurities) %</label>
+                        <input type="number" id="labMNI" step="0.01" min="0" placeholder="e.g. 2.0" oninput="checkThresholds(); calculatePO();" />
+                        <div id="mniStatus" class="threshold-ok">Threshold: ~2%</div>
+                    </div>
+                    <div class="lab-field">
+                        <label>Sulfur (ppm)</label>
+                        <input type="number" id="labSulfur" step="0.1" min="0" placeholder="e.g. 15" oninput="checkThresholds(); calculatePO();" />
+                        <div id="sulfurStatus" class="threshold-ok"></div>
+                    </div>
+                    <div class="lab-field">
+                        <label>Iodine Value</label>
+                        <input type="number" id="labIodine" step="0.1" min="0" placeholder="e.g. 80" oninput="checkThresholds(); calculatePO();" />
+                        <div id="iodineStatus" class="threshold-ok"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Market Prices -->
+            <div class="market-prices-card">
+                <h3 style="color:var(--text-primary); font-weight:700; margin-bottom:16px;"><i class="fa-solid fa-chart-line"></i> Market Prices (R/litre)</h3>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:14px;">Manually input current stock/market prices for each oil type.</p>
+                <div class="lab-grid">
+                    <div class="lab-field">
+                        <label>UCO Price (R/L)</label>
+                        <input type="number" id="priceUCO" step="0.01" min="0" placeholder="e.g. 8.50" oninput="calculatePO()" />
+                    </div>
+                    <div class="lab-field">
+                        <label>Winterized Price (R/L)</label>
+                        <input type="number" id="priceWinterized" step="0.01" min="0" placeholder="e.g. 10.00" oninput="calculatePO()" />
+                    </div>
+                    <div class="lab-field">
+                        <label>Acid Oil Price (R/L)</label>
+                        <input type="number" id="priceAcidOil" step="0.01" min="0" placeholder="e.g. 6.00" oninput="calculatePO()" />
+                    </div>
+                    <div class="lab-field">
+                        <label>Gum Oil Price (R/L)</label>
+                        <input type="number" id="priceGumOil" step="0.01" min="0" placeholder="e.g. 5.50" oninput="calculatePO()" />
+                    </div>
+                    <div class="lab-field">
+                        <label>Mixed Oil Price (R/L)</label>
+                        <input type="number" id="priceMixedOil" step="0.01" min="0" placeholder="e.g. 7.00" oninput="calculatePO()" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Purchase Order Section -->
+            <div class="po-section">
+                <h3><i class="fa-solid fa-file-invoice-dollar"></i> Purchase Order</h3>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:14px;">Prices quoted against SO1. Inbound weight used for calculation.</p>
+
+                <div class="po-grid">
+                    <div class="lab-field">
+                        <label>Oil Type</label>
+                        <select id="poOilType" onchange="calculatePO()" style="width:100%; padding:10px 12px; background:rgba(255,255,255,0.04); border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary); font-size:14px;">
+                            <option value="UCO">UCO</option>
+                            <option value="WINTERIZED">Winterized</option>
+                            <option value="ACID_OIL">Acid Oil</option>
+                            <option value="GUM_OIL">Gum Oil</option>
+                            <option value="MIXED_OIL">Mixed Oil</option>
+                        </select>
+                    </div>
+                    <div class="lab-field">
+                        <label>Inbound Weight (Litres)</label>
+                        <input type="number" id="poWeight" step="0.1" min="0" placeholder="Auto-filled from event" oninput="calculatePO()" />
+                    </div>
+                    <div class="lab-field">
+                        <label>Purchase Rate (R/L)</label>
+                        <input type="number" id="poPurchaseRate" step="0.01" min="0" placeholder="Enter buying rate" oninput="calculatePO()" />
+                    </div>
+                    <div class="lab-field">
+                        <label>Storage Type</label>
+                        <select id="poStorageType" style="width:100%; padding:10px 12px; background:rgba(255,255,255,0.04); border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary); font-size:14px;">
+                            <option value="BULK">Bulk</option>
+                            <option value="IBC">IBC</option>
+                            <option value="ISO">ISO Tank Container</option>
+                        </select>
+                    </div>
+                    <div class="lab-field">
+                        <label>ISO Tank Container #</label>
+                        <input type="text" id="poISONumber" placeholder="e.g. MSKU1234567" style="padding:10px 12px; background:rgba(255,255,255,0.04); border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary);" />
+                    </div>
+                    <div class="lab-field">
+                        <label>Company VAT Registered?</label>
+                        <select id="poVATRegistered" onchange="calculatePO()" style="width:100%; padding:10px 12px; background:rgba(255,255,255,0.04); border:1px solid var(--border-color); border-radius:8px; color:var(--text-primary); font-size:14px;">
+                            <option value="no">No</option>
+                            <option value="yes">Yes (VAT 264)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-top:20px; padding:16px; background:rgba(0,0,0,0.2); border-radius:12px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="color:var(--text-muted);">Subtotal (Weight × Rate):</span>
+                        <span id="poSubtotal" style="color:var(--text-primary); font-weight:600;">R 0.00</span>
+                    </div>
+                    <div id="poDiscountRow" style="display:none; justify-content:space-between; margin-bottom:8px;">
+                        <span style="color:#fbbf24;">10% Quality Discount:</span>
+                        <span id="poDiscount" style="color:#fbbf24; font-weight:600;">- R 0.00</span>
+                    </div>
+                    <div id="poVATRow" style="display:none; justify-content:space-between; margin-bottom:8px;">
+                        <span style="color:var(--text-muted);">VAT (15%):</span>
+                        <span id="poVAT" style="color:var(--text-primary); font-weight:600;">R 0.00</span>
+                    </div>
+                    <div style="border-top:1px solid var(--border-color); padding-top:10px; display:flex; justify-content:space-between;">
+                        <span style="color:var(--text-primary); font-weight:700; font-size:1.1rem;">TOTAL:</span>
+                        <span id="poTotal" class="po-total" style="font-size:1.3rem;">R 0.00</span>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:12px; margin-top:16px; flex-wrap:wrap;">
+                    <button class="po-btn" onclick="generatePurchaseOrder()">
+                        <i class="fa-solid fa-file-pdf"></i> Generate Purchase Order
+                    </button>
+                    <button class="po-btn" onclick="sendPOToAdmin()" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                        <i class="fa-solid fa-paper-plane"></i> Send PO to Admin
+                    </button>
+                </div>
+                <div id="poMessage" style="margin-top:12px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ============================================================
+    // Lab Results & Purchase Order Logic
+    // ============================================================
+
+    function showLabResultsForm() {
+        const modal = document.getElementById('labResultsModal');
+        modal.style.display = 'flex';
+        populateLabEventSelect();
+    }
+
+    function closeLabResults() {
+        document.getElementById('labResultsModal').style.display = 'none';
+    }
+
+    document.getElementById('labResultsModal').addEventListener('click', function(e) {
+        if (e.target === this) closeLabResults();
+    });
+
+    function populateLabEventSelect() {
+        const select = document.getElementById('labEventSelect');
+        select.innerHTML = '<option value="">-- Select an event --</option>';
+
+        if (!aggregatorEventsData || aggregatorEventsData.length === 0) {
+            select.innerHTML += '<option value="" disabled>No events loaded. Load events first.</option>';
+            return;
+        }
+
+        // Group by company and show STORED events
+        const companies = {};
+        aggregatorEventsData.forEach(event => {
+            const company = event.company_name || 'Unknown Company';
+            if (!companies[company]) companies[company] = [];
+            companies[company].push(event);
+        });
+
+        Object.keys(companies).sort().forEach(company => {
+            const events = companies[company];
+            events.forEach(event => {
+                const date = new Date(event.timestamp).toLocaleDateString();
+                const litres = event.inbound_litres || 0;
+                const oilType = event.oil_type || 'N/A';
+                select.innerHTML += `<option value="${event.id}" data-litres="${litres}" data-oil="${oilType}" data-company="${company}">
+                    ${company} — ${event.event_type} — ${oilType} — ${litres}L — ${date}
+                </option>`;
+            });
+        });
+    }
+
+    function onLabEventSelected() {
+        const select = document.getElementById('labEventSelect');
+        const option = select.selectedOptions[0];
+        if (!option || !option.value) return;
+
+        const litres = option.getAttribute('data-litres');
+        const oilType = option.getAttribute('data-oil');
+
+        document.getElementById('poWeight').value = litres || '';
+
+        // Map oil type to select
+        const oilMap = { 'UCO': 'UCO', 'WINTERIZED': 'WINTERIZED', 'ACID_OIL': 'ACID_OIL', 'GUM_OIL': 'GUM_OIL', 'MIXED_OIL': 'MIXED_OIL' };
+        if (oilMap[oilType]) {
+            document.getElementById('poOilType').value = oilMap[oilType];
+        }
+
+        // Auto-fill purchase rate from market price
+        calculatePO();
+    }
+
+    const THRESHOLDS = { FFA: 5, MNI: 2 };
+
+    function checkThresholds() {
+        const ffa = parseFloat(document.getElementById('labFFA').value) || 0;
+        const mni = parseFloat(document.getElementById('labMNI').value) || 0;
+
+        const ffaStatus = document.getElementById('ffaStatus');
+        if (ffa > THRESHOLDS.FFA) {
+            ffaStatus.className = 'threshold-warning';
+            ffaStatus.textContent = `⚠ Above threshold (${THRESHOLDS.FFA}%) — 10% discount applies`;
+        } else if (ffa > 0) {
+            ffaStatus.className = 'threshold-ok';
+            ffaStatus.textContent = `✓ Within threshold (${THRESHOLDS.FFA}%)`;
+        } else {
+            ffaStatus.className = 'threshold-ok';
+            ffaStatus.textContent = `Threshold: ${THRESHOLDS.FFA}%`;
+        }
+
+        const mniStatus = document.getElementById('mniStatus');
+        if (mni > THRESHOLDS.MNI) {
+            mniStatus.className = 'threshold-warning';
+            mniStatus.textContent = `⚠ Above threshold (~${THRESHOLDS.MNI}%) — 10% discount applies`;
+        } else if (mni > 0) {
+            mniStatus.className = 'threshold-ok';
+            mniStatus.textContent = `✓ Within threshold (~${THRESHOLDS.MNI}%)`;
+        } else {
+            mniStatus.className = 'threshold-ok';
+            mniStatus.textContent = `Threshold: ~${THRESHOLDS.MNI}%`;
+        }
+    }
+
+    function getMarketPrice(oilType) {
+        const priceMap = {
+            'UCO': parseFloat(document.getElementById('priceUCO').value) || 0,
+            'WINTERIZED': parseFloat(document.getElementById('priceWinterized').value) || 0,
+            'ACID_OIL': parseFloat(document.getElementById('priceAcidOil').value) || 0,
+            'GUM_OIL': parseFloat(document.getElementById('priceGumOil').value) || 0,
+            'MIXED_OIL': parseFloat(document.getElementById('priceMixedOil').value) || 0,
+        };
+        return priceMap[oilType] || 0;
+    }
+
+    function isAboveThreshold() {
+        const ffa = parseFloat(document.getElementById('labFFA').value) || 0;
+        const mni = parseFloat(document.getElementById('labMNI').value) || 0;
+        return ffa > THRESHOLDS.FFA || mni > THRESHOLDS.MNI;
+    }
+
+    function calculatePO() {
+        const weight = parseFloat(document.getElementById('poWeight').value) || 0;
+        const rate = parseFloat(document.getElementById('poPurchaseRate').value) || 0;
+        const oilType = document.getElementById('poOilType').value;
+        const vatRegistered = document.getElementById('poVATRegistered').value === 'yes';
+        const aboveThreshold = isAboveThreshold();
+
+        // If no manual rate, use market price
+        const effectiveRate = rate || getMarketPrice(oilType);
+
+        let subtotal = weight * effectiveRate;
+        let discount = 0;
+        let vat = 0;
+
+        if (aboveThreshold) {
+            discount = subtotal * 0.10;
+        }
+
+        const afterDiscount = subtotal - discount;
+
+        if (vatRegistered) {
+            vat = afterDiscount * 0.15;
+        }
+
+        const total = afterDiscount + vat;
+
+        document.getElementById('poSubtotal').textContent = 'R ' + subtotal.toFixed(2);
+
+        const discountRow = document.getElementById('poDiscountRow');
+        if (aboveThreshold && subtotal > 0) {
+            discountRow.style.display = 'flex';
+            document.getElementById('poDiscount').textContent = '- R ' + discount.toFixed(2);
+        } else {
+            discountRow.style.display = 'none';
+        }
+
+        const vatRow = document.getElementById('poVATRow');
+        if (vatRegistered && afterDiscount > 0) {
+            vatRow.style.display = 'flex';
+            document.getElementById('poVAT').textContent = 'R ' + vat.toFixed(2);
+        } else {
+            vatRow.style.display = 'none';
+        }
+
+        document.getElementById('poTotal').textContent = 'R ' + total.toFixed(2);
+    }
+
+    function generatePurchaseOrder() {
+        const select = document.getElementById('labEventSelect');
+        const option = select.selectedOptions[0];
+        const company = option ? option.getAttribute('data-company') : 'Unknown';
+        const oilType = document.getElementById('poOilType').value;
+        const weight = document.getElementById('poWeight').value;
+        const rate = document.getElementById('poPurchaseRate').value;
+        const storage = document.getElementById('poStorageType').value;
+        const isoNum = document.getElementById('poISONumber').value;
+        const vatReg = document.getElementById('poVATRegistered').value === 'yes';
+        const total = document.getElementById('poTotal').textContent;
+        const ffa = document.getElementById('labFFA').value;
+        const mni = document.getElementById('labMNI').value;
+        const sulfur = document.getElementById('labSulfur').value;
+        const iodine = document.getElementById('labIodine').value;
+
+        const poDate = new Date().toLocaleDateString('en-ZA');
+        const poNumber = 'PO-' + Date.now().toString(36).toUpperCase();
+
+        const poHTML = `
+            <div style="font-family:Inter,system-ui,sans-serif; max-width:700px; margin:0 auto; padding:40px; background:white; color:#1a1a1a;">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:30px; border-bottom:3px solid #10b981; padding-bottom:20px;">
+                    <div>
+                        <h1 style="font-size:24px; font-weight:700; margin:0;">PURCHASE ORDER</h1>
+                        <p style="color:#666; margin:4px 0;">${poNumber}</p>
+                        <p style="color:#666; margin:4px 0;">Date: ${poDate}</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <h2 style="font-size:18px; margin:0;">Apex Chemicals</h2>
+                        <p style="color:#666; font-size:13px;">Oil Collection & Processing</p>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:24px;">
+                    <h3 style="font-size:14px; text-transform:uppercase; color:#666; margin-bottom:8px;">Supplier</h3>
+                    <p style="font-size:16px; font-weight:600;">${company}</p>
+                    ${vatReg ? '<p style="color:#666; font-size:13px;">VAT Registered (VAT 264 applicable)</p>' : ''}
+                </div>
+
+                <table style="width:100%; border-collapse:collapse; margin-bottom:24px;">
+                    <thead>
+                        <tr style="background:#f8f8f8; text-align:left;">
+                            <th style="padding:10px 12px; border-bottom:2px solid #ddd; font-size:13px; text-transform:uppercase; color:#666;">Description</th>
+                            <th style="padding:10px 12px; border-bottom:2px solid #ddd; font-size:13px; text-transform:uppercase; color:#666;">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td style="padding:8px 12px; border-bottom:1px solid #eee;">Oil Type</td><td style="padding:8px 12px; border-bottom:1px solid #eee;">${oilType.replace(/_/g,' ')}</td></tr>
+                        <tr><td style="padding:8px 12px; border-bottom:1px solid #eee;">Inbound Weight</td><td style="padding:8px 12px; border-bottom:1px solid #eee;">${weight} Litres</td></tr>
+                        <tr><td style="padding:8px 12px; border-bottom:1px solid #eee;">Purchase Rate</td><td style="padding:8px 12px; border-bottom:1px solid #eee;">R ${rate}/L</td></tr>
+                        <tr><td style="padding:8px 12px; border-bottom:1px solid #eee;">Storage</td><td style="padding:8px 12px; border-bottom:1px solid #eee;">${storage}${isoNum ? ' — ' + isoNum : ''}</td></tr>
+                    </tbody>
+                </table>
+
+                <div style="margin-bottom:24px;">
+                    <h3 style="font-size:14px; text-transform:uppercase; color:#666; margin-bottom:8px;">Lab Results</h3>
+                    <table style="width:100%; border-collapse:collapse;">
+                        <tr><td style="padding:6px 12px; border-bottom:1px solid #eee; width:50%;">FFA (Free Fatty Acids)</td><td style="padding:6px 12px; border-bottom:1px solid #eee;">${ffa || 'N/A'}%</td></tr>
+                        <tr><td style="padding:6px 12px; border-bottom:1px solid #eee;">MNI (Moisture & Impurities)</td><td style="padding:6px 12px; border-bottom:1px solid #eee;">${mni || 'N/A'}%</td></tr>
+                        <tr><td style="padding:6px 12px; border-bottom:1px solid #eee;">Sulfur</td><td style="padding:6px 12px; border-bottom:1px solid #eee;">${sulfur || 'N/A'} ppm</td></tr>
+                        <tr><td style="padding:6px 12px; border-bottom:1px solid #eee;">Iodine Value</td><td style="padding:6px 12px; border-bottom:1px solid #eee;">${iodine || 'N/A'}</td></tr>
+                    </table>
+                </div>
+
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:16px; text-align:right;">
+                    <p style="font-size:22px; font-weight:700; color:#059669; margin:0;">Total: ${total}</p>
+                    ${isAboveThreshold() ? '<p style="color:#d97706; font-size:13px; margin-top:4px;">* 10% quality discount applied (above threshold)</p>' : ''}
+                    ${vatReg ? '<p style="color:#666; font-size:13px; margin-top:4px;">* Inclusive of 15% VAT</p>' : ''}
+                </div>
+
+                <p style="text-align:center; color:#999; font-size:11px; margin-top:30px;">Generated by Apex Admin Dashboard — ${poDate}</p>
+            </div>
+        `;
+
+        const win = window.open('', '_blank');
+        win.document.write('<html><head><title>Purchase Order ' + poNumber + '</title></head><body>' + poHTML + '</body></html>');
+        win.document.close();
+        win.print();
+
+        document.getElementById('poMessage').innerHTML = '<div class="success-message" style="padding:10px 14px; font-size:13px;">✓ Purchase Order ' + poNumber + ' generated successfully</div>';
+    }
+
+    function sendPOToAdmin() {
+        const total = document.getElementById('poTotal').textContent;
+        const weight = document.getElementById('poWeight').value;
+        const rate = document.getElementById('poPurchaseRate').value;
+
+        if (!weight || !rate) {
+            document.getElementById('poMessage').innerHTML = '<div class="error-message" style="padding:10px 14px; font-size:13px;">Please fill in weight and purchase rate first.</div>';
+            return;
+        }
+
+        // In a real app this would post to Supabase or send an email
+        document.getElementById('poMessage').innerHTML = '<div class="success-message" style="padding:10px 14px; font-size:13px;">✓ Purchase Order sent to admin for approval. Total: ' + total + '</div>';
+    }
+    </script>
+
 </body>
 </html>

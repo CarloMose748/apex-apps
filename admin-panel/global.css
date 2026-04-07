@@ -10,7 +10,7 @@
 html, body {
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-  background-color: var(--background-gray);
+  background-color: #0f1117;
   color: var(--text-primary);
   line-height: 1.6;
   font-size: 16px;
@@ -29,56 +29,41 @@ body {
 
 /* Color Palette - Professional Design System */
 :root {
-  /* Primary Brand Colors */
-  --primary-color: #0066cc;
-  --primary-light: #3385d6;
-  --primary-dark: #0052a3;
-  
-  /* Secondary Colors */
-  --secondary-color: #1a202c;
-  --secondary-light: #2d3748;
-  --secondary-dark: #121826;
-  
-  /* Accent Colors */
-  --accent-blue: #1e40af;
-  --accent-blue-light: #3b82f6;
-  --accent-blue-dark: #1e3a8a;
+  --primary-color: #10b981;
+  --primary-light: #34d399;
+  --primary-dark: #059669;
+  --secondary-color: #1a1d2e;
+  --secondary-light: #252838;
+  --secondary-dark: #0f1117;
+  --accent-blue: #06b6d4;
+  --accent-blue-light: #22d3ee;
+  --accent-blue-dark: #0891b2;
   --accent-orange: #f59e0b;
   --accent-orange-light: #fbbf24;
   --accent-red: #ef4444;
   --accent-red-light: #f87171;
-  
-  /* Neutral Colors */
-  --background-light: #ffffff;
-  --background-gray: #f8fafc;
-  --background-dark: #f1f5f9;
-  --surface-white: #ffffff;
-  --surface-gray: #f8fafc;
-  --surface-dark: #e2e8f0;
-  
-  /* Text Colors */
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --text-disabled: #cbd5e1;
+  --background-light: #0f1117;
+  --background-gray: #0f1117;
+  --background-dark: #1a1d2e;
+  --surface-white: #1e2030;
+  --surface-gray: #1a1d2e;
+  --surface-dark: #252838;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --text-disabled: #52525b;
   --text-white: #ffffff;
-  
-  /* Border Colors */
-  --border-color: #e2e8f0;
-  --border-light: #f1f5f9;
-  --border-dark: #cbd5e1;
-  --border-focus: var(--primary-color);
-  
-  /* Shadow System */
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
-  
-  /* Border Radius System */
+  --border-color: rgba(255,255,255,0.06);
+  --border-light: rgba(255,255,255,0.04);
+  --border-dark: rgba(255,255,255,0.12);
+  --border-focus: #10b981;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.4);
+  --shadow-xl: 0 20px 25px rgba(0,0,0,0.5);
+  --shadow-2xl: 0 25px 50px rgba(0,0,0,0.6);
+  --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.3);
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -86,8 +71,6 @@ body {
   --radius-xl: 16px;
   --radius-2xl: 20px;
   --radius-full: 9999px;
-  
-  /* Spacing System */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 12px;
@@ -96,16 +79,14 @@ body {
   --space-2xl: 24px;
   --space-3xl: 32px;
   --space-4xl: 40px;
-  
-  /* Status Colors */
-  --status-success: var(--accent-blue);
-  --status-success-bg: #eff6ff;
-  --status-warning: var(--accent-orange);
-  --status-warning-bg: #fffbeb;
-  --status-error: var(--accent-red);
-  --status-error-bg: #fef2f2;
-  --status-info: var(--primary-color);
-  --status-info-bg: #eff6ff;
+  --status-success: #10b981;
+  --status-success-bg: rgba(16,185,129,0.1);
+  --status-warning: #f59e0b;
+  --status-warning-bg: rgba(245,158,11,0.1);
+  --status-error: #ef4444;
+  --status-error-bg: rgba(239,68,68,0.1);
+  --status-info: #3b82f6;
+  --status-info-bg: rgba(59,130,246,0.1);
 }
 
 /* Layout Utilities */
@@ -1834,7 +1815,7 @@ body {
   }
 
   .directions-step:active {
-    background-color: var(--background-gray);
+    background-color: #0f1117;
   }
 
   .step-instruction {
