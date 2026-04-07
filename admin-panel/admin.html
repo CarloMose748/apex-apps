@@ -370,22 +370,43 @@
         }
 
         @media (max-width: 768px) {
-            .admin-container { padding: 12px; }
-            .admin-header { padding: 16px; margin-bottom: 14px; }
-            .admin-header h1 { font-size: 1.15rem; }
-            .header-logo { height: 36px; }
-            .admin-nav-wrapper { margin: 0 -12px 14px -12px; padding: 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); }
-            .admin-nav { display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 8px; padding-bottom: 4px; }
+            .admin-container { padding: 8px; }
+            .admin-header { padding: 14px; margin-bottom: 10px; text-align: center; }
+            .admin-header h1 { font-size: 1.1rem; }
+            .header-logo { height: 32px; }
+            .header-title { flex-direction: column; gap: 8px; }
+            .admin-header div[style*="position: absolute"], .header-logout { position: static !important; margin-top: 10px; text-align: center; }
+            .admin-nav-wrapper { margin: 0 -8px 10px -8px; padding: 8px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); }
+            .admin-nav { display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 6px; padding-bottom: 4px; scrollbar-width: none; }
             .admin-nav::-webkit-scrollbar { display: none; }
-            .nav-btn { flex-shrink: 0; padding: 8px 14px; font-size: 12px; }
-            .nav-dropdown .dropdown-content { position: fixed; left: 12px; right: 12px; min-width: auto; width: calc(100% - 24px); max-height: 60vh; overflow-y: auto; z-index: 2000; }
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-            .search-filters { flex-direction: column; }
-            .section-card { padding: 16px; border-radius: 14px; overflow-x: auto; }
-            .user-table { font-size: 12px; min-width: 600px; }
-            .user-table th, .user-table td { padding: 8px 6px; white-space: nowrap; }
-            .action-buttons .btn-small { padding: 4px 8px; font-size: 11px; }
+            .nav-btn { flex-shrink: 0; padding: 7px 12px; font-size: 11px; border-radius: 8px; }
+            .nav-dropdown .dropdown-content { position: fixed; left: 8px; right: 8px; min-width: auto; width: calc(100% - 16px); max-height: 60vh; overflow-y: auto; z-index: 2000; }
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .stat-card { padding: 12px; border-radius: 10px; }
+            .stat-card h3 { font-size: 1.3rem; }
+            .stat-card p { font-size: 0.75rem; }
+            .search-filters { flex-direction: column; gap: 8px; }
+            .section-card { padding: 12px !important; border-radius: 12px !important; margin-bottom: 16px !important; }
+            .section-title { font-size: 1.2rem !important; margin-bottom: 16px !important; }
+            .user-table { font-size: 11px; min-width: 500px; }
+            .user-table th, .user-table td { padding: 6px 5px; white-space: nowrap; }
+            .action-buttons { flex-direction: column; gap: 4px; }
+            .action-buttons .btn-small { padding: 5px 10px; font-size: 11px; width: 100%; text-align: center; }
             .lab-grid, .po-grid { grid-template-columns: 1fr; }
+            .modal-overlay > div, .modal-content { max-width: 95vw !important; width: 95vw !important; padding: 16px !important; max-height: 85vh; overflow-y: auto; }
+            input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+            .grid-2 { grid-template-columns: 1fr !important; }
+            .btn-small { padding: 6px 10px; font-size: 11px; }
+            #adminInfo { font-size: 0.8rem; }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .admin-container { padding: 6px; }
+            .admin-header { padding: 12px; border-radius: 10px; }
+            .admin-header h1 { font-size: 1rem; }
+            .nav-btn { padding: 6px 10px; font-size: 10px; }
+            .section-card { padding: 10px !important; }
         }
 
         .nav-btn i, .btn-small i, .section-title i, h4 i { margin-right: 6px; }
@@ -422,7 +443,7 @@
                 </div>
                 <p id="adminInfo">Loading admin info...</p>
             </div>
-            <div style="position: absolute; top: 20px; right: 20px;">
+            <div class="header-logout" style="position: absolute; top: 20px; right: 20px;">
                 <button onclick="handleLogout()" style="background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); padding: 8px 16px; border-radius: 10px; font-weight: 600; cursor: pointer;">
                     <i class="fa-solid fa-right-from-bracket"></i> Logout
                 </button>
