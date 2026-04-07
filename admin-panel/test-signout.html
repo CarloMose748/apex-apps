@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Sign Out</title>
+</head>
+<body>
+    <h1>Test Sign Out Functionality</h1>
+    <button id="testBtn">Test AuthService Availability</button>
+    <button id="signOutBtn">Test Sign Out</button>
+    <div id="output" style="margin-top: 20px; padding: 10px; background: #f5f5f5; white-space: pre-line;"></div>
+
+    <!-- Load the same scripts as admin.html -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="auth-service.js"></script>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.textContent += message + '\n';
+            console.log(message);
+        }
+
+        document.getElementById('testBtn').addEventListener('click', function() {
+            output.textContent = '';
+            log('Testing AuthService availability...');
+            log('typeof AuthService: ' + typeof AuthService);
+            log('AuthService: ' + AuthService);
+            
+            if (AuthService) {
+                log('AuthService.signOut: ' + typeof AuthService.signOut);
+                log('AuthService.currentUser: ' + AuthService.currentUser);
+                log('AuthService.isReady: ' + AuthService.isReady);
+            }
+            
+            // Also check window.authService
+            log('typeof window.authService: ' + typeof window.authService);
+            
+            // Test the same logic as the fixed handleLogout
+            let authServiceInstance = null;
+            if (typeof AuthService !== 'undefined' && AuthService.signOut) {
+                authServiceInstance = AuthService;
+                log('Using AuthService (uppercase)');
+            } else if (typeof authService !== 'undefined' && authService.signOut) {
+                authServiceInstance = authService;
+                log('Using authService (lowercase)');
+            } else {
+                log('ERROR: No auth service instance found');
+            }
+            
+            if (authServiceInstance) {
+                log('Found auth service instance, isReady: ' + authServiceInstance.isReady);
+            }
+        });
+
+        document.getElementById('signOutBtn').addEventListener('click', async function() {
+            log('\nTesting sign out with improved logic...');
+            try {
+                // Use the same logic as the fixed handleLogout function
+                let authServiceInstance = null;
+                
+                if (typeof AuthService !== 'undefined' && AuthService.signOut) {
+                    authServiceInstance = AuthService;
+                    log('Using AuthService (uppercase)');
+                } else if (typeof authService !== 'undefined' && authService.signOut) {
+                    authServiceInstance = authService;
+                    log('Using authService (lowercase)');
+                } else {
+                    log('ERROR: No auth service instance found');
+                    return;
+                }
+
+                if (!authServiceInstance.isReady) {
+                    log('Auth service not ready, waiting...');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    if (!authServiceInstance.isReady) {
+                        log('ERROR: Auth service failed to initialize');
+                        return;
+                    }
+                }
+
+                log('Calling authServiceInstance.signOut()...');
+                const result = await authServiceInstance.signOut();
+                log('Sign out result: ' + JSON.stringify(result));
+                log('Sign out completed successfully');
+                
+            } catch (error) {
+                log('ERROR during sign out: ' + error.message);
+                log('Error stack: ' + error.stack);
+            }
+        });
+
+        // Log when scripts are loaded
+        document.addEventListener('supabaseReady', function() {
+            log('Supabase ready event fired');
+        });
+
+        window.addEventListener('load', function() {
+            log('Page loaded');
+            log('Initial AuthService check: ' + typeof AuthService);
+        });
+    </script>
+</body>
+</html>
