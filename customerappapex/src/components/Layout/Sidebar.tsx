@@ -5,17 +5,16 @@ import {
   FiShield, 
   FiTruck,
   FiSettings,
-  FiFileText,
-  FiGlobe
+  FiFileText
 } from 'react-icons/fi';
 
 const navigationItems = [
   { to: '/', icon: FiHome, label: 'Dashboard' },
   { to: '/collections', icon: FiArchive, label: 'Collection History' },
-  { to: '/certificates', icon: FiShield, label: 'Certificates' },
+  { to: '/certificates', icon: FiShield, label: 'Certificates & ISCC' },
   { to: '/requests', icon: FiTruck, label: 'Request Pickup' },
+  { to: '/vat-declaration', icon: FiFileText, label: 'VAT Declaration' },
   { to: '/sars-form', icon: FiFileText, label: 'SARS Form' },
-  { to: '/iscc-form', icon: FiGlobe, label: 'ISCC Form' },
   { to: '/account', icon: FiSettings, label: 'Account' },
 ];
 
@@ -51,7 +50,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
       </div>
       
       <div className="sidebar__footer">
-        <p className="sidebar__footer-text">© 2025 Apex Chem</p>
+        <p className="sidebar__footer-text">© 2022 Apex Chem</p>
       </div>
     </nav>
   );

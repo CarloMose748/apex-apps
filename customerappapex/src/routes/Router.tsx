@@ -15,6 +15,7 @@ import { Account } from '../pages/Account';
 import { RequestPickup } from '../pages/RequestPickup';
 import { SarsForm } from '../pages/SarsForm';
 import { IsccForm } from '../pages/IsccForm';
+import { VatCollectionForm } from '../pages/VatCollectionForm';
 
 export function Router() {
   return (
@@ -40,6 +41,7 @@ export function Router() {
                   <Route path="/requests" element={<Requests />} />
                   <Route path="/sars-form" element={<SarsForm />} />
                   <Route path="/iscc-form" element={<IsccForm />} />
+                  <Route path="/vat-declaration" element={<VatCollectionForm />} />
                   <Route path="/account" element={<Account />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

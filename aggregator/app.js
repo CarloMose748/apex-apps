@@ -329,6 +329,10 @@
     if (userDisplay && currentAdmin) {
       userDisplay.textContent = `${currentAdmin.full_name} (${currentAdmin.role})`;
     }
+
+    // Load history panels
+    loadSampleHistory();
+    loadTestResultsHistory();
   }
 
   // Helper functions
@@ -1053,7 +1057,7 @@
   // --- New Feature Functions ---
 
   // Sample Collection
-  window.confirmSample = function() {
+  window.confirmSample = async function() {
     const size = document.getElementById('sampleSize')?.value;
     const unit = document.getElementById('sampleUnit')?.value;
     const testType = document.getElementById('sampleTestType')?.value;
@@ -1066,14 +1070,39 @@
       return;
     }
 
-    const sampleData = { size: parseFloat(size), unit, testType, reference: ref, notes, timestamp: new Date().toISOString() };
-    console.log('Sample logged:', sampleData);
-    
-    if (msg) { msg.textContent = `Sample logged: ${size} ${unit} for ${testType} test. Ref: ${ref || 'N/A'}`; msg.className = 'message success'; }
+    if (msg) { msg.textContent = 'Saving sample...'; msg.className = 'message'; }
+
+    try {
+      const { data, error } = await supabase.from('aggregator_samples').insert({
+        depot_id: DEPOT.id,
+        sample_size: parseFloat(size),
+        unit: unit || 'ml',
+        test_type: testType || 'Standard Quality Test',
+        reference: ref || null,
+        notes: notes || null,
+        user_id: currentUser?.id || 'unknown'
+      }).select().single();
+
+      if (error) throw error;
+
+      console.log('Sample saved to DB:', data);
+      if (msg) { msg.textContent = `Sample logged: ${size} ${unit} for ${testType} test. Ref: ${ref || 'N/A'}`; msg.className = 'message success'; }
+
+      // Clear form
+      if (document.getElementById('sampleSize')) document.getElementById('sampleSize').value = '';
+      if (document.getElementById('sampleReference')) document.getElementById('sampleReference').value = '';
+      if (document.getElementById('sampleNotes')) document.getElementById('sampleNotes').value = '';
+
+      // Refresh history
+      loadSampleHistory();
+    } catch (err) {
+      console.error('Error saving sample:', err);
+      if (msg) { msg.textContent = 'Error saving sample. Please try again.'; msg.className = 'message error'; }
+    }
   };
 
   // Test Results
-  window.saveTestResults = function() {
+  window.saveTestResults = async function() {
     const ffa = document.getElementById('testFFA')?.value;
     const mi = document.getElementById('testMI')?.value;
     const density = document.getElementById('testDensity')?.value;
@@ -1087,14 +1116,118 @@
       return;
     }
 
-    const testData = { ffa: parseFloat(ffa) || null, mi: parseFloat(mi) || null, density: parseFloat(density) || null, temperature: parseFloat(temp) || null, reference: ref, notes, timestamp: new Date().toISOString() };
-    console.log('Test results saved:', testData);
+    if (msg) { msg.textContent = 'Saving test results...'; msg.className = 'message'; }
 
-    if (msg) { msg.textContent = `Test results saved. FFA: ${ffa || '-'}%, M&I: ${mi || '-'}%, Density: ${density || '-'} kg/L, Temp: ${temp || '-'}°C`; msg.className = 'message success'; }
+    try {
+      const { data, error } = await supabase.from('aggregator_test_results').insert({
+        depot_id: DEPOT.id,
+        ffa_percent: ffa ? parseFloat(ffa) : null,
+        moisture_percent: mi ? parseFloat(mi) : null,
+        density: density ? parseFloat(density) : null,
+        temperature: temp ? parseFloat(temp) : null,
+        lab_reference: ref || null,
+        notes: notes || null,
+        user_id: currentUser?.id || 'unknown'
+      }).select().single();
+
+      if (error) throw error;
+
+      console.log('Test results saved to DB:', data);
+      if (msg) { msg.textContent = `Test results saved. FFA: ${ffa || '-'}%, M&I: ${mi || '-'}%, Density: ${density || '-'} kg/L, Temp: ${temp || '-'}°C`; msg.className = 'message success'; }
+
+      // Clear form
+      ['testFFA', 'testMI', 'testDensity', 'testTemperature', 'testReference', 'testNotes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+
+      // Refresh history
+      loadTestResultsHistory();
+    } catch (err) {
+      console.error('Error saving test results:', err);
+      if (msg) { msg.textContent = 'Error saving test results. Please try again.'; msg.className = 'message error'; }
+    }
   };
 
+  // Load Sample History
+  async function loadSampleHistory() {
+    const container = document.getElementById('sampleHistory');
+    if (!container || !supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('aggregator_samples')
+        .select('*')
+        .eq('depot_id', DEPOT.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p style="color:#888;text-align:center;padding:12px;">No samples recorded yet.</p>';
+        return;
+      }
+
+      container.innerHTML = '<h4 style="margin:0 0 8px;">Recent Samples</h4>' + data.map(s => `
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid #10b981;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <strong>${s.sample_size} ${s.unit}</strong>
+            <span style="font-size:0.75rem;color:#888;">${new Date(s.created_at).toLocaleDateString('en-ZA', {day:'2-digit',month:'short',year:'numeric'})}</span>
+          </div>
+          <div style="font-size:0.8rem;color:#aaa;margin-top:4px;">${s.test_type}${s.reference ? ' — Ref: ' + s.reference : ''}</div>
+          ${s.notes ? '<div style="font-size:0.75rem;color:#777;margin-top:2px;">' + s.notes + '</div>' : ''}
+        </div>
+      `).join('');
+    } catch (err) {
+      console.error('Error loading sample history:', err);
+    }
+  }
+  window.loadSampleHistory = loadSampleHistory;
+
+  // Load Test Results History
+  async function loadTestResultsHistory() {
+    const container = document.getElementById('testResultsHistory');
+    if (!container || !supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('aggregator_test_results')
+        .select('*')
+        .eq('depot_id', DEPOT.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p style="color:#888;text-align:center;padding:12px;">No test results recorded yet.</p>';
+        return;
+      }
+
+      container.innerHTML = '<h4 style="margin:0 0 8px;">Recent Test Results</h4>' + data.map(t => `
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid #3b82f6;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:0.85rem;">
+              FFA: <strong>${t.ffa_percent != null ? t.ffa_percent + '%' : '-'}</strong> &nbsp;
+              M&I: <strong>${t.moisture_percent != null ? t.moisture_percent + '%' : '-'}</strong> &nbsp;
+              Density: <strong>${t.density != null ? t.density + ' kg/L' : '-'}</strong> &nbsp;
+              Temp: <strong>${t.temperature != null ? t.temperature + '°C' : '-'}</strong>
+            </span>
+            <span style="font-size:0.75rem;color:#888;">${new Date(t.created_at).toLocaleDateString('en-ZA', {day:'2-digit',month:'short',year:'numeric'})}</span>
+          </div>
+          ${t.lab_reference ? '<div style="font-size:0.8rem;color:#aaa;margin-top:4px;">Lab Ref: ' + t.lab_reference + '</div>' : ''}
+          ${t.notes ? '<div style="font-size:0.75rem;color:#777;margin-top:2px;">' + t.notes + '</div>' : ''}
+        </div>
+      `).join('');
+    } catch (err) {
+      console.error('Error loading test results history:', err);
+    }
+  }
+  window.loadTestResultsHistory = loadTestResultsHistory;
+
   // Purchase Order
-  window.savePurchaseOrder = function() {
+  window.savePurchaseOrder = async function() {
     const poNum = document.getElementById('poNumber')?.value;
     const supplier = document.getElementById('poSupplier')?.value;
     const vol = document.getElementById('poVolume')?.value;
@@ -1109,14 +1242,32 @@
       return;
     }
 
-    const poData = { poNumber: poNum, supplier, volume: parseFloat(vol) || 0, pricePerLitre: parseFloat(price) || 0, totalAmount: parseFloat(total) || 0, date, notes, timestamp: new Date().toISOString() };
-    console.log('PO saved:', poData);
+    if (msg) { msg.textContent = 'Saving purchase order...'; msg.className = 'message'; }
 
-    if (msg) { msg.textContent = `PO ${poNum} saved. Total: R${total || '0.00'}`; msg.className = 'message success'; }
+    try {
+      const { data, error } = await supabase.from('aggregator_purchase_orders').insert({
+        depot_id: DEPOT.id,
+        po_number: poNum,
+        supplier: supplier || null,
+        volume_litres: parseFloat(vol) || 0,
+        price_per_litre: parseFloat(price) || 0,
+        total_amount: parseFloat(total) || 0,
+        po_date: date || null,
+        notes: notes || null,
+        user_id: currentUser?.id || 'unknown'
+      }).select().single();
+
+      if (error) throw error;
+      console.log('PO saved to DB:', data);
+      if (msg) { msg.textContent = `PO ${poNum} saved. Total: R${total || '0.00'}`; msg.className = 'message success'; }
+    } catch (err) {
+      console.error('Error saving PO:', err);
+      if (msg) { msg.textContent = 'Error saving purchase order. Please try again.'; msg.className = 'message error'; }
+    }
   };
 
   // Invoice Generation
-  window.generateInvoice = function() {
+  window.generateInvoice = async function() {
     const poNum = document.getElementById('poNumber')?.value || 'N/A';
     const supplier = document.getElementById('poSupplier')?.value || 'N/A';
     const vol = document.getElementById('poVolume')?.value || '0';
@@ -1131,6 +1282,27 @@
     const temp = document.getElementById('testTemperature')?.value || '-';
 
     const invoiceNum = 'INV-' + Date.now().toString().slice(-8);
+
+    // Save invoice to database
+    try {
+      await supabase.from('aggregator_invoices').insert({
+        depot_id: DEPOT.id,
+        invoice_number: invoiceNum,
+        po_number: poNum,
+        supplier: supplier,
+        volume_litres: parseFloat(vol) || 0,
+        price_per_litre: parseFloat(price) || 0,
+        total_amount: parseFloat(total) || 0,
+        ffa_percent: ffa !== '-' ? parseFloat(ffa) : null,
+        moisture_percent: mi !== '-' ? parseFloat(mi) : null,
+        density: density !== '-' ? parseFloat(density) : null,
+        temperature: temp !== '-' ? parseFloat(temp) : null,
+        user_id: currentUser?.id || 'unknown'
+      });
+      console.log('Invoice saved to DB:', invoiceNum);
+    } catch (err) {
+      console.error('Error saving invoice to DB:', err);
+    }
 
     const invoiceHTML = `
       <html><head><title>Invoice ${invoiceNum}</title>

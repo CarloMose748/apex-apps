@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/UI/Card';
 import { Button } from '../components/UI/Button';
-import { FiPackage, FiCheckCircle, FiAlertCircle, FiPlus } from 'react-icons/fi';
+import { FiPackage, FiCheckCircle, FiAlertCircle, FiPlus, FiMapPin, FiNavigation } from 'react-icons/fi';
 import { supabase } from '../lib/supabase';
 
 interface Bin {
@@ -34,6 +34,39 @@ export function RequestPickup() {
     notes: '',
     urgency: 'normal'
   });
+  const [storeLocation, setStoreLocation] = useState({
+    address: '',
+    lat: '',
+    lng: '',
+    locatingGps: false,
+    gpsError: '',
+  });
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setStoreLocation(prev => ({ ...prev, gpsError: 'Geolocation is not supported by your browser' }));
+      return;
+    }
+    setStoreLocation(prev => ({ ...prev, locatingGps: true, gpsError: '' }));
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setStoreLocation(prev => ({
+          ...prev,
+          lat: position.coords.latitude.toFixed(6),
+          lng: position.coords.longitude.toFixed(6),
+          locatingGps: false,
+        }));
+      },
+      (err) => {
+        setStoreLocation(prev => ({
+          ...prev,
+          locatingGps: false,
+          gpsError: err.code === 1 ? 'Location permission denied. Please allow location access or enter address manually.' : 'Unable to detect location. Please enter address manually.',
+        }));
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   useEffect(() => {
     fetchUserBins();
@@ -129,12 +162,12 @@ export function RequestPickup() {
         customer_name: customerData.full_name,
         customer_phone: customerData.phone_number || '',
         customer_email: customerData.email || '',
-        pickup_address: customerData.address || '',
+        pickup_address: storeLocation.address || customerData.address || '',
         dropoff_address: 'Apex Oil Collection Center',
         job_type: 'oil_collection',
         description: `Oil collection for ${selectedBins.size} bin(s)${manualBin.serial ? ` + manual bin: ${manualBin.serial} (${manualBin.type})` : ''}`,
         status: 'pending',
-        notes: `Customer ID: ${userId}\nBin Serial Numbers: ${selectedBinsList.map(b => b.bin_serial_number).join(', ')}${manualBin.serial ? `\nManual Bin: ${manualBin.serial} (${manualBin.type})` : ''}\nBin IDs: ${Array.from(selectedBins).join(', ')}\nUrgency: ${manualBin.urgency}${manualBin.notes ? `\nAdditional Notes: ${manualBin.notes}` : ''}`
+        notes: `Customer ID: ${userId}\nBin Serial Numbers: ${selectedBinsList.map(b => b.bin_serial_number).join(', ')}${manualBin.serial ? `\nManual Bin: ${manualBin.serial} (${manualBin.type})` : ''}\nBin IDs: ${Array.from(selectedBins).join(', ')}\nUrgency: ${manualBin.urgency}${storeLocation.lat && storeLocation.lng ? `\nGPS Location: ${storeLocation.lat}, ${storeLocation.lng}` : ''}${storeLocation.address ? `\nStore Address: ${storeLocation.address}` : ''}${manualBin.notes ? `\nAdditional Notes: ${manualBin.notes}` : ''}`
       };
 
       const { error: jobError } = await supabase
@@ -296,6 +329,59 @@ export function RequestPickup() {
               );
             })}
             </div>
+
+            {/* Store Location */}
+            <Card style={{ marginBottom: '24px' }}>
+              <div style={{ padding: '20px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FiMapPin size={18} style={{ color: 'var(--primary)' }} />
+                  Store / Pickup Location
+                </h3>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                  Share your location so the driver can find you easily.
+                </p>
+                <div style={{ display: 'grid', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                      Street Address
+                    </label>
+                    <input
+                      type="text"
+                      value={storeLocation.address}
+                      onChange={e => setStoreLocation(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="e.g., 45 Main Road, Durban, 4001"
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', background: 'var(--bg)' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={detectLocation}
+                      disabled={storeLocation.locatingGps}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--primary)',
+                        background: 'transparent', color: 'var(--primary)', fontSize: '0.875rem',
+                        cursor: storeLocation.locatingGps ? 'wait' : 'pointer', fontWeight: 500,
+                      }}
+                    >
+                      <FiNavigation size={16} />
+                      {storeLocation.locatingGps ? 'Detecting...' : 'Use My Current Location'}
+                    </button>
+                    {storeLocation.lat && storeLocation.lng && (
+                      <span style={{ fontSize: '0.8125rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <FiCheckCircle size={14} /> GPS: {storeLocation.lat}, {storeLocation.lng}
+                      </span>
+                    )}
+                  </div>
+                  {storeLocation.gpsError && (
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--error, #ef4444)' }}>
+                      {storeLocation.gpsError}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Card>
 
             {/* Manual Bin Entry */}
             <Card style={{ marginBottom: '24px' }}>

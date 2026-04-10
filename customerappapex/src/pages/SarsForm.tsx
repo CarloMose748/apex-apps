@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card } from '../components/UI/Card';
 import { Button } from '../components/UI/Button';
 import { FiFileText, FiDownload, FiCheckCircle } from 'react-icons/fi';
+import { supabase } from '../lib/supabase';
 
 export function SarsForm() {
   const [formData, setFormData] = useState({
@@ -16,7 +17,7 @@ export function SarsForm() {
     contactEmail: '',
     contactPhone: '',
     financialYearEnd: '',
-    wasteType: 'Used Cooking Oil',
+    wasteType: 'Used Cooking Oil (UCO)',
     totalVolumeCollected: '',
     totalValueDeclared: '',
     periodFrom: '',
@@ -33,9 +34,31 @@ export function SarsForm() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    try {
+      if (supabase) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from('sars_declarations').insert({
+          user_email: user?.email || '',
+          company_name: formData.companyName,
+          company_registration: formData.registrationNumber,
+          vat_number: formData.vatNumber,
+          tax_reference: formData.taxReferenceNumber,
+          waste_type: formData.wasteType,
+          waste_volume: formData.totalVolumeCollected ? parseFloat(formData.totalVolumeCollected) : null,
+          waste_value: formData.totalValueDeclared ? parseFloat(formData.totalValueDeclared) : null,
+          period_from: formData.periodFrom || null,
+          period_to: formData.periodTo || null,
+          declaration_date: new Date().toISOString().split('T')[0],
+          form_data: formData,
+        });
+      }
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Error saving SARS declaration:', err);
+      alert('Error saving declaration. Please try again.');
+    }
   };
 
   const inputStyle: React.CSSProperties = {
@@ -157,10 +180,10 @@ export function SarsForm() {
                   <div>
                     <label style={labelStyle}>Waste Type</label>
                     <select name="wasteType" value={formData.wasteType} onChange={handleChange} style={inputStyle}>
-                      <option>Used Cooking Oil</option>
-                      <option>Industrial Waste Oil</option>
-                      <option>Mixed Waste Oil</option>
-                      <option>Biodiesel Feedstock</option>
+                      <option>Used Cooking Oil (UCO)</option>
+                      <option>Gum Oil</option>
+                      <option>Winterized Oil</option>
+                      <option>Acid Oil</option>
                     </select>
                   </div>
                 </div>

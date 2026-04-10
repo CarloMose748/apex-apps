@@ -1,121 +1,117 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '../components/UI/Card';
-import { Table } from '../components/UI/Table';
 import { Button } from '../components/UI/Button';
-import { Input } from '../components/UI/Input';
-import { Select } from '../components/UI/Select';
 import { StatusPill } from '../components/UI/StatusPill';
-import { FiPlus, FiTruck, FiUpload } from 'react-icons/fi';
-import type { PickupRequest, TableColumn, SelectOption } from '../lib/types';
-import { PickupRequestStatus } from '../lib/types';
+import { FiPlus, FiTruck, FiMapPin, FiClock, FiRefreshCw } from 'react-icons/fi';
+import { supabase } from '../lib/supabase';
+
+interface JobRequest {
+  id: string;
+  customer_name: string;
+  pickup_address: string;
+  description: string;
+  status: string;
+  notes: string;
+  created_at: string;
+  driver_id?: string;
+  assigned_driver?: string;
+}
 
 export function Requests() {
-  const [requests, setRequests] = useState<PickupRequest[]>([]);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [requests, setRequests] = useState<JobRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({
-    bin_id: '',
-    reason: '',
-    est_volume_l: ''
-  });
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Mock customer pickup requests
-    setTimeout(() => {
-      const mockRequests: PickupRequest[] = [
-        {
-          id: '1',
-          org_id: '1',
-          bin_id: '1',
-          requested_by: 'demo@apex.com',
-          reason: 'Bin is 80% full - routine pickup',
-          est_volume_l: 180,
-          status: PickupRequestStatus.SCHEDULED,
-          created_at: '2025-10-15T09:00:00Z',
-          scheduled_date: '2025-10-19T10:00:00Z'
-        },
-        {
-          id: '2',
-          org_id: '1',
-          bin_id: '2',
-          requested_by: 'demo@apex.com',
-          reason: 'Urgent - bin overflow risk',
-          est_volume_l: 240,
-          status: PickupRequestStatus.REQUESTED,
-          created_at: '2025-10-16T14:30:00Z'
-        },
-        {
-          id: '3',
-          org_id: '1',
-          bin_id: '3',
-          requested_by: 'demo@apex.com',
-          reason: 'Weekly scheduled pickup',
-          est_volume_l: 95,
-          status: PickupRequestStatus.COMPLETED,
-          created_at: '2025-10-10T11:15:00Z',
-          completed_at: '2025-10-12T15:30:00Z'
-        }
-      ];
-      setRequests(mockRequests);
-      setLoading(false);
-    }, 800);
+    loadRequests();
   }, []);
 
-  const binOptions: SelectOption[] = [
-    { value: '', label: 'Select Bin (Optional)' },
-    { value: '1', label: 'BIN-001' },
-    { value: '2', label: 'BIN-002' },
-    { value: '3', label: 'BIN-003' }
-  ];
+  const loadRequests = async () => {
+    try {
+      setLoading(true);
+      setError('');
 
-  const getStatusVariant = (status: string) => {
+      if (!supabase) {
+        setError('Unable to connect to database');
+        setLoading(false);
+        return;
+      }
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        setError('Please log in to view your requests');
+        setLoading(false);
+        return;
+      }
+
+      // Fetch jobs for this customer — match by email or by customer_id in notes
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('id, full_name, email')
+        .eq('email', user.email)
+        .single();
+
+      if (!customer) {
+        setLoading(false);
+        return;
+      }
+
+      // Query jobs that belong to this customer
+      const { data: jobs, error: jobsError } = await supabase
+        .from('jobs')
+        .select('*')
+        .or(`customer_email.eq.${customer.email},customer_name.eq.${customer.full_name}`)
+        .order('created_at', { ascending: false });
+
+      if (jobsError) {
+        console.error('Error fetching jobs:', jobsError);
+        // Fallback: try querying with notes containing customer ID
+        const { data: fallbackJobs } = await supabase
+          .from('jobs')
+          .select('*')
+          .ilike('notes', `%${customer.id}%`)
+          .order('created_at', { ascending: false });
+        
+        setRequests(fallbackJobs || []);
+      } else {
+        setRequests(jobs || []);
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Failed to load requests');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusVariant = (status: string): 'success' | 'warning' | 'danger' | 'neutral' => {
     switch (status) {
-      case 'completed': return 'success';
-      case 'rejected': return 'danger';
-      case 'en_route': case 'collected': return 'warning';
+      case 'completed': case 'verified': return 'success';
+      case 'in_progress': case 'assigned': case 'en_route': return 'warning';
+      case 'rejected': case 'cancelled': return 'danger';
       default: return 'neutral';
     }
   };
 
-  const columns: TableColumn<PickupRequest>[] = [
-    {
-      key: 'created_at',
-      label: 'Request Date',
-      render: (value) => value ? new Date(value).toLocaleDateString() : '-'
-    },
-    {
-      key: 'reason',
-      label: 'Reason',
-      render: (value) => value || '-'
-    },
-    {
-      key: 'est_volume_l',
-      label: 'Est. Volume',
-      render: (value) => value ? `${value}L` : '-'
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (value) => (
-        <StatusPill 
-          status={value.replace('_', ' ').toUpperCase()} 
-          variant={getStatusVariant(value)} 
-        />
-      )
-    },
-    {
-      key: 'scheduled_date',
-      label: 'Scheduled Date',
-      render: (value) => value ? new Date(value).toLocaleDateString() : 'Not scheduled'
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Awaiting Assignment';
+      case 'assigned': return 'Driver Assigned';
+      case 'in_progress': return 'In Progress';
+      case 'en_route': return 'Driver En Route';
+      case 'completed': return 'Completed';
+      case 'verified': return 'Verified';
+      case 'rejected': return 'Rejected';
+      case 'cancelled': return 'Cancelled';
+      default: return status.replace(/_/g, ' ').toUpperCase();
     }
-  ];
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Mock submission
-    alert('Pickup request submitted successfully!');
-    setShowCreateForm(false);
-    setFormData({ bin_id: '', reason: '', est_volume_l: '' });
+  const extractGps = (notes: string) => {
+    const match = notes?.match(/GPS Location:\s*([-\d.]+),\s*([-\d.]+)/);
+    if (match) return { lat: match[1], lng: match[2] };
+    return null;
   };
 
   return (
@@ -123,78 +119,123 @@ export function Requests() {
       <div className="page__header">
         <div className="page__header-content">
           <div>
-            <h1 className="page__title">Request Pickup</h1>
-            <p className="page__subtitle">Request waste oil collection for your locations and track pickup status.</p>
+            <h1 className="page__title">My Pickup Requests</h1>
+            <p className="page__subtitle">Track the status of your waste oil collection requests.</p>
           </div>
-          <Button 
-            variant="primary" 
-            onClick={() => setShowCreateForm(true)}
-          >
-            <FiPlus />
-            New Pickup Request
-          </Button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button variant="secondary" onClick={loadRequests} disabled={loading}>
+              <FiRefreshCw size={16} style={{ marginRight: '4px' }} />
+              Refresh
+            </Button>
+            <Link to="/request-pickup">
+              <Button variant="primary">
+                <FiPlus size={16} style={{ marginRight: '4px' }} />
+                New Request
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
       <div className="page__content">
-        {showCreateForm && (
-          <Card title="New Pickup Request" className="mb-6">
-            <form onSubmit={handleSubmit} className="form">
-              <Select
-                label="Bin"
-                options={binOptions}
-                value={formData.bin_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, bin_id: e.target.value }))}
-              />
-
-              <Input
-                label="Estimated Volume (L)"
-                type="number"
-                value={formData.est_volume_l}
-                onChange={(e) => setFormData(prev => ({ ...prev, est_volume_l: e.target.value }))}
-                placeholder="Enter estimated volume"
-                help="Optional - helps with scheduling"
-              />
-
-              <Input
-                label="Reason"
-                value={formData.reason}
-                onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
-                placeholder="Describe why pickup is needed"
-                required
-              />
-
-              <div className="border-2 border-dashed border-border-light rounded p-4 text-center">
-                <FiUpload className="mx-auto mb-2 text-muted" size={24} />
-                <p className="text-sm text-muted">Click to upload photos (up to 3)</p>
-                <p className="text-xs text-muted mt-1">JPG, PNG up to 5MB each</p>
-              </div>
-
-              <div className="button-group">
-                <Button type="submit" variant="primary">
-                  <FiTruck />
-                  Submit Request
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="secondary"
-                  onClick={() => setShowCreateForm(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </Card>
+        {error && (
+          <div className="alert alert--error" style={{ marginBottom: '16px' }}>
+            <span>{error}</span>
+          </div>
         )}
 
-        <Card title="Request History">
-          <Table
-            data={requests}
-            columns={columns}
-            loading={loading}
-            emptyMessage="No pickup requests found"
-          />
-        </Card>
+        {loading ? (
+          <Card>
+            <div style={{ padding: '40px', textAlign: 'center' }}>
+              <p className="text-muted">Loading your requests...</p>
+            </div>
+          </Card>
+        ) : requests.length === 0 ? (
+          <Card>
+            <div style={{ padding: '40px', textAlign: 'center' }}>
+              <FiTruck size={48} style={{ margin: '0 auto 16px', color: 'var(--text-muted)', display: 'block' }} />
+              <h3 style={{ marginBottom: '8px' }}>No pickup requests yet</h3>
+              <p className="text-muted" style={{ marginBottom: '24px' }}>
+                Request a pickup and it will appear here so you can track its progress.
+              </p>
+              <Link to="/request-pickup">
+                <Button variant="primary">
+                  <FiPlus size={16} style={{ marginRight: '4px' }} />
+                  Request Your First Pickup
+                </Button>
+              </Link>
+            </div>
+          </Card>
+        ) : (
+          <div style={{ display: 'grid', gap: '16px' }}>
+            {requests.map((job) => {
+              const gps = extractGps(job.notes || '');
+              return (
+                <div
+                  key={job.id}
+                  style={{
+                    background: 'var(--bg)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--border-radius)',
+                    padding: '20px',
+                    borderLeft: `4px solid ${
+                      job.status === 'completed' || job.status === 'verified' ? 'var(--success, #10b981)' :
+                      job.status === 'pending' ? 'var(--primary)' :
+                      job.status === 'in_progress' || job.status === 'assigned' ? '#f59e0b' :
+                      'var(--border)'
+                    }`,
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                    <div>
+                      <p style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '4px' }}>
+                        {job.description || 'Oil Collection Request'}
+                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                        <FiClock size={12} />
+                        {new Date(job.created_at).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {' at '}
+                        {new Date(job.created_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                    <StatusPill 
+                      status={getStatusLabel(job.status)} 
+                      variant={getStatusVariant(job.status)} 
+                    />
+                  </div>
+
+                  {job.pickup_address && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      <FiMapPin size={12} />
+                      {job.pickup_address}
+                    </div>
+                  )}
+
+                  {gps && (
+                    <div style={{ marginTop: '8px' }}>
+                      <a
+                        href={`https://www.google.com/maps?q=${gps.lat},${gps.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '0.8125rem', color: 'var(--primary)', textDecoration: 'none' }}
+                      >
+                        View on Map
+                      </a>
+                    </div>
+                  )}
+
+                  {job.status === 'completed' && (
+                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+                      <Link to={`/vat-declaration?collection=${job.id}`} style={{ fontSize: '0.8125rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>
+                        Sign VAT Declaration
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

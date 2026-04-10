@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card } from '../components/UI/Card';
 import { Button } from '../components/UI/Button';
 import { FiFileText, FiDownload, FiCheckCircle, FiGlobe } from 'react-icons/fi';
+import { supabase } from '../lib/supabase';
 
 export function IsccForm() {
   const [formData, setFormData] = useState({
@@ -40,9 +41,38 @@ export function IsccForm() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    try {
+      if (supabase) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const gpsParts = formData.gpsCoordinates.split(',').map(s => parseFloat(s.trim()));
+        await supabase.from('iscc_declarations').insert({
+          user_email: user?.email || '',
+          company_name: formData.companyName,
+          certificate_number: formData.isccCertificateNumber,
+          certificate_valid_from: formData.validFrom || null,
+          certificate_valid_to: formData.validUntil || null,
+          site_name: formData.companyName,
+          site_address: formData.physicalAddress,
+          site_gps_lat: gpsParts[0] || null,
+          site_gps_lng: gpsParts[1] || null,
+          feedstock_type: formData.feedstockType,
+          feedstock_volume: formData.annualVolume ? parseFloat(formData.annualVolume) : null,
+          ghg_value: formData.ghgEmissionValue ? parseFloat(formData.ghgEmissionValue) : null,
+          sustainability_criteria: {
+            sustainabilityCriteria: formData.sustainabilityCriteria,
+            landUseCriteria: formData.landUseCriteria,
+            ghgCriteria: formData.ghgCriteria,
+          },
+          form_data: formData,
+        });
+      }
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Error saving ISCC declaration:', err);
+      alert('Error saving declaration. Please try again.');
+    }
   };
 
   const inputStyle: React.CSSProperties = {

@@ -64,6 +64,14 @@ export function generateCertificatePdf(data: CertificatePdfData): Blob {
   pdf.text(data.issuedDate, 140, height - 90);
   pdf.text(data.complianceManager ?? 'S Brijlal', width - 240, height - 90);
 
+  // Company address
+  pdf.setFontSize(10);
+  pdf.setFont('times', 'bold');
+  pdf.text('APEX CHEM (PTY) LTD', 80, height - 60);
+  pdf.setFont('times', 'normal');
+  pdf.text('1 Lodestar Avenue, Umbogintwini, eManzimtoti, 4026', 80, height - 48);
+  pdf.text('www.apexchemicals.co.za', 80, height - 36);
+
   // Certificate number small tag
   pdf.setFontSize(10);
   pdf.text(`Certificate: ${data.certificateNo}`, width - 140, 40, { align: 'right' });
@@ -136,6 +144,14 @@ export async function generateCertificatePdfAsync(
   pdf.setFont('times', 'normal');
   pdf.text(data.issuedDate, 140, height - 90);
   pdf.text(data.complianceManager ?? 'S Brijlal', width - 240, height - 90);
+
+  // Company address
+  pdf.setFontSize(10);
+  pdf.setFont('times', 'bold');
+  pdf.text('APEX CHEM (PTY) LTD', 80, height - 60);
+  pdf.setFont('times', 'normal');
+  pdf.text('1 Lodestar Avenue, Umbogintwini, eManzimtoti, 4026', 80, height - 48);
+  pdf.text('www.apexchemicals.co.za', 80, height - 36);
 
   pdf.setFontSize(10);
   pdf.text(`Certificate: ${data.certificateNo}`, width - 140, 40, { align: 'right' });
