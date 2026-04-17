@@ -7,6 +7,7 @@ import { FileDownload } from '../components/UI/FileDownload';
 import { FiArrowLeft, FiCamera, FiFileText, FiExternalLink } from 'react-icons/fi';
 import type { CollectionWithRelations } from '../lib/types';
 import { DEFAULT_LOCATION } from '../lib/constants';
+import { formatKilograms, litresToKilograms } from '../lib/units';
 
 export function CollectionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -86,8 +87,8 @@ export function CollectionDetail() {
                 <span className="font-medium">{collection.driver_id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted">Volume:</span>
-                <span className="font-medium">{collection.volume_l?.toFixed(1)}L</span>
+                <span className="text-muted">Recovered Mass:</span>
+                <span className="font-medium">{formatKilograms(litresToKilograms(collection.volume_l))}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">Mass:</span>

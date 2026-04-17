@@ -8,6 +8,7 @@ import { StatusPill } from '../components/UI/StatusPill';
 import { FiSearch } from 'react-icons/fi';
 import type { CollectionWithRelations, TableColumn, FilterState } from '../lib/types';
 import { DEFAULT_LOCATION } from '../lib/constants';
+import { formatKilograms, litresToKilograms } from '../lib/units';
 
 export function Collections() {
   const [, setAllCollections] = useState<CollectionWithRelations[]>([]);
@@ -66,8 +67,8 @@ export function Collections() {
     },
     {
       key: 'volume_l',
-      label: 'Oil Collected',
-      render: (value) => value ? `${value.toFixed(1)}L` : '-'
+      label: 'Oil Collected (kg)',
+      render: (value) => formatKilograms(litresToKilograms(value))
     },
     {
       key: 'certificate',

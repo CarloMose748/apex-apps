@@ -10,7 +10,7 @@ interface MobileMenuProps {
 const mobileNavigationItems = [
   { to: '/', icon: FiHome, label: 'Dashboard' },
   { to: '/collections', icon: FiArchive, label: 'Collection History' },
-  { to: '/certificates', icon: FiShield, label: 'Certificates & ISCC' },
+  { to: '/certificates', icon: FiShield, label: 'Certificates, ISCC & Carbon' },
   { to: '/requests', icon: FiTruck, label: 'Request Pickup' },
   { to: '/vat-declaration', icon: FiFileText, label: 'VAT Declaration' },
   { to: '/sars-form', icon: FiFileText, label: 'SARS Form' },

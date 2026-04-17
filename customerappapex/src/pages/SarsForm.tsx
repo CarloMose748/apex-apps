@@ -104,7 +104,8 @@ export function SarsForm() {
 
       <div className="page__content">
         <form onSubmit={handleSubmit}>
-          <Card style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <Card>
             <div style={{ padding: '20px' }}>
               <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>
                 <FiFileText style={{ marginRight: '8px' }} /> Company Information
@@ -136,9 +137,11 @@ export function SarsForm() {
                 </div>
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          <Card style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <Card>
             <div style={{ padding: '20px' }}>
               <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>Contact Details</h3>
               <div style={{ display: 'grid', gap: '12px' }}>
@@ -166,9 +169,11 @@ export function SarsForm() {
                 </div>
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          <Card style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <Card>
             <div style={{ padding: '20px' }}>
               <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>Waste Disposal Declaration</h3>
               <div style={{ display: 'grid', gap: '12px' }}>
@@ -199,7 +204,7 @@ export function SarsForm() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={labelStyle}>Total Volume Collected (Litres) *</label>
+                    <label style={labelStyle}>Total Mass Collected (kg) *</label>
                     <input name="totalVolumeCollected" type="number" value={formData.totalVolumeCollected} onChange={handleChange} required style={inputStyle} />
                   </div>
                   <div>
@@ -215,7 +220,8 @@ export function SarsForm() {
                 </div>
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <Button type="submit">

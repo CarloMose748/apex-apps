@@ -1,4 +1,5 @@
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
+import { litresToKilograms } from './units';
 
 // Date formatting utilities
 export const formatDate = (date: string | Date) => {
@@ -18,7 +19,7 @@ export const formatTimeAgo = (date: string | Date) => {
 
 // Number formatting utilities
 export const formatVolume = (volume: number) => {
-  return `${volume.toFixed(1)}L`;
+  return `${litresToKilograms(volume).toFixed(1)}kg`;
 };
 
 export const formatMass = (mass: number) => {

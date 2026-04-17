@@ -6,6 +6,7 @@ import { Input } from '../components/UI/Input';
 import { StatusPill } from '../components/UI/StatusPill';
 import { FiSearch, FiRefreshCw } from 'react-icons/fi';
 import { formatDate } from '../lib/format';
+import { formatKilograms } from '../lib/units';
 import type { TableColumn } from '../lib/types';
 
 interface OilCollection {
@@ -208,8 +209,8 @@ export function OilCollections() {
     },
     {
       key: 'collected_volume',
-      label: 'Volume',
-      render: (_, collection) => `${collection.collected_volume || 0}L`
+      label: 'Recovered Mass',
+      render: (_, collection) => formatKilograms(collection.collected_volume || 0)
     },
     {
       key: 'oil_type',
@@ -287,8 +288,8 @@ export function OilCollections() {
             <p className="stat-card__label">Total Collections</p>
           </div>
           <div className="stat-card">
-            <div className="stat-card__value">{stats.totalVolume.toFixed(1)}L</div>
-            <p className="stat-card__label">Total Volume</p>
+            <div className="stat-card__value">{(stats.totalVolume * 0.92).toFixed(1)} kg</div>
+            <p className="stat-card__label">Total Recovered Mass</p>
           </div>
           <div className="stat-card">
             <div className="stat-card__value">R{stats.totalPayments.toFixed(2)}</div>

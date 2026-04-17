@@ -1161,7 +1161,7 @@
                             <strong>Collection Date:</strong> ${collectionDate} ${collectionTime}
                         </div>
                         <div class="job-detail">
-                            <strong>Volume Collected:</strong> ${collection.collected_volume}L
+                            <strong>Recovered Mass:</strong> ${((collection.collected_volume || 0) * 0.92).toFixed(1)} kg
                         </div>
                         <div class="job-detail">
                             <strong>Oil Type:</strong> ${collection.oil_type}

@@ -4,6 +4,7 @@ import { Card } from '../components/UI/Card';
 import { Button } from '../components/UI/Button';
 import { FiPackage, FiCheckCircle, FiAlertCircle, FiPlus, FiMapPin, FiNavigation } from 'react-icons/fi';
 import { supabase } from '../lib/supabase';
+import { formatKilograms } from '../lib/units';
 
 interface Bin {
   id: string;
@@ -30,7 +31,7 @@ export function RequestPickup() {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualBin, setManualBin] = useState({
     serial: '',
-    type: 'Standard (120L)',
+    type: 'Standard (110.4 kg)',
     notes: '',
     urgency: 'normal'
   });
@@ -310,7 +311,7 @@ export function RequestPickup() {
                           </div>
                           <div>
                             <span className="text-muted">Size: </span>
-                            <span style={{ fontWeight: 500 }}>{capacity}L</span>
+                            <span style={{ fontWeight: 500 }}>{formatKilograms(capacity)}</span>
                           </div>
                           <div>
                             <span className="text-muted">Frequency: </span>
@@ -331,7 +332,7 @@ export function RequestPickup() {
             </div>
 
             {/* Store Location */}
-            <Card style={{ marginBottom: '24px' }}>
+            <div style={{ marginBottom: '24px' }}><Card>
               <div style={{ padding: '20px' }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FiMapPin size={18} style={{ color: 'var(--primary)' }} />
@@ -381,10 +382,10 @@ export function RequestPickup() {
                   )}
                 </div>
               </div>
-            </Card>
+            </Card></div>
 
             {/* Manual Bin Entry */}
-            <Card style={{ marginBottom: '24px' }}>
+            <div style={{ marginBottom: '24px' }}><Card>
               <div style={{ padding: '20px' }}>
                 <div 
                   onClick={() => setShowManualEntry(!showManualEntry)}
@@ -419,12 +420,12 @@ export function RequestPickup() {
                           onChange={e => setManualBin(prev => ({ ...prev, type: e.target.value }))}
                           style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', background: 'var(--bg)' }}
                         >
-                          <option>Standard (120L)</option>
-                          <option>Large (240L)</option>
-                          <option>Small (80L)</option>
-                          <option>Commercial (660L)</option>
-                          <option>Industrial (1000L IBC)</option>
-                          <option>Drum (210L)</option>
+                          <option>Standard (110.4 kg)</option>
+                          <option>Large (220.8 kg)</option>
+                          <option>Small (73.6 kg)</option>
+                          <option>Commercial (607.2 kg)</option>
+                          <option>Industrial (920.0 kg IBC)</option>
+                          <option>Drum (193.2 kg)</option>
                           <option>Storage Tank</option>
                           <option>Other</option>
                         </select>
@@ -459,7 +460,7 @@ export function RequestPickup() {
                   </div>
                 )}
               </div>
-            </Card>
+            </Card></div>
 
             <div style={{ 
               position: 'sticky', 

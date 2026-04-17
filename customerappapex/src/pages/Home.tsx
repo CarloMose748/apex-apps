@@ -6,6 +6,7 @@ import { FiArchive, FiShield, FiEye, FiTruck } from 'react-icons/fi';
 import { supabase } from '../lib/supabase';
 import type { HomeKpis, CollectionWithRelations, TableColumn } from '../lib/types';
 import { DEFAULT_LOCATION } from '../lib/constants';
+import { formatKilograms, litresToKilograms } from '../lib/units';
 
 export function Home() {
   const [kpis, setKpis] = useState<HomeKpis>({
@@ -143,8 +144,8 @@ export function Home() {
     },
     {
       key: 'volume_l',
-      label: 'Volume (L)',
-      render: (value) => value ? `${value.toFixed(1)}L` : '-'
+      label: 'Recovered Mass (kg)',
+      render: (value) => formatKilograms(litresToKilograms(value))
     },
     {
       key: 'certificate',

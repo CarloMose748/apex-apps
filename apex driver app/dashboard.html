@@ -816,7 +816,7 @@
             <div class="stat-card">
                 <div class="stat-icon">&#9679;</div>
                 <div class="stat-value" id="totalVolume">-</div>
-                <div class="stat-label">Litres Collected</div>
+                <div class="stat-label">Kilograms Collected</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">&#8364;</div>
@@ -1030,6 +1030,11 @@
         let myJobs = [];
         let collections = [];
         let oilService;
+        const KG_PER_LITRE = 0.92;
+
+        function litresToKilograms(litres) {
+            return (Number(litres) || 0) * KG_PER_LITRE;
+        }
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
@@ -1247,9 +1252,9 @@
                     return sum + volume;
                 }, 0) || 0;
                 
-                // Calculate earnings based on volume (R10 per litre as base rate)
-                const baseRatePerLitre = 10;
-                const totalEarnings = totalVolume * baseRatePerLitre;
+                const totalMassKg = litresToKilograms(totalVolume);
+                const baseRatePerKilogram = 10;
+                const totalEarnings = totalMassKg * baseRatePerKilogram;
 
                 // Count completed/verified collections
                 const completedJobs = collections?.filter(col => 
@@ -1276,7 +1281,7 @@
         function updateStatsDisplay(stats) {
             document.getElementById('totalJobs').textContent = stats.total_jobs || 0;
             document.getElementById('completedJobs').textContent = stats.total_collections || 0;
-            document.getElementById('totalVolume').textContent = (stats.total_volume || 0).toFixed(1) + 'L';
+            document.getElementById('totalVolume').textContent = litresToKilograms(stats.total_volume || 0).toFixed(1) + ' kg';
             document.getElementById('totalEarnings').textContent = 'R' + (stats.total_earnings || 0).toFixed(2);
         }
 
@@ -1338,7 +1343,7 @@
                 <tr>
                     <td><strong>${job.customer_name}</strong></td>
                     <td>${job.pickup_address}</td>
-                    <td>${job.estimated_oil_volume}L</td>
+                    <td>${litresToKilograms(job.estimated_oil_volume).toFixed(1)} kg</td>
                     <td>R${job.payment_amount.toFixed(2)}</td>
                     <td><span class="priority-${job.priority}">${job.priority.toUpperCase()}</span></td>
                     <td>${formatDate(job.created_at)}</td>
@@ -1378,7 +1383,7 @@
                         </div>
                         <div class="mobile-card-detail">
                             <div class="mobile-card-detail-label">Volume</div>
-                            <div class="mobile-card-detail-value">${job.estimated_oil_volume}L</div>
+                            <div class="mobile-card-detail-value">${litresToKilograms(job.estimated_oil_volume).toFixed(1)} kg</div>
                         </div>
                         <div class="mobile-card-detail">
                             <div class="mobile-card-detail-label">Created</div>
@@ -1458,7 +1463,7 @@
                 <tr>
                     <td><strong>${job.name || job.customer_name}</strong></td>
                     <td>${job.address || job.pickup_address}</td>
-                    <td>${job.estimatedVolume || '-'}L</td>
+                    <td>${job.estimatedVolume ? litresToKilograms(job.estimatedVolume).toFixed(1) + ' kg' : '-'}</td>
                     <td>R${(job.payment || 0).toFixed(2)}</td>
                     <td><span class="status-badge status-${job.status}">${job.status.replace('_', ' ').toUpperCase()}</span></td>
                     <td>${formatDate(job.acceptedAt || job.created_at)}</td>
@@ -1498,7 +1503,7 @@
                         </div>
                         <div class="mobile-card-detail">
                             <div class="mobile-card-detail-label">Volume</div>
-                            <div class="mobile-card-detail-value">${job.estimatedVolume || '-'}L</div>
+                            <div class="mobile-card-detail-value">${job.estimatedVolume ? litresToKilograms(job.estimatedVolume).toFixed(1) + ' kg' : '-'}</div>
                         </div>
                         <div class="mobile-card-detail">
                             <div class="mobile-card-detail-label">Date</div>
@@ -1625,7 +1630,7 @@
                         estimated_volume: collection.collected_volume || 0,
                         volume_collected: collection.collected_volume || 0,
                         collected_volume: collection.collected_volume || 0,
-                        unit: collection.unit || 'litres',
+                        unit: 'kg',
                         status: collection.status || 'completed',
                         collection_date: collection.collection_date || collection.created_at,
                         collection_method: collection.collection_method || 'Manual',
@@ -1655,6 +1660,8 @@
         function displayCollectionHistory(collections) {
             const tableBody = document.getElementById('collectionHistoryTable');
             const tableWrapper = tableBody.closest('.table-wrapper');
+            const formatCollectionMass = (collection) => `${litresToKilograms(collection.collected_volume || collection.volume_collected || 0).toFixed(1)} kg`;
+            const calculateCollectionEarnings = (collection) => (litresToKilograms(collection.collected_volume || collection.volume_collected || 0) * 10).toFixed(2);
             
             if (collections.length === 0) {
                 tableBody.innerHTML = `
@@ -1684,10 +1691,10 @@
                 <tr>
                     <td><strong>${collection.collection_location || collection.customer_name || 'Collection ' + collection.id}</strong></td>
                     <td>${collection.collection_address || collection.pickup_address || '-'}</td>
-                    <td>${(collection.collected_volume || collection.volume_collected || 0).toFixed(1)}${collection.unit || 'L'}</td>
+                    <td>${formatCollectionMass(collection)}</td>
                     <td>${collection.oil_type || 'Used Cooking Oil'}</td>
                     <td>${collection.oil_condition || '-'}</td>
-                    <td>R${((collection.collected_volume || 0) * 10).toFixed(2)}</td>
+                    <td>R${calculateCollectionEarnings(collection)}</td>
                     <td>${formatDate(collection.collection_date)}</td>
                     <td>
                         <span class="status-badge status-${collection.status || 'completed'}" title="${collection.verification_notes || ''}">
@@ -1726,8 +1733,8 @@
                             <div class="mobile-card-detail-value">${collection.collection_address || collection.collection_location || '-'}</div>
                         </div>
                         <div class="mobile-card-detail">
-                            <div class="mobile-card-detail-label">Volume</div>
-                            <div class="mobile-card-detail-value">${collection.collected_volume || 0}${collection.unit || 'L'}</div>
+                            <div class="mobile-card-detail-label">Recovered Mass</div>
+                            <div class="mobile-card-detail-value">${formatCollectionMass(collection)}</div>
                         </div>
                         <div class="mobile-card-detail">
                             <div class="mobile-card-detail-label">Oil Type</div>
@@ -1739,7 +1746,7 @@
                         </div>
                         <div class="mobile-card-detail">
                             <div class="mobile-card-detail-label">Earnings</div>
-                            <div class="mobile-card-detail-value">R${((collection.collected_volume || 0) * 10).toFixed(2)}</div>
+                            <div class="mobile-card-detail-value">R${calculateCollectionEarnings(collection)}</div>
                         </div>
                         <div class="mobile-card-detail">
                             <div class="mobile-card-detail-label">Date</div>
@@ -1784,7 +1791,7 @@
                 }
                 
                 document.getElementById('thisMonthJobs').textContent = stats.this_month_collections || 0;
-                document.getElementById('thisMonthVolume').textContent = (stats.this_month_volume || 0).toFixed(1) + 'L';
+                document.getElementById('thisMonthVolume').textContent = litresToKilograms(stats.this_month_volume || 0).toFixed(1) + ' kg';
                 document.getElementById('thisMonthEarnings').textContent = 'R' + (stats.this_month_earnings || 0).toFixed(2);
                 document.getElementById('averageRating').textContent = '4.8'; // Static for now
                 
@@ -1834,20 +1841,19 @@
                     console.error('Error fetching all collections:', allError);
                 }
 
-                // Calculate monthly stats (base rate R10 per litre)
-                const baseRatePerLitre = 10;
+                const baseRatePerKilogram = 10;
                 const monthlyStats = (monthlyCollections || []).reduce((acc, col) => {
                     acc.count += 1;
-                    const volume = parseFloat(col.collected_volume) || 0;
+                    const volume = litresToKilograms(parseFloat(col.collected_volume) || 0);
                     acc.volume += volume;
-                    acc.earnings += volume * baseRatePerLitre;
+                    acc.earnings += volume * baseRatePerKilogram;
                     return acc;
                 }, { count: 0, volume: 0, earnings: 0 });
 
                 // Calculate all-time stats
                 const allTimeStats = (allCollections || []).reduce((acc, col) => {
                     acc.count += 1;
-                    acc.volume += parseFloat(col.collected_volume) || 0;
+                    acc.volume += litresToKilograms(parseFloat(col.collected_volume) || 0);
                     // Count verified collections
                     if (col.status === 'verified' || col.verified_at) {
                         acc.verified += 1;
@@ -1886,9 +1892,9 @@
             const achievements = [];
             
             if (totalCollections >= 10) achievements.push('&#9733; Collected from 10+ locations');
-            if (totalVolume >= 500) achievements.push('&#9679; Collected 500+ litres');
+            if (totalVolume >= 500) achievements.push('&#9679; Collected 500+ kg');
             if (totalCollections >= 50) achievements.push('&#10004; Expert Collector (50+ collections)');
-            if (totalVolume >= 1000) achievements.push('&#9829; Environmental Hero (1000+ litres)');
+            if (totalVolume >= 1000) achievements.push('&#9829; Environmental Hero (1000+ kg)');
             
             if (achievements.length === 0) {
                 achievements.push('&#9733; Complete your first collection to earn achievements!');

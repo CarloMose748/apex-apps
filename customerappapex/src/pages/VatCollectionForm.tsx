@@ -136,7 +136,7 @@ export function VatCollectionForm() {
     y += 20;
     addRow('Collection Date:', new Date(formData.collectionDate).toLocaleDateString('en-ZA', { day: '2-digit', month: 'long', year: 'numeric' }));
     addRow('Collection Reference:', formData.collectionReference);
-    addRow('Volume Collected:', `${formData.volumeCollected} litres`);
+    addRow('Weight Collected:', `${formData.volumeCollected} kg`);
     addRow('Oil Type:', formData.oilType);
     addRow('Driver Name:', formData.driverName);
     addRow('Vehicle Registration:', formData.vehicleRegistration);
@@ -282,7 +282,7 @@ export function VatCollectionForm() {
                 </div>
               </div>
             </div>
-          </Card>
+          </Card></div>
 
           <div style={{ marginBottom: '20px' }}><Card>
             <div style={{ padding: '20px' }}>
@@ -298,7 +298,7 @@ export function VatCollectionForm() {
                     <input name="collectionReference" value={formData.collectionReference} onChange={handleChange} placeholder="e.g., JOB-2026-001" style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Volume Collected (Litres) *</label>
+                    <label style={labelStyle}>Weight Collected (kg) *</label>
                     <input name="volumeCollected" type="number" value={formData.volumeCollected} onChange={handleChange} required style={inputStyle} />
                   </div>
                 </div>
@@ -323,7 +323,7 @@ export function VatCollectionForm() {
                 </div>
               </div>
             </div>
-          </Card>
+          </Card></div>
 
           {/* Signature */}
           <div style={{ marginBottom: '20px' }}><Card>
@@ -358,7 +358,7 @@ export function VatCollectionForm() {
                 Clear Signature
               </button>
             </div>
-          </Card>
+          </Card></div>
 
           {/* Declaration */}
           <Card>

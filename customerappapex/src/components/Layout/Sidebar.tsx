@@ -11,7 +11,7 @@ import {
 const navigationItems = [
   { to: '/', icon: FiHome, label: 'Dashboard' },
   { to: '/collections', icon: FiArchive, label: 'Collection History' },
-  { to: '/certificates', icon: FiShield, label: 'Certificates & ISCC' },
+  { to: '/certificates', icon: FiShield, label: 'Certificates, ISCC & Carbon' },
   { to: '/requests', icon: FiTruck, label: 'Request Pickup' },
   { to: '/vat-declaration', icon: FiFileText, label: 'VAT Declaration' },
   { to: '/sars-form', icon: FiFileText, label: 'SARS Form' },
@@ -26,7 +26,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   return (
     <nav className="sidebar">
       <div className="sidebar__header">
-        <img src="/logo-apex.svg" alt="Apex" className="sidebar__logo" />
+        <img src="/logo-apex.png" alt="Apex Chem" className="sidebar__logo" />
       </div>
       
       <div className="sidebar__nav">

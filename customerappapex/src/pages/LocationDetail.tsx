@@ -5,6 +5,7 @@ import { Table } from '../components/UI/Table';
 import { Button } from '../components/UI/Button';
 import { StatusPill } from '../components/UI/StatusPill';
 import { FiArrowLeft, FiMapPin, FiTruck } from 'react-icons/fi';
+import { formatKilograms } from '../lib/units';
 import type { Location, BinWithLocation, CollectionWithRelations, TableColumn } from '../lib/types';
 
 export function LocationDetail() {
@@ -80,8 +81,8 @@ export function LocationDetail() {
     },
     {
       key: 'capacity_l',
-      label: 'Capacity',
-      render: (value) => value ? `${value}L` : '-'
+      label: 'Capacity (kg)',
+      render: (value) => value ? formatKilograms(value) : '-'
     },
     {
       key: 'oil_type',
@@ -108,13 +109,13 @@ export function LocationDetail() {
     },
     {
       key: 'volume_l',
-      label: 'Volume (L)',
-      render: (value) => value ? `${value.toFixed(1)}L` : '-'
+      label: 'Recovered Mass (kg)',
+      render: (value) => value ? `${(value * 0.92).toFixed(1)} kg` : '-'
     },
     {
       key: 'net_mass_kg',
       label: 'Mass (kg)',
-      render: (value) => value ? `${value.toFixed(1)}kg` : '-'
+      render: (value) => value ? `${value.toFixed(1)} kg` : '-'
     }
   ];
 

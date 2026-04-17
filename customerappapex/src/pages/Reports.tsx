@@ -5,6 +5,7 @@ import { Button } from '../components/UI/Button';
 import { DateRangePicker } from '../components/UI/DateRange';
 import { FiDownload, FiFileText, FiTrendingUp } from 'react-icons/fi';
 import type { DateRange, EsgSummary } from '../lib/types';
+import { litresToKilograms } from '../lib/units';
 
 export function Reports() {
   const [period, setPeriod] = useState('month');
@@ -88,7 +89,7 @@ export function Reports() {
                 <div className="flex items-center justify-between p-4 bg-success-bg rounded">
                   <div>
                     <p className="text-sm text-success">Your Oil Recycled This Month</p>
-                    <p className="text-2xl font-bold text-success">{report.total_l.toFixed(1)}L</p>
+                    <p className="text-2xl font-bold text-success">{litresToKilograms(report.total_l).toFixed(1)} kg</p>
                   </div>
                   <FiTrendingUp className="text-success" size={32} />
                 </div>

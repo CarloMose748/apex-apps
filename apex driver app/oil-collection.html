@@ -1325,7 +1325,7 @@
               </div>
               
               <div class="unit-display">
-                <span class="unit-label">Litres</span>
+                <span class="unit-label">Kilograms (kg)</span>
               </div>
             </div>
             
@@ -1500,8 +1500,8 @@
               <span class="detail-value" id="certLocation">Collection Address</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Volume Collected:</span>
-              <span class="detail-value" id="certVolume">0 Litres</span>
+              <span class="detail-label">Recovered Mass:</span>
+              <span class="detail-value" id="certVolume">0 kg</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Collection Status:</span>
@@ -1571,6 +1571,11 @@
     let generatedCertificateDataUrl = null;
     let generatedCertificateBlob = null;
     let generatedPdfBlob = null;
+    const KG_PER_LITRE = 0.92;
+
+    function litresToKilograms(litres) {
+      return (Number(litres) || 0) * KG_PER_LITRE;
+    }
 
     // Initialize page
     document.addEventListener('DOMContentLoaded', async function() {
@@ -1872,7 +1877,7 @@
             <div class="bin-info">
               <div class="bin-serial">🏷️ ${bin.bin_serial_number}</div>
               <div class="bin-details">
-                ${bin.bin_size_liters || 0}L • ${bin.bin_type || 'Standard'} • ${bin.location_notes || 'No location'}
+                ${litresToKilograms(bin.bin_size_liters || 0).toFixed(1)} kg • ${bin.bin_type || 'Standard'} • ${bin.location_notes || 'No location'}
               </div>
             </div>
             <button type="button" class="bin-remove" onclick="removeBin(${index})">
@@ -1983,7 +1988,7 @@
       const binCollection = {
         ...currentBinData,
         quantity: parseFloat(document.getElementById('quantityInput').value),
-        unit: 'litres',
+        unit: 'kg',
         notes: document.getElementById('collectionNotes').value.trim(),
         oilPhotos: oilPhotos.map(photo => ({
           name: photo.name,
@@ -2022,7 +2027,7 @@
     }
     
     // Show payment collection step after all bins are scanned
-    function showPaymentCollection(totalLitres, expectedPayment) {
+    function showPaymentCollection(totalKilograms, expectedPayment) {
       // Reset payment photos for collection
       paymentPhotos = [];
       updatePhotoPreview('payment');
@@ -2070,8 +2075,8 @@
       existingInfo.innerHTML = `
         <h4 style="margin: 0 0 10px 0; color: #2e7d32;">💰 Payment Summary</h4>
         <div style="display: grid; gap: 8px; font-size: 14px;">
-          <div><strong>Total Volume:</strong> ${totalLitres.toFixed(1)} litres</div>
-          <div><strong>Rate:</strong> R${3}/litre</div>
+          <div><strong>Total Recovered Mass:</strong> ${totalKilograms.toFixed(1)} kg</div>
+          <div><strong>Rate:</strong> R${3}/kg</div>
           <div style="font-size: 16px; font-weight: bold; color: #2e7d32;"><strong>Expected Payment: R${expectedPayment.toFixed(2)}</strong></div>
         </div>
         <p style="margin: 10px 0 0 0; font-size: 13px; color: #555;">Please upload proof of payment (slip/receipt) below:</p>
@@ -2084,7 +2089,7 @@
         // Change the form submit handler temporarily
         submitBtn.onclick = function(e) {
           e.preventDefault();
-          finalizeCollection(totalLitres, expectedPayment);
+          finalizeCollection(totalKilograms, expectedPayment);
         };
       }
       
@@ -2094,14 +2099,14 @@
     }
     
     // Finalize collection with payment proof
-    async function finalizeCollection(totalLitres, expectedPayment) {
+    async function finalizeCollection(totalKilograms, expectedPayment) {
       if (paymentPhotos.length === 0) {
         alert('Please upload proof of payment before completing the collection.');
         return;
       }
       
       // Show confirmation with final details
-      const confirmMessage = `✅ Final Confirmation\n\n📦 Bins Collected: ${scannedBins.length}\n🛢️ Total Volume: ${totalLitres.toFixed(1)} litres\n💰 Expected Payment: R${expectedPayment.toFixed(2)}\n📸 Payment Proof: ${paymentPhotos.length} photo(s)\n\nSubmit collection?`;
+      const confirmMessage = `✅ Final Confirmation\n\n📦 Bins Collected: ${scannedBins.length}\n⚖️ Total Recovered Mass: ${totalKilograms.toFixed(1)} kg\n💰 Expected Payment: R${expectedPayment.toFixed(2)}\n📸 Payment Proof: ${paymentPhotos.length} photo(s)\n\nSubmit collection?`;
       
       if (confirm(confirmMessage)) {
         await submitAllCollections();
@@ -2116,15 +2121,15 @@
         return;
       }
       
-      const totalLitres = scannedBins.reduce((sum, bin) => sum + bin.quantity, 0);
-      const ratePerLitre = 3; // R3 per litre
-      const expectedPayment = totalLitres * ratePerLitre;
-      const binList = scannedBins.map(b => `• ${b.binSerialNumber}: ${b.quantity}L`).join('\n');
+      const totalKilograms = scannedBins.reduce((sum, bin) => sum + litresToKilograms(bin.quantity), 0);
+      const ratePerKilogram = 3;
+      const expectedPayment = totalKilograms * ratePerKilogram;
+      const binList = scannedBins.map(b => `• ${b.binSerialNumber}: ${litresToKilograms(b.quantity).toFixed(1)} kg`).join('\n');
       
-      const message = `📦 Collection Summary\n\nTotal Bins: ${scannedBins.length}\nTotal Volume: ${totalLitres.toFixed(1)} litres\n\n${binList}\n\n💰 Expected Payment: R${expectedPayment.toFixed(2)}\n(${totalLitres.toFixed(1)}L × R${ratePerLitre}/L)\n\nProceed to payment collection?`;
+      const message = `📦 Collection Summary\n\nTotal Bins: ${scannedBins.length}\nTotal Recovered Mass: ${totalKilograms.toFixed(1)} kg\n\n${binList}\n\n💰 Expected Payment: R${expectedPayment.toFixed(2)}\n(${totalKilograms.toFixed(1)} kg × R${ratePerKilogram}/kg)\n\nProceed to payment collection?`;
       
       if (confirm(message)) {
-        showPaymentCollection(totalLitres, expectedPayment);
+        showPaymentCollection(totalKilograms, expectedPayment);
       } else {
         // Let user scan more
         if (!isScanning) toggleScanner();
@@ -2338,7 +2343,7 @@
           jobName: currentJob.name,
           jobAddress: currentJob.address,
           quantity: totalQuantity,
-          unit: 'litres',
+          unit: 'kg',
           notes: `Multi-bin collection: ${scannedBins.length} bins`,
           scannedBins: scannedBins,
           binCount: scannedBins.length,
@@ -3541,7 +3546,7 @@ Driver: ${currentCertificateData.driverName}
 
 Customer: ${currentCertificateData.customerName}
 Location: ${currentCertificateData.location}
-Volume Collected: ${currentCertificateData.volume}
+Recovered Mass: ${currentCertificateData.volume}
 
 Issued: ${currentCertificateData.issuedDate}
 
@@ -3564,7 +3569,7 @@ Apex Oil Collection Services`;
 
 🏢 *Customer:* ${currentCertificateData.customerName}
 📍 *Location:* ${currentCertificateData.location}
-🗂️ *Volume:* ${currentCertificateData.volume}
+⚖️ *Recovered Mass:* ${currentCertificateData.volume}
 
 ⏰ *Issued:* ${currentCertificateData.issuedDate}
 
@@ -3580,7 +3585,7 @@ ID: ${currentCertificateData.id}
 Date: ${currentCertificateData.date}
 Driver: ${currentCertificateData.driverName}
 Customer: ${currentCertificateData.customerName}
-Volume: ${currentCertificateData.volume}
+Recovered Mass: ${currentCertificateData.volume}
 
 Successful collection completed.
 - Apex Oil Collection Services`;
@@ -3595,7 +3600,7 @@ Driver: ${currentCertificateData.driverName}
 
 Customer: ${currentCertificateData.customerName}
 Location: ${currentCertificateData.location}
-Volume Collected: ${currentCertificateData.volume}
+Recovered Mass: ${currentCertificateData.volume}
 
 Issued: ${currentCertificateData.issuedDate}
 
@@ -3776,7 +3781,7 @@ COLLECTION DETAILS:
 Collection Date: ${currentCertificateData.date}
 Customer: ${currentCertificateData.customerName}
 Location: ${currentCertificateData.location}
-Volume Collected: ${currentCertificateData.volume}
+Recovered Mass: ${currentCertificateData.volume}
 Collection Status: ✓ Completed
 
 AUTHORIZATION:
@@ -3802,7 +3807,7 @@ Environmental Waste Management Solutions
 📋 *Certificate Details:*
 • Customer: ${currentCertificateData.customerName}
 • Location: ${currentCertificateData.location}
-• Volume: ${currentCertificateData.volume}
+• Recovered Mass: ${currentCertificateData.volume}
 • Date: ${new Date(currentCertificateData.collectionData.timestamp).toLocaleDateString()}
 • Collector: ${currentCertificateData.driverName}
 

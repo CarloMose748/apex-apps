@@ -569,6 +569,12 @@
     setMessage(msgEl, '', '');
   }
 
+  const KG_PER_LITRE = 0.92;
+
+  function litresToKilograms(litres) {
+    return (Number(litres) || 0) * KG_PER_LITRE;
+  }
+
   // ----- Receive Screen -----
   function setupReceive() {
     const receiveBinQr = document.getElementById('receiveBinQr');
@@ -686,7 +692,7 @@
           'Bin ID': resolvedBin.id,
           'New Status': STATUSES.RECEIVED_AT_DEPOT,
           'Aggregator': resolvedBin.aggregator?.name || 'Unassigned',
-          'Litres': eventData.inbound_litres ?? '—',
+          'Kilograms': eventData.inbound_litres != null ? litresToKilograms(eventData.inbound_litres).toFixed(1) : '—',
           'Oil Type': eventData.oil_type ?? '—',
           'Notes': eventData.notes ?? '—',
           'Photo': eventData.photo_url ?? '—',
@@ -729,7 +735,7 @@
     }));
 
     storeBinListEl.innerHTML = binsWithEvents.map(bin => {
-      const litres = bin.receiptEvent?.inbound_litres ?? '—';
+      const kilograms = bin.receiptEvent?.inbound_litres != null ? litresToKilograms(bin.receiptEvent.inbound_litres).toFixed(1) : '—';
       const oilType = bin.receiptEvent?.oil_type ?? '—';
       
       return `
@@ -739,18 +745,18 @@
           </div>
           <div class="bin-item-details">
             <div><strong>Branch:</strong> ${bin.aggregator?.name || 'Unassigned'}</div>
-            <div><strong>Inbound Litres:</strong> ${litres}</div>
+            <div><strong>Inbound Kilograms:</strong> ${kilograms}</div>
             <div><strong>Oil Type:</strong> ${oilType}</div>
           </div>
           <div style="margin-top: 10px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Amount after drainage (litres)</label>
+            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Amount after drainage (kg)</label>
             <input 
               type="number" 
               id="drainage-${bin.id}" 
               data-bin-id="${bin.id}"
               data-inbound-litres="${bin.receiptEvent?.inbound_litres || ''}"
               data-oil-type="${bin.receiptEvent?.oil_type || ''}"
-              placeholder="Enter litres after drainage" 
+              placeholder="Enter kilograms after drainage" 
               min="0" 
               step="0.1"
               style="width: 100%; padding: 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;"

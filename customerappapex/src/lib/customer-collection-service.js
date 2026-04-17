@@ -3,6 +3,12 @@
  * Functions to fetch and display oil collection history for customers
  */
 
+const KG_PER_LITRE = 0.92;
+
+function litresToKilograms(litres) {
+    return (Number(litres) || 0) * KG_PER_LITRE;
+}
+
 class CustomerCollectionService {
     
     /**
@@ -96,7 +102,7 @@ class CustomerCollectionService {
             id: collection.id,
             collectionDate: new Date(collection.collection_date).toLocaleDateString(),
             collectionTime: new Date(collection.collection_date).toLocaleTimeString(),
-            volume: `${collection.collected_volume || 0}L`,
+            volume: `${litresToKilograms(collection.collected_volume || 0).toFixed(1)}kg`,
             oilType: collection.oil_type || 'Unknown',
             condition: collection.oil_condition || 'N/A',
             method: collection.collection_method || 'N/A',

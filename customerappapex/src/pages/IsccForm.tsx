@@ -19,7 +19,7 @@ export function IsccForm() {
     feedstockType: 'Used Cooking Oil (UCO)',
     feedstockOrigin: '',
     annualVolume: '',
-    volumeUnit: 'litres',
+    volumeUnit: 'kg',
     ghgEmissionValue: '',
     massBalanceSystem: 'Yes',
     traceabilitySystem: '',
@@ -118,7 +118,8 @@ export function IsccForm() {
 
       <div className="page__content">
         <form onSubmit={handleSubmit}>
-          <Card style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <Card>
             <div style={{ padding: '20px' }}>
               <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>
                 <FiGlobe style={{ marginRight: '8px' }} /> Certification Details
@@ -156,9 +157,11 @@ export function IsccForm() {
                 </div>
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          <Card style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <Card>
             <div style={{ padding: '20px' }}>
               <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>Site Information</h3>
               <div style={{ display: 'grid', gap: '12px' }}>
@@ -188,9 +191,11 @@ export function IsccForm() {
                 </div>
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          <Card style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <Card>
             <div style={{ padding: '20px' }}>
               <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>Feedstock & Volume</h3>
               <div style={{ display: 'grid', gap: '12px' }}>
@@ -218,9 +223,8 @@ export function IsccForm() {
                   <div>
                     <label style={labelStyle}>Unit</label>
                     <select name="volumeUnit" value={formData.volumeUnit} onChange={handleChange} style={inputStyle}>
-                      <option value="litres">Litres</option>
-                      <option value="tonnes">Tonnes</option>
                       <option value="kg">Kilograms</option>
+                      <option value="tonnes">Tonnes</option>
                     </select>
                   </div>
                   <div>
@@ -230,9 +234,11 @@ export function IsccForm() {
                 </div>
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          <Card style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <Card>
             <div style={{ padding: '20px' }}>
               <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>Sustainability Compliance</h3>
               <div style={{ display: 'grid', gap: '12px' }}>
@@ -295,7 +301,8 @@ export function IsccForm() {
                 </div>
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <Button type="submit">
