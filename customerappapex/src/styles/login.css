@@ -62,6 +62,12 @@
   letter-spacing: -0.02em;
 }
 
+.login-logo__image {
+  display: block;
+  width: min(250px, 70%);
+  margin: 0 auto var(--space-sm);
+}
+
 .login-logo p {
   color: var(--text-muted);
   font-size: var(--font-size-lg);
@@ -347,6 +353,12 @@
   margin-bottom: var(--space-xl);
 }
 
+.register-logo__image {
+  display: block;
+  width: min(230px, 55%);
+  margin: 0 auto var(--space-sm);
+}
+
 .register-logo h1 {
   font-size: 2rem;
   font-weight: 700;
@@ -585,6 +597,10 @@
   .register-logo h1 {
     font-size: 1.75rem;
   }
+
+  .register-logo__image {
+    width: min(210px, 68%);
+  }
   
   .register-content {
     padding: var(--space-lg);
@@ -652,4 +668,14 @@
   color: #059669;
   font-weight: 500;
   margin: 0;
+}
+
+@media (max-width: 480px) {
+  .login-logo__image {
+    width: min(210px, 78%);
+  }
+
+  .register-logo__image {
+    width: min(190px, 72%);
+  }
 }

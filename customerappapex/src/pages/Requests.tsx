@@ -227,7 +227,7 @@ export function Requests() {
                   {job.status === 'completed' && (
                     <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
                       <Link to={`/vat-declaration?collection=${job.id}`} style={{ fontSize: '0.8125rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>
-                        Sign VAT Declaration
+                        Submit Official VAT PDF
                       </Link>
                     </div>
                   )}

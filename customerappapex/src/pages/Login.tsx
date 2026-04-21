@@ -65,7 +65,7 @@ export function Login() {
       <div className="login-card">
         <div className="login-header">
           <div className="login-logo">
-            <h1>Apex</h1>
+            <img src="/logo-apex.png" alt="Apex Chem" className="login-logo__image" />
             <p>Customer Portal</p>
           </div>
         </div>

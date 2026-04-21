@@ -466,7 +466,7 @@ export function Register() {
       <div className="register-card">
         <div className="register-header">
           <div className="register-logo">
-            <h1>Apex</h1>
+            <img src="/logo-apex.png" alt="Apex Chem" className="register-logo__image" />
             <p>Business Registration</p>
           </div>
           

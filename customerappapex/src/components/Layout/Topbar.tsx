@@ -32,6 +32,7 @@ export function Topbar({ onMobileMenuToggle }: TopbarProps) {
           >
             <FiMenu size={20} />
           </button>
+          <img src="/logo-apex.png" alt="Apex Chem" className="topbar__logo" />
           <h1 className="topbar__title">Apex Customer App</h1>
         </div>
         
