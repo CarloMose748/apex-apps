@@ -1167,6 +1167,11 @@
                     <div id="pendingCustomersList" class="loading">Loading customers...</div>
                 </div>
 
+                <div id="pendingDepot" style="margin-top: 30px;">
+                    <h4><i class="fa-solid fa-warehouse"></i> Pending Depot Managers (<span id="pendingDepotCount">0</span>)</h4>
+                    <div id="pendingDepotList" class="loading">Loading depot managers...</div>
+                </div>
+
                 <!-- Verification History -->
                 <div style="margin-top: 36px; border-top: 1px solid var(--border-color); padding-top: 24px;">
                     <h4 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
@@ -1952,12 +1957,16 @@
                 // Update counts
                 document.getElementById('pendingDriverCount').textContent = pending.drivers.length;
                 document.getElementById('pendingCustomerCount').textContent = pending.customers.length;
+                document.getElementById('pendingDepotCount').textContent = (pending.depot || []).length;
                 
                 // Display pending drivers
                 displayPendingUsers(pending.drivers, 'driver', 'pendingDriversList');
                 
                 // Display pending customers
                 displayPendingUsers(pending.customers, 'customer', 'pendingCustomersList');
+
+                // Display pending depot managers
+                displayDepotUsers(pending.depot || [], 'pendingDepotList');
                 
             } catch (error) {
                 console.error('Error loading pending verifications:', error);
@@ -1966,8 +1975,58 @@
                 // Remove loading classes and show error state
                 document.getElementById('pendingDriversList').classList.remove('loading');
                 document.getElementById('pendingCustomersList').classList.remove('loading');
+                document.getElementById('pendingDepotList').classList.remove('loading');
                 document.getElementById('pendingDriversList').innerHTML = '<div class="no-data">Error loading drivers</div>';
                 document.getElementById('pendingCustomersList').innerHTML = '<div class="no-data">Error loading customers</div>';
+                document.getElementById('pendingDepotList').innerHTML = '<div class="no-data">Error loading depot managers</div>';
+            }
+        }
+
+        function displayDepotUsers(users, containerId) {
+            const container = document.getElementById(containerId);
+            container.classList.remove('loading');
+
+            if (!users || users.length === 0) {
+                container.innerHTML = '<div class="no-data">No pending depot managers found</div>';
+                return;
+            }
+
+            let html = '<table class="user-table"><thead><tr>';
+            html += '<th>Name</th><th>Email</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead><tbody>';
+
+            users.forEach(user => {
+                const name = user.full_name || user.name || '—';
+                const email = user.email || '—';
+                const registered = user.created_at ? new Date(user.created_at).toLocaleDateString() : '—';
+                html += `<tr>
+                    <td>${name}</td>
+                    <td>${email}</td>
+                    <td><span class="status-badge status-pending">pending</span></td>
+                    <td>${registered}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-small btn-approve" onclick="approveDepotUser('${user.id}', 'approved')">
+                                <i class="fa-solid fa-check"></i> Approve
+                            </button>
+                            <button class="btn-small btn-reject" onclick="approveDepotUser('${user.id}', 'rejected')">
+                                <i class="fa-solid fa-xmark"></i> Reject
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        async function approveDepotUser(userId, action) {
+            try {
+                await AdminService.verifyDepotUser(userId, action);
+                showSuccess(`Depot manager ${action} successfully`);
+                await loadPendingVerifications();
+            } catch (err) {
+                showError('Failed to ' + action + ' depot manager: ' + err.message);
             }
         }
 

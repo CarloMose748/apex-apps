@@ -98,7 +98,7 @@ class AdminService {
     }
 
     /**
-     * Get all pending verifications (drivers and customers)
+     * Get all pending verifications (drivers, customers, and depot managers)
      */
     static async getPendingVerifications() {
         try {
@@ -134,9 +134,27 @@ class AdminService {
 
             console.log('AdminService: Found', pendingCustomers?.length || 0, 'pending customers');
 
+            // Get pending depot managers
+            console.log('AdminService: Querying admins table for pending depot managers...');
+            const supabase = this.getSupabaseClient();
+            const { data: pendingDepot, error: depotError } = await supabase
+                .from('admins')
+                .select('*')
+                .eq('role', 'depot_manager')
+                .eq('status', 'pending')
+                .order('created_at', { ascending: true });
+
+            if (depotError) {
+                console.error('AdminService: Error querying depot managers:', depotError);
+                // Don't throw — depot table may not exist yet
+            }
+
+            console.log('AdminService: Found', pendingDepot?.length || 0, 'pending depot managers');
+
             return {
                 drivers: pendingDrivers || [],
-                customers: pendingCustomers || []
+                customers: pendingCustomers || [],
+                depot: pendingDepot || []
             };
         } catch (error) {
             console.error('Error getting pending verifications:', error);
@@ -250,6 +268,52 @@ class AdminService {
             return { success: true, message: `User ${action} successfully` };
         } catch (error) {
             console.error('Error verifying user:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Approve or reject a depot manager registration
+     */
+    static async verifyDepotUser(userId, action, notes = '') {
+        try {
+            if (!this.isAdmin()) {
+                throw new Error('Admin access required');
+            }
+
+            if (!['approved', 'rejected'].includes(action)) {
+                throw new Error('Invalid action. Must be "approved" or "rejected"');
+            }
+
+            const supabase = this.getSupabaseClient();
+            const newStatus = action === 'approved' ? 'active' : 'rejected';
+            const now = new Date().toISOString();
+
+            // Update admins table
+            const { error: adminErr } = await supabase
+                .from('admins')
+                .update({ status: newStatus, updated_at: now })
+                .eq('id', userId);
+
+            if (adminErr) throw adminErr;
+
+            // Update user_roles table
+            const { error: roleErr } = await supabase
+                .from('user_roles')
+                .update({ status: action === 'approved' ? 'active' : 'rejected', updated_at: now })
+                .eq('user_id', userId)
+                .eq('platform', 'aggregator');
+
+            if (roleErr) {
+                console.error('AdminService: Could not update user_roles for depot user:', roleErr);
+                // Non-fatal — admins table is the primary gate
+            }
+
+            await this.recordVerificationHistory(userId, 'depot', action, 'pending', notes);
+
+            return { success: true, message: `Depot manager ${action} successfully` };
+        } catch (error) {
+            console.error('Error verifying depot user:', error);
             throw error;
         }
     }

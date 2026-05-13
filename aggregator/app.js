@@ -120,7 +120,7 @@
           full_name: fullName,
           role: 'depot_manager',
           permissions: ['receive_bins', 'store_bins', 'view_reports'],
-          status: 'active',
+          status: 'pending',
           created_at: nowTs(),
           updated_at: nowTs()
         }]);
@@ -145,7 +145,7 @@
           email: email.toLowerCase(),
           platform: 'aggregator',
           platform_role: 'depot_manager',
-          status: 'active',
+          status: 'pending',
           created_at: nowTs(),
           updated_at: nowTs()
         }]);
@@ -1009,9 +1009,9 @@
         
         if (result.success) {
           if (result.emailConfirmationRequired) {
-            setMessage(msgEl, 'Account created! Check your email (and spam folder) for the verification link, then login.', 'success');
+            setMessage(msgEl, 'Account created! Please check your email to verify your address. Your account will be activated once approved by an administrator.', 'success');
           } else {
-            setMessage(msgEl, 'Account created successfully! You can now login.', 'success');
+            setMessage(msgEl, 'Account created successfully! Your account is pending admin approval. You will receive access once approved.', 'success');
           }
           setTimeout(() => {
             signupForm.classList.remove('active');

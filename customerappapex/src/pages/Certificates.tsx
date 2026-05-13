@@ -12,20 +12,8 @@ import type { Certificate, TableColumn, DateRange } from '../lib/types';
 
 export function Certificates() {
   const [activeTab, setActiveTab] = useState<'certificates' | 'iscc' | 'vat204' | 'carboncredits'>('certificates');
-  const demoCert: any = {
-    id: 'demo-cert-001',
-    org_id: 'demo-org',
-    collection_id: 'demo-collection',
-    certificate_no: 'CERT-DEMO-2026-001',
-    pdf_url: '',
-    hash_sha256: '',
-    issued_at: new Date().toISOString(),
-    verifier_url: '#',
-    customer_name: 'Demo Client',
-    job_address: '123 Demo Street, Demo City'
-  };
-  const [certificates, setCertificates] = useState<Certificate[]>([demoCert]);
-  const [filteredCertificates, setFilteredCertificates] = useState<Certificate[]>([demoCert]);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [filteredCertificates, setFilteredCertificates] = useState<Certificate[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [loading, setLoading] = useState(false);
@@ -37,12 +25,8 @@ export function Certificates() {
       setLoading(true);
       try {
         if (useMockData() || !supabase) {
-          // Fallback mock
-          const mockCerts: Certificate[] = [
-            { id: '1', org_id: '1', collection_id: '1', certificate_no: 'CERT-2025-001', pdf_url: '', hash_sha256: 'demo', issued_at: new Date().toISOString(), verifier_url: '#' },
-          ];
-          setCertificates(mockCerts);
-          setFilteredCertificates(mockCerts);
+          setCertificates([]);
+          setFilteredCertificates([]);
           return;
         }
 
@@ -85,24 +69,8 @@ export function Certificates() {
           };
         });
 
-        // Fallback: if no certificates are found, add one dummy for viewing
-        const fallbackCerts = certs.length ? certs : [
-          {
-            id: 'demo-cert-001',
-            org_id: 'demo-org',
-            collection_id: 'demo-collection',
-            certificate_no: 'CERT-DEMO-2026-001',
-            pdf_url: '',
-            hash_sha256: '',
-            issued_at: new Date().toISOString(),
-            verifier_url: '#',
-            customer_name: 'Demo Client',
-            job_address: '123 Demo Street, Demo City'
-          } as any
-        ];
-
-        setCertificates(fallbackCerts as any);
-        setFilteredCertificates(fallbackCerts as any);
+        setCertificates(certs as any);
+        setFilteredCertificates(certs as any);
       } catch (err) {
         console.error('Failed to load certificates:', err);
       } finally {

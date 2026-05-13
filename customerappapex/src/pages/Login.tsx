@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { signInWithPassword, signInWithOtp, useAuthState } from '../lib/supabase';
-import { FiInfo } from 'react-icons/fi';
 
 export function Login() {
   const { user, loading } = useAuthState();
@@ -71,20 +70,6 @@ export function Login() {
         </div>
         
         <div className="login-content">
-          {/* Demo Mode Info */}
-          {!import.meta.env.VITE_SUPABASE_URL && (
-            <div className="demo-notice">
-              <div className="demo-notice__content">
-                <h4><FiInfo /> Demo Mode</h4>
-                <p>You're using the demo version. Use these credentials to explore the system:</p>
-                <div className="demo-credentials">
-                  <span><strong>Email:</strong> demo@apex.com</span>
-                  <span><strong>Password:</strong> demo123</span>
-                </div>
-              </div>
-            </div>
-          )}
-          
           <form onSubmit={handlePasswordLogin} className="login-form">
             <div className="form-group">
               <label htmlFor="email">Email Address</label>
