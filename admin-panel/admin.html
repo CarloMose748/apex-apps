@@ -1384,6 +1384,40 @@
                         <li>The oil type or bin fills in automatically — no typing needed.</li>
                     </ol>
                 </div>
+            <!-- Custom QR Generator -->
+            <div style="background: var(--bg-secondary, #1a2433); border: 1px solid #374151; border-radius: 12px; padding: 18px 22px; margin-bottom: 24px;">
+                <h4 style="margin: 0 0 14px 0; color: var(--text-primary); font-size: 1rem;"><i class="fa-solid fa-sliders"></i> Generate Custom Numbered QR Codes</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+                    <div>
+                        <label style="display:block; font-size:0.82rem; color:#9ca3af; margin-bottom:4px;">Prefix (e.g. IBC, DRUM, BARREL)</label>
+                        <input id="customQrPrefix" type="text" value="IBC" maxlength="20" style="background:#0f172a; border:1px solid #374151; color:#fff; border-radius:8px; padding:8px 12px; font-size:0.95rem; width:140px;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.82rem; color:#9ca3af; margin-bottom:4px;">From number</label>
+                        <input id="customQrFrom" type="number" value="31" min="1" max="9999" style="background:#0f172a; border:1px solid #374151; color:#fff; border-radius:8px; padding:8px 12px; font-size:0.95rem; width:90px;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.82rem; color:#9ca3af; margin-bottom:4px;">To number</label>
+                        <input id="customQrTo" type="number" value="40" min="1" max="9999" style="background:#0f172a; border:1px solid #374151; color:#fff; border-radius:8px; padding:8px 12px; font-size:0.95rem; width:90px;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.82rem; color:#9ca3af; margin-bottom:4px;">Pad digits (e.g. 2 → 01, 02)</label>
+                        <input id="customQrPad" type="number" value="2" min="0" max="4" style="background:#0f172a; border:1px solid #374151; color:#fff; border-radius:8px; padding:8px 12px; font-size:0.95rem; width:80px;">
+                    </div>
+                    <button onclick="generateCustomQRCodes()" style="background:#3b82f6; color:#fff; border:none; border-radius:8px; padding:9px 22px; cursor:pointer; font-weight:600; font-size:0.95rem; white-space:nowrap;">Generate QR Codes</button>
+                </div>
+                <div id="customQrError" style="color:#f87171; font-size:0.85rem; margin-top:6px; display:none;"></div>
+            </div>
+
+            <!-- Custom QR Output Grid -->
+            <div id="customQrGrid" style="display: none; margin-bottom: 24px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-bottom:8px; border-bottom: 2px solid #3b82f6;">
+                    <h4 id="customQrHeading" style="color: var(--text-primary); font-size: 1.1rem; margin: 0;">Custom QR Codes</h4>
+                    <button onclick="downloadAllCustomQRCodes()" style="background:#10b981; color:#fff; border:none; border-radius:8px; padding:7px 18px; cursor:pointer; font-weight:600; font-size:0.88rem;">Download All</button>
+                </div>
+                <div id="customQrCards" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;"></div>
+            </div>
+
             <!-- QR Code Cards Grid -->
             <div id="qrCodeGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 0;">
                 <!-- QR code cards will be generated here -->
@@ -4416,6 +4450,87 @@
                 console.error('QR code container not found');
             }
         }
+
+        // ---- Custom numbered QR code generator ----
+        function generateCustomQRCodes() {
+            const errEl = document.getElementById('customQrError');
+            errEl.style.display = 'none';
+
+            const prefix = document.getElementById('customQrPrefix').value.trim().toUpperCase();
+            const from   = parseInt(document.getElementById('customQrFrom').value, 10);
+            const to     = parseInt(document.getElementById('customQrTo').value, 10);
+            const pad    = parseInt(document.getElementById('customQrPad').value, 10) || 0;
+
+            if (!prefix) { errEl.textContent = 'Please enter a prefix.'; errEl.style.display = 'block'; return; }
+            if (isNaN(from) || isNaN(to) || from < 1 || to < from) { errEl.textContent = 'Please enter a valid number range (From ≤ To).'; errEl.style.display = 'block'; return; }
+            if (to - from > 199) { errEl.textContent = 'Maximum 200 QR codes at once.'; errEl.style.display = 'block'; return; }
+
+            const cards = document.getElementById('customQrCards');
+            const grid  = document.getElementById('customQrGrid');
+            const heading = document.getElementById('customQrHeading');
+
+            cards.innerHTML = '';
+            heading.textContent = `Custom QR Codes — ${prefix}${String(from).padStart(pad,'0')} to ${prefix}${String(to).padStart(pad,'0')}`;
+            grid.style.display = 'block';
+
+            const ids = [];
+            for (let i = from; i <= to; i++) {
+                const id = `${prefix}${String(i).padStart(pad, '0')}`;
+                ids.push(id);
+                const card = document.createElement('div');
+                card.style.cssText = 'background: var(--bg-card); border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); text-align: center;';
+                card.innerHTML = `
+                    <div style="font-weight:700; color:var(--text-primary); margin-bottom:8px; font-size:0.95rem;">${id}</div>
+                    <div style="display:flex; justify-content:center;">
+                        <div id="cqr-${id}" style="width:150px; height:150px;"></div>
+                    </div>
+                    <button onclick="downloadCustomQRCode('${id}')" style="margin-top:8px; background:#3b82f6; color:#fff; border:none; border-radius:7px; padding:6px 16px; cursor:pointer; font-weight:600; font-size:0.83rem;">Download PNG</button>
+                `;
+                cards.appendChild(card);
+            }
+
+            setTimeout(() => {
+                ids.forEach(id => {
+                    const el = document.getElementById(`cqr-${id}`);
+                    if (el && typeof QRCode !== 'undefined') {
+                        new QRCode(el, { text: id, width: 150, height: 150, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+                    }
+                });
+            }, 200);
+        }
+
+        function downloadCustomQRCode(id) {
+            const container = document.getElementById(`cqr-${id}`);
+            if (!container) return;
+            const canvas = container.querySelector('canvas');
+            if (!canvas) return;
+            const final = document.createElement('canvas');
+            final.width  = canvas.width;
+            final.height = canvas.height + 30;
+            const ctx = final.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, final.width, final.height);
+            ctx.drawImage(canvas, 0, 0);
+            ctx.fillStyle = '#111111';
+            ctx.font = `bold ${Math.max(11, Math.round(canvas.width / 12))}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(id, final.width / 2, canvas.height + 20);
+            const link = document.createElement('a');
+            link.download = `APEX-QR-${id}.png`;
+            link.href = final.toDataURL('image/png');
+            link.click();
+        }
+
+        function downloadAllCustomQRCodes() {
+            const cards = document.getElementById('customQrCards');
+            const buttons = cards.querySelectorAll('button');
+            let delay = 0;
+            buttons.forEach(btn => {
+                setTimeout(() => btn.click(), delay);
+                delay += 300;
+            });
+        }
+        // ---- End custom QR generator ----
 
         const originalShowSection = showSection;
         showSection = function(section) {
