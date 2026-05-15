@@ -113,8 +113,8 @@
         <label>Condition notes
           <input id="receiveNotes" placeholder="Optional notes" />
         </label>
-        <label>Photo (optional)
-          <input id="receivePhoto" type="file" accept="image/*" />
+        <label>Photos / Documents (optional — select multiple)
+          <input id="receivePhoto" type="file" accept="image/*,.pdf,.doc,.docx" multiple />
         </label>
         <div class="actions">
           <button id="receiveConfirmBtn" class="primary">Confirm Receipt</button>
@@ -139,16 +139,16 @@
             </select>
           </label>
         </div>
-        <label>Type of Test
-          <select id="sampleTestType">
-            <option value="standard">Standard Quality Test</option>
-            <option value="ffa">FFA Analysis</option>
-            <option value="moisture">Moisture & Impurities</option>
-            <option value="density">Density Test</option>
-            <option value="full-panel">Full Panel (FFA + M&I + Density + Temp)</option>
-            <option value="custom">Custom Test</option>
-          </select>
-        </label>
+        <label style="display:block;margin-bottom:6px;">Type of Test (select all that apply)</label>
+        <div id="sampleTestTypeGroup" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+          <label style="display:flex;align-items:center;gap:6px;font-weight:normal;"><input type="checkbox" value="ffa" /> FFA Analysis</label>
+          <label style="display:flex;align-items:center;gap:6px;font-weight:normal;"><input type="checkbox" value="moisture" /> Moisture &amp; Impurities</label>
+          <label style="display:flex;align-items:center;gap:6px;font-weight:normal;"><input type="checkbox" value="density" /> Density Test</label>
+          <label style="display:flex;align-items:center;gap:6px;font-weight:normal;"><input type="checkbox" value="temperature" /> Temperature</label>
+          <label style="display:flex;align-items:center;gap:6px;font-weight:normal;"><input type="checkbox" value="full-panel" /> Full Panel</label>
+          <label style="display:flex;align-items:center;gap:6px;font-weight:normal;"><input type="checkbox" value="standard" /> Standard Quality Test</label>
+          <label style="display:flex;align-items:center;gap:6px;font-weight:normal;"><input type="checkbox" value="custom" /> Custom Test</label>
+        </div>
         <label>Sample Reference / Batch Number
           <input id="sampleReference" placeholder="e.g., SMPL-2025-001" />
         </label>

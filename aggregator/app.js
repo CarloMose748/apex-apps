@@ -569,12 +569,6 @@
     setMessage(msgEl, '', '');
   }
 
-  const KG_PER_LITRE = 0.92;
-
-  function litresToKilograms(litres) {
-    return (Number(litres) || 0) * KG_PER_LITRE;
-  }
-
   // ----- Receive Screen -----
   function setupReceive() {
     const receiveBinQr = document.getElementById('receiveBinQr');
@@ -655,9 +649,9 @@
         
         // Allow bins to be received multiple times (no status check)
 
-        let photoName = '';
-        if (photoEl && photoEl.files && photoEl.files[0]) {
-          photoName = photoEl.files[0].name;
+        let photoNames = '';
+        if (photoEl && photoEl.files && photoEl.files.length > 0) {
+          photoNames = Array.from(photoEl.files).map(f => f.name).join(', ');
         }
 
         setMessage(msgEl, 'Saving receipt...', '');
@@ -672,7 +666,7 @@
           inbound_litres: litresEl && litresEl.value ? Number(litresEl.value) : null,
           oil_type: oilTypeEl && oilTypeEl.value ? oilTypeEl.value : null,
           notes: notesEl && (notesEl.value || '').trim() ? (notesEl.value || '').trim() : null,
-          photo_url: photoName || null
+          photo_url: photoNames || null
         };
 
         const event = await createEvent(eventData);
@@ -692,10 +686,10 @@
           'Bin ID': resolvedBin.id,
           'New Status': STATUSES.RECEIVED_AT_DEPOT,
           'Aggregator': resolvedBin.aggregator?.name || 'Unassigned',
-          'Kilograms': eventData.inbound_litres != null ? litresToKilograms(eventData.inbound_litres).toFixed(1) : '—',
+          'Kilograms': eventData.inbound_litres != null ? eventData.inbound_litres.toFixed(1) + ' kg' : '—',
           'Oil Type': eventData.oil_type ?? '—',
           'Notes': eventData.notes ?? '—',
-          'Photo': eventData.photo_url ?? '—',
+          'Files': eventData.photo_url ?? '—',
         });
         
         if (goToStoreBtn) goToStoreBtn.style.display = 'block';
@@ -735,7 +729,7 @@
     }));
 
     storeBinListEl.innerHTML = binsWithEvents.map(bin => {
-      const kilograms = bin.receiptEvent?.inbound_litres != null ? litresToKilograms(bin.receiptEvent.inbound_litres).toFixed(1) : '—';
+      const kilograms = bin.receiptEvent?.inbound_litres != null ? bin.receiptEvent.inbound_litres.toFixed(1) + ' kg' : '—';
       const oilType = bin.receiptEvent?.oil_type ?? '—';
       
       return `
@@ -1066,7 +1060,10 @@
   window.confirmSample = async function() {
     const size = document.getElementById('sampleSize')?.value;
     const unit = document.getElementById('sampleUnit')?.value;
-    const testType = document.getElementById('sampleTestType')?.value;
+    // Collect all checked test types
+    const checkedBoxes = document.querySelectorAll('#sampleTestTypeGroup input[type="checkbox"]:checked');
+    const testTypes = Array.from(checkedBoxes).map(cb => cb.value);
+    const testType = testTypes.length > 0 ? testTypes.join(', ') : 'standard';
     const ref = document.getElementById('sampleReference')?.value;
     const notes = document.getElementById('sampleNotes')?.value;
     const msg = document.getElementById('sampleMessage');
