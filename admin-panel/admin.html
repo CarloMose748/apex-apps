@@ -634,7 +634,7 @@
         <div class="admin-nav-wrapper">
         <div class="admin-nav">
             <button class="nav-btn tab-dashboard active" onclick="showSection('dashboard')"><i class="fa-solid fa-gauge"></i> Dashboard</button>
-            <button class="nav-btn tab-pending" onclick="showSection('pending')"><i class="fa-solid fa-hourglass-half"></i> Pending Verifications</button>
+            <button class="nav-btn tab-pending" onclick="showSection('pending')"><i class="fa-solid fa-hourglass-half"></i> Pending Verifications <span id="pendingNavBadge" style="display:none; background:#f59e0b; color:#111; border-radius:12px; padding:1px 8px; font-size:0.78rem; font-weight:700; margin-left:4px;">0</span></button>
             <button class="nav-btn tab-drivers" onclick="showSection('drivers')"><i class="fa-solid fa-id-card"></i> Drivers</button>
             <button class="nav-btn tab-smartbins" onclick="showSection('smartbins')"><i class="fa-solid fa-box"></i> Smart Bins</button>
             <button class="nav-btn tab-collections" onclick="showSection('collections')"><i class="fa-solid fa-truck"></i> Collections</button>
@@ -1168,7 +1168,10 @@
                 </div>
 
                 <div id="pendingDepot" style="margin-top: 30px;">
-                    <h4><i class="fa-solid fa-warehouse"></i> Pending Depot Managers (<span id="pendingDepotCount">0</span>)</h4>
+                    <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6e 100%); border: 1px solid #3b82f6; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px;">
+                        <h4 style="margin: 0 0 6px 0; color: #93c5fd;"><i class="fa-solid fa-warehouse"></i> Pending Depot Manager Registrations (<span id="pendingDepotCount">0</span>)</h4>
+                        <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">When someone registers on the Depot App, they appear here. Click <strong style="color:#4ade80;">Approve</strong> to grant them access or <strong style="color:#f87171;">Reject</strong> to deny it. They cannot log in until you approve.</p>
+                    </div>
                     <div id="pendingDepotList" class="loading">Loading depot managers...</div>
                 </div>
 
@@ -1369,7 +1372,18 @@
             </h3>
             
             <p style="color: #6b7280; margin-bottom: 16px; font-size: 1.05rem;">Two sets of QR codes: <strong>Oil Type QR codes</strong> (scan to auto-fill the oil type in the Depot app) and <strong>IBC Bin QR codes</strong> (scan to identify the physical bin).</p>
-            
+
+                <!-- How-to guide -->
+                <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6e 100%); border: 1px solid #3b82f6; border-radius: 12px; padding: 18px 22px; margin-bottom: 24px;">
+                    <h4 style="margin: 0 0 10px 0; color: #93c5fd;"><i class="fa-solid fa-circle-info"></i> How to create &amp; use QR codes</h4>
+                    <ol style="margin: 0; padding-left: 20px; color: #94a3b8; font-size: 0.95rem; line-height: 1.9;">
+                        <li>Find the QR code you need below (oil type or IBC bin number).</li>
+                        <li>Click the <strong style="color:#4ade80;">Download PNG</strong> button under it.</li>
+                        <li>Print the downloaded image and stick it on the physical drum / storage area / bin.</li>
+                        <li>In the Depot App → Inbound Receipt, tap <strong style="color:#fff;">Open Scanner</strong> and scan the printed QR.</li>
+                        <li>The oil type or bin fills in automatically — no typing needed.</li>
+                    </ol>
+                </div>
             <!-- QR Code Cards Grid -->
             <div id="qrCodeGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 0;">
                 <!-- QR code cards will be generated here -->
@@ -1958,6 +1972,18 @@
                 document.getElementById('pendingDriverCount').textContent = pending.drivers.length;
                 document.getElementById('pendingCustomerCount').textContent = pending.customers.length;
                 document.getElementById('pendingDepotCount').textContent = (pending.depot || []).length;
+
+                // Update nav badge
+                const totalPending = pending.drivers.length + pending.customers.length + (pending.depot || []).length;
+                const badge = document.getElementById('pendingNavBadge');
+                if (badge) {
+                    if (totalPending > 0) {
+                        badge.textContent = totalPending;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
                 
                 // Display pending drivers
                 displayPendingUsers(pending.drivers, 'driver', 'pendingDriversList');
