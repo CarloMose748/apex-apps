@@ -1404,6 +1404,10 @@
                         <label style="display:block; font-size:0.82rem; color:#9ca3af; margin-bottom:4px;">Pad digits (e.g. 2 → 01, 02)</label>
                         <input id="customQrPad" type="number" value="2" min="0" max="4" style="background:#0f172a; border:1px solid #374151; color:#fff; border-radius:8px; padding:8px 12px; font-size:0.95rem; width:80px;">
                     </div>
+                    <div>
+                        <label style="display:block; font-size:0.82rem; color:#9ca3af; margin-bottom:4px;">Oil type suffix (e.g. UCO, ACID)</label>
+                        <input id="customQrSuffix" type="text" value="" maxlength="20" placeholder="optional" style="background:#0f172a; border:1px solid #374151; color:#fff; border-radius:8px; padding:8px 12px; font-size:0.95rem; width:130px;">
+                    </div>
                     <button onclick="generateCustomQRCodes()" style="background:#3b82f6; color:#fff; border:none; border-radius:8px; padding:9px 22px; cursor:pointer; font-weight:600; font-size:0.95rem; white-space:nowrap;">Generate QR Codes</button>
                 </div>
                 <div id="customQrError" style="color:#f87171; font-size:0.85rem; margin-top:6px; display:none;"></div>
@@ -4460,6 +4464,8 @@
             const from   = parseInt(document.getElementById('customQrFrom').value, 10);
             const to     = parseInt(document.getElementById('customQrTo').value, 10);
             const pad    = parseInt(document.getElementById('customQrPad').value, 10) || 0;
+            const suffix = document.getElementById('customQrSuffix').value.trim().toUpperCase();
+            const suffixPart = suffix ? `-${suffix}` : '';
 
             if (!prefix) { errEl.textContent = 'Please enter a prefix.'; errEl.style.display = 'block'; return; }
             if (isNaN(from) || isNaN(to) || from < 1 || to < from) { errEl.textContent = 'Please enter a valid number range (From ≤ To).'; errEl.style.display = 'block'; return; }
@@ -4470,12 +4476,12 @@
             const heading = document.getElementById('customQrHeading');
 
             cards.innerHTML = '';
-            heading.textContent = `Custom QR Codes — ${prefix}${String(from).padStart(pad,'0')} to ${prefix}${String(to).padStart(pad,'0')}`;
+            heading.textContent = `Custom QR Codes — ${prefix}${String(from).padStart(pad,'0')}${suffixPart} to ${prefix}${String(to).padStart(pad,'0')}${suffixPart}`;
             grid.style.display = 'block';
 
             const ids = [];
             for (let i = from; i <= to; i++) {
-                const id = `${prefix}${String(i).padStart(pad, '0')}`;
+                const id = `${prefix}${String(i).padStart(pad, '0')}${suffixPart}`;
                 ids.push(id);
                 const card = document.createElement('div');
                 card.style.cssText = 'background: var(--bg-card); border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); text-align: center;';
