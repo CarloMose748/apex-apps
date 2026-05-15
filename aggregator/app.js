@@ -626,11 +626,38 @@
       return true;
     }
 
+    // Map oil-type QR codes to the oilType select values
+    const OIL_QR_MAP = {
+      'OIL-UCO':        'UCO',
+      'OIL-ACID':       'ACID_OIL',
+      'OIL-WINTERIZED': 'WINTERIZED',
+      'OIL-GUM':        'GUM_OIL',
+      'OIL-MIXED':      'MIXED_OIL',
+      'OIL-DRAINED':    'DRAINED_OIL',
+    };
+
+    function handleQRScan(decodedText) {
+      const oilType = OIL_QR_MAP[decodedText.trim().toUpperCase()];
+      if (oilType) {
+        // It's an oil-type QR — auto-fill the oil type dropdown
+        if (oilTypeEl) {
+          oilTypeEl.value = oilType;
+          // Flash the dropdown to show it changed
+          oilTypeEl.style.outline = '2px solid #10b981';
+          setTimeout(() => { oilTypeEl.style.outline = ''; }, 1500);
+        }
+        setMessage(msgEl, `Oil type set to: ${decodedText.replace('OIL-', '').replace(/-/g, ' ')}`, 'success');
+      } else {
+        // It's a bin QR
+        receiveBinQr.value = decodedText;
+        resolveBin(decodedText);
+      }
+    }
+
     if (receiveOpenScannerBtn) {
       receiveOpenScannerBtn.addEventListener('click', () => {
         openScanner((decodedText) => {
-          receiveBinQr.value = decodedText;
-          resolveBin(decodedText);
+          handleQRScan(decodedText);
         });
       });
     }
