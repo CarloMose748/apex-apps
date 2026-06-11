@@ -1323,8 +1323,56 @@
 
                 <!-- Branches Tab -->
                 <div id="aggregatorBranchesTab" class="aggregator-tab-content" style="display:none; overflow-x:auto; width:100%;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+                        <p style="color: var(--text-muted); margin: 0; font-size: 0.95rem;">Branches are aggregator companies that supply oil. Each branch can be assigned bins and seen in the events timeline.</p>
+                        <button onclick="openBranchModal()" style="background: var(--accent); color: #fff; border:none; border-radius:8px; padding:9px 18px; font-weight:600; cursor:pointer;">
+                            <i class="fa-solid fa-plus"></i> Add Branch
+                        </button>
+                    </div>
                     <div id="aggregatorBranchesList" class="loading" style="min-height: 160px;">
                         <div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;">Loading branches...</div>
+                    </div>
+                </div>
+
+                <!-- Branch Add/Edit Modal -->
+                <div id="branchModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+                    <div style="background: var(--bg-card); border-radius: 16px; padding: 28px; max-width: 520px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.4);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                            <h3 id="branchModalTitle" style="margin:0; color: var(--text-primary);">Add Branch</h3>
+                            <button onclick="closeBranchModal()" style="background:none; border:none; color: var(--text-muted); font-size:1.4rem; cursor:pointer;">&times;</button>
+                        </div>
+                        <input type="hidden" id="branchModalId" />
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div style="grid-column: 1 / -1;">
+                                <label style="display:block; font-size:0.83rem; color: var(--text-muted); margin-bottom:4px;">Branch ID *</label>
+                                <input id="branchModalIdInput" type="text" placeholder="e.g. BR-001" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background: var(--bg-secondary, #1a2433); color: var(--text-primary);" />
+                            </div>
+                            <div style="grid-column: 1 / -1;">
+                                <label style="display:block; font-size:0.83rem; color: var(--text-muted); margin-bottom:4px;">Name *</label>
+                                <input id="branchModalName" type="text" placeholder="e.g. Apex Chem Durban" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background: var(--bg-secondary, #1a2433); color: var(--text-primary);" />
+                            </div>
+                            <div style="grid-column: 1 / -1;">
+                                <label style="display:block; font-size:0.83rem; color: var(--text-muted); margin-bottom:4px;">Location</label>
+                                <input id="branchModalLocation" type="text" placeholder="e.g. Durban, KZN" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background: var(--bg-secondary, #1a2433); color: var(--text-primary);" />
+                            </div>
+                            <div>
+                                <label style="display:block; font-size:0.83rem; color: var(--text-muted); margin-bottom:4px;">Contact Person</label>
+                                <input id="branchModalContact" type="text" placeholder="Full name" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background: var(--bg-secondary, #1a2433); color: var(--text-primary);" />
+                            </div>
+                            <div>
+                                <label style="display:block; font-size:0.83rem; color: var(--text-muted); margin-bottom:4px;">Phone</label>
+                                <input id="branchModalPhone" type="text" placeholder="e.g. 031 123 4567" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background: var(--bg-secondary, #1a2433); color: var(--text-primary);" />
+                            </div>
+                            <div style="grid-column: 1 / -1; display:flex; align-items:center; gap:8px;">
+                                <input id="branchModalActive" type="checkbox" checked />
+                                <label for="branchModalActive" style="font-size:0.9rem; color: var(--text-primary);">Active (uncheck to archive this branch)</label>
+                            </div>
+                        </div>
+                        <div id="branchModalError" style="color:#f87171; font-size:0.85rem; margin-top:10px; display:none;"></div>
+                        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:22px;">
+                            <button onclick="closeBranchModal()" style="background: var(--bg-secondary, #1a2433); color: var(--text-primary); border:1px solid var(--border-color); border-radius:8px; padding:9px 18px; font-weight:600; cursor:pointer;">Cancel</button>
+                            <button onclick="saveBranch()" style="background: var(--accent); color:#fff; border:none; border-radius:8px; padding:9px 22px; font-weight:600; cursor:pointer;">Save Branch</button>
+                        </div>
                     </div>
                 </div>
 
@@ -4106,25 +4154,97 @@
             container.classList.remove('loading');
             
             if (!aggregatorBranchesData || aggregatorBranchesData.length === 0) {
-                container.innerHTML = '<div class="no-data" style="padding: 32px; text-align: center; color: #888;">No branches found</div>';
+                container.innerHTML = '<div class="no-data" style="padding: 32px; text-align: center; color: #888;">No branches found — click <strong>Add Branch</strong> above to create one.</div>';
                 return;
             }
 
             let html = '<table class="user-table" style="width:100%; border-radius: 18px; overflow: hidden; background: var(--bg-card);">';
             html += '<thead><tr>';
-            html += '<th>Branch ID</th><th>Name</th><th>Location</th><th>Contact</th><th>Created</th></tr></thead><tbody>';
+            html += '<th>Branch ID</th><th>Name</th><th>Location</th><th>Contact</th><th>Status</th><th>Created</th><th style="text-align:right;">Actions</th></tr></thead><tbody>';
             
             aggregatorBranchesData.forEach(branch => {
+                const statusBadge = branch.active === false
+                    ? '<span style="background:#6b7280; color:#fff; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">Archived</span>'
+                    : '<span style="background:#10b981; color:#fff; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">Active</span>';
                 html += `<tr>
                     <td style="font-weight:600;">${branch.id}</td>
                     <td>${branch.name}</td>
                     <td>${branch.location || 'N/A'}</td>
                     <td>${branch.contact_person || 'N/A'}<br><small style="color: var(--text-muted);">${branch.phone || ''}</small></td>
+                    <td>${statusBadge}</td>
                     <td>${new Date(branch.created_at).toLocaleDateString()}</td>
+                    <td style="text-align:right; white-space:nowrap;">
+                        <button onclick='editBranch(${JSON.stringify(branch).replace(/'/g, "&apos;")})' style="background:#3b82f6; color:#fff; border:none; border-radius:6px; padding:6px 12px; margin-right:4px; cursor:pointer; font-size:0.8rem;" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteBranch('${branch.id}', '${branch.name.replace(/'/g, "\\'")}')" style="background:#dc2626; color:#fff; border:none; border-radius:6px; padding:6px 12px; cursor:pointer; font-size:0.8rem;" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    </td>
                 </tr>`;
             });
             html += '</tbody></table>';
             container.innerHTML = html;
+        }
+
+        function openBranchModal(branch) {
+            const modal = document.getElementById('branchModal');
+            const errEl = document.getElementById('branchModalError');
+            errEl.style.display = 'none';
+            document.getElementById('branchModalTitle').textContent = branch ? 'Edit Branch' : 'Add Branch';
+            document.getElementById('branchModalId').value         = branch?.id || '';
+            document.getElementById('branchModalIdInput').value    = branch?.id || '';
+            document.getElementById('branchModalIdInput').disabled = !!branch;
+            document.getElementById('branchModalName').value       = branch?.name || '';
+            document.getElementById('branchModalLocation').value   = branch?.location || '';
+            document.getElementById('branchModalContact').value    = branch?.contact_person || '';
+            document.getElementById('branchModalPhone').value      = branch?.phone || '';
+            document.getElementById('branchModalActive').checked   = branch ? (branch.active !== false) : true;
+            modal.style.display = 'flex';
+        }
+
+        function closeBranchModal() {
+            document.getElementById('branchModal').style.display = 'none';
+        }
+
+        async function saveBranch() {
+            const errEl = document.getElementById('branchModalError');
+            errEl.style.display = 'none';
+            const id       = document.getElementById('branchModalId').value;
+            const idInput  = document.getElementById('branchModalIdInput').value.trim();
+            const name     = document.getElementById('branchModalName').value.trim();
+            const location = document.getElementById('branchModalLocation').value.trim();
+            const contact  = document.getElementById('branchModalContact').value.trim();
+            const phone    = document.getElementById('branchModalPhone').value.trim();
+            const active   = document.getElementById('branchModalActive').checked;
+
+            if (!idInput || !name) { errEl.textContent = 'Branch ID and Name are required.'; errEl.style.display = 'block'; return; }
+
+            const client = window.getSupabaseClient();
+            if (!client) { errEl.textContent = 'Database not available.'; errEl.style.display = 'block'; return; }
+
+            const payload = { id: idInput, name, location, contact_person: contact, phone, active };
+
+            let res, err;
+            if (id) {
+                ({ data: res, error: err } = await client.from('high_aggregator_branches').update(payload).eq('id', id));
+            } else {
+                ({ data: res, error: err } = await client.from('high_aggregator_branches').insert(payload).select().single());
+            }
+            if (err) { errEl.textContent = 'Error: ' + err.message; errEl.style.display = 'block'; return; }
+            closeBranchModal();
+            await loadAggregatorBranches();
+            showSuccess(id ? 'Branch updated' : 'Branch created');
+        }
+
+        function editBranch(branch) {
+            openBranchModal(branch);
+        }
+
+        async function deleteBranch(id, name) {
+            if (!confirm(`Delete branch "${name}"? Bins that reference this branch will keep their data but the name will not resolve.`)) return;
+            const client = window.getSupabaseClient();
+            if (!client) return;
+            const { error } = await client.from('high_aggregator_branches').delete().eq('id', id);
+            if (error) { showError('Failed to delete: ' + error.message); return; }
+            await loadAggregatorBranches();
+            showSuccess('Branch deleted');
         }
 
         function renderAggregatorEvents() {
@@ -4198,11 +4318,18 @@
                     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
                 );
                 
-                // Calculate totals for this company
-                const totalInbound = companyEvents.reduce((sum, e) => sum + (parseFloat(e.inbound_litres) || 0), 0);
+                // Calculate totals for this company (sum kg and L separately)
+                const totalInboundKg    = companyEvents.reduce((s, e) => s + (parseFloat(e.inbound_kg)    || 0), 0);
+                const totalInboundLitres = companyEvents.reduce((s, e) => s + (parseFloat(e.inbound_litres) || 0), 0);
                 const totalDrainage = companyEvents.reduce((sum, e) => sum + (parseFloat(e.drainage_litres) || 0), 0);
                 const receivedCount = companyEvents.filter(e => e.event_type === 'RECEIVED').length;
                 const storedCount = companyEvents.filter(e => e.event_type === 'STORED').length;
+
+                const totalParts = [];
+                if (totalInboundKg    > 0) totalParts.push(`<span style="font-weight:600;">${totalInboundKg.toFixed(1)} kg</span> inbound`);
+                if (totalInboundLitres > 0) totalParts.push(`<span style="font-weight:600;">${totalInboundLitres.toFixed(1)} L</span> inbound`);
+                if (totalDrainage > 0) totalParts.push(`<span style="font-weight:600;">${totalDrainage.toFixed(1)}L</span> after drainage`);
+                const totalText = totalParts.length > 0 ? `Total: ${totalParts.join(', ')}` : '';
                 
                 html += `
                     <div style="margin-bottom: 24px; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; background: var(--bg-card);">
@@ -4213,8 +4340,7 @@
                                 <span style="font-weight: 400; opacity: 0.85; margin-left: 8px; font-size: 0.9em;">(${receivedCount} received, ${storedCount} stored)</span>
                             </div>
                             <div style="font-size: 0.9em; font-weight: 400;">
-                                Total: <span style="font-weight: 600;">${totalInbound.toFixed(1)}L</span> inbound, 
-                                <span style="font-weight: 600;">${totalDrainage.toFixed(1)}L</span> after drainage
+                                ${totalText}
                             </div>
                         </div>
                         <table class="user-table" style="width:100%; margin: 0;">
@@ -4223,24 +4349,29 @@
                                     <th>Bin ID</th>
                                     <th>Event Type</th>
                                     <th>Oil Type</th>
-                                    <th>Inbound L</th>
-                                    <th>Drainage L</th>
+                                    <th>Quantity</th>
+                                    <th>Notes</th>
                                     <th>Storage Location</th>
                                     <th>User ID</th>
                                     <th>Timestamp</th>
                                 </tr>
                             </thead>
                             <tbody>`;
-                
+
                 companyEvents.forEach(event => {
                     const eventTypeColor = event.event_type === 'RECEIVED' ? '#f59e0b' : '#10b981';
                     const eventTypeBg = event.event_type === 'RECEIVED' ? '#fef3c7' : '#d1fae5';
+                    // Build quantity string (handles both kg and L units)
+                    let qtyStr = 'N/A';
+                    if (event.inbound_kg != null) qtyStr = `${event.inbound_kg} kg`;
+                    else if (event.inbound_litres != null) qtyStr = `${event.inbound_litres} L`;
+                    if (event.drainage_litres) qtyStr += ` <small style="color:#dc2626;">(${event.drainage_litres}L drained)</small>`;
                     html += `<tr>
                         <td style="font-weight:600;">${event.bin_id || 'N/A'}</td>
                         <td><span style="background:${eventTypeBg}; color:${eventTypeColor}; padding:4px 8px; border-radius:6px; font-size:0.85em; font-weight:600;">${event.event_type || 'N/A'}</span></td>
                         <td>${event.oil_type || 'N/A'}</td>
-                        <td style="color:#059669; font-weight:600;">${event.inbound_litres ? event.inbound_litres + 'L' : 'N/A'}</td>
-                        <td style="color:#dc2626; font-weight:600;">${event.drainage_litres ? event.drainage_litres + 'L' : 'N/A'}</td>
+                        <td style="color:#059669; font-weight:600;">${qtyStr}</td>
+                        <td style="font-size: 0.85em; max-width: 220px; word-wrap: break-word;">${event.notes ? event.notes.replace(/</g, '&lt;') : '—'}</td>
                         <td style="font-weight:500; color:#7c3aed;">${event.location_id || 'N/A'}</td>
                         <td style="font-size: 0.85em;">${event.user_id || 'N/A'}</td>
                         <td>${new Date(event.timestamp).toLocaleString()}</td>

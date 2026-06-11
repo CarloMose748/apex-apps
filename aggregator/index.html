@@ -97,8 +97,14 @@
           <input id="receiveCompanyName" type="text" placeholder="Enter company name" />
         </label>
         <div class="grid-2">
-          <label>Inbound kilograms (kg)
-            <input id="receiveLitres" type="number" min="0" step="0.1" />
+          <label>Inbound quantity
+            <div style="display:flex; gap:6px;">
+              <input id="receiveQuantity" type="number" min="0" step="0.1" style="flex:1;" placeholder="Enter amount" />
+              <select id="receiveUnit" style="width:130px;">
+                <option value="kg">Kilograms (kg)</option>
+                <option value="L">Litres (L)</option>
+              </select>
+            </div>
           </label>
           <label>Oil type
             <select id="receiveOilType">
@@ -108,13 +114,15 @@
               <option value="GUM_OIL">Gum Oil</option>
               <option value="MIXED_OIL">Mixed Gums</option>
               <option value="DRAINED_OIL">Drained Oil</option>
+              <option value="BLACK_OIL">Black Oil</option>
+              <option value="OTHER">Other</option>
             </select>
           </label>
         </div>
         <label>Condition notes
           <input id="receiveNotes" placeholder="Optional notes" />
         </label>
-        <label>Photos / Documents (optional — select multiple)
+        <label>Photos / Documents (optional — select 2 or more, or one)
           <input id="receivePhoto" type="file" accept="image/*,.pdf,.doc,.docx" multiple />
         </label>
         <div class="actions">
@@ -135,6 +143,7 @@
           <label>Unit
             <select id="sampleUnit">
               <option value="ml">Millilitres (ml)</option>
+              <option value="L">Litres (L)</option>
               <option value="g">Grams (g)</option>
               <option value="kg">Kilograms (kg)</option>
             </select>

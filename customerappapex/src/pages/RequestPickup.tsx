@@ -218,9 +218,34 @@ export function RequestPickup() {
           </Card>
         ) : bins.length === 0 ? (
           <Card>
-            <div style={{ padding: '40px', textAlign: 'center' }}>
+            <div style={{ padding: '32px', textAlign: 'center' }}>
               <FiPackage size={48} style={{ margin: '0 auto 16px', color: 'var(--text-muted)' }} />
-              <p className="text-muted">No bins found. Please contact support to register your bins.</p>
+              <h3 style={{ margin: '0 0 10px 0', color: 'var(--text-primary)' }}>No bins linked to your account</h3>
+              <p className="text-muted" style={{ marginBottom: '20px' }}>
+                To request a pickup, an admin must first allocate a bin to your account.
+                Until then, you can use <strong>Manual Bin Entry</strong> below.
+              </p>
+
+              <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '18px', textAlign: 'left', margin: '0 auto 18px', maxWidth: '520px' }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '0.95rem' }}><FiMapPin style={{ verticalAlign: 'middle' }} /> How bins are allocated to your account</h4>
+                <ol style={{ margin: 0, paddingLeft: '20px', lineHeight: 1.8, fontSize: '0.88rem' }}>
+                  <li>Your customer account is approved by the admin (status: <em>approved</em>).</li>
+                  <li>Admin opens the <strong>Smart Bins</strong> or <strong>Bins Management</strong> section in the admin panel.</li>
+                  <li>Admin creates a new bin with a unique serial number (e.g. <code>BIN-2026-0001</code>).</li>
+                  <li>Admin sets <code>customer_id</code> = your user ID and <code>bin_status</code> = <em>active</em>.</li>
+                  <li>The bin appears here automatically on your next refresh.</li>
+                </ol>
+                <p style={{ margin: '12px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  To allocate a bin now, ask an admin to add a row in the <code>bins</code> table linked to your user id.
+                </p>
+              </div>
+
+              <Button
+                variant="primary"
+                onClick={() => setShowManualEntry(true)}
+              >
+                <FiPlus /> Use Manual Bin Entry
+              </Button>
             </div>
           </Card>
         ) : (

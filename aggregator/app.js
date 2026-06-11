@@ -575,7 +575,8 @@
     const receiveOpenScannerBtn = document.getElementById('receiveOpenScannerBtn');
     const receiveBinInfo = document.getElementById('receiveBinInfo');
     const companyNameEl = document.getElementById('receiveCompanyName');
-    const litresEl = document.getElementById('receiveLitres');
+    const quantityEl = document.getElementById('receiveQuantity');
+    const unitEl = document.getElementById('receiveUnit');
     const oilTypeEl = document.getElementById('receiveOilType');
     const notesEl = document.getElementById('receiveNotes');
     const photoEl = document.getElementById('receivePhoto');
@@ -634,6 +635,8 @@
       'OIL-GUM':        'GUM_OIL',
       'OIL-MIXED':      'MIXED_OIL',
       'OIL-DRAINED':    'DRAINED_OIL',
+      'OIL-BLACK':      'BLACK_OIL',
+      'OIL-OTHER':      'OTHER',
     };
 
     function handleQRScan(decodedText) {
@@ -683,6 +686,8 @@
 
         setMessage(msgEl, 'Saving receipt...', '');
 
+        const qtyValue = quantityEl && quantityEl.value ? Number(quantityEl.value) : null;
+        const unitValue = unitEl && unitEl.value ? unitEl.value : 'kg';
         const eventData = {
           event_type: 'RECEIVED',
           bin_id: resolvedBin.id,
@@ -690,7 +695,9 @@
           aggregator_id: resolvedBin.aggregator_id,
           user_id: currentUser?.id || 'unknown',
           company_name: companyNameEl && (companyNameEl.value || '').trim() ? (companyNameEl.value || '').trim() : null,
-          inbound_litres: litresEl && litresEl.value ? Number(litresEl.value) : null,
+          inbound_litres: unitValue === 'L' && qtyValue != null ? qtyValue : null,
+          inbound_kg: unitValue === 'kg' && qtyValue != null ? qtyValue : null,
+          quantity_unit: unitValue,
           oil_type: oilTypeEl && oilTypeEl.value ? oilTypeEl.value : null,
           notes: notesEl && (notesEl.value || '').trim() ? (notesEl.value || '').trim() : null,
           photo_url: photoNames || null
@@ -713,7 +720,7 @@
           'Bin ID': resolvedBin.id,
           'New Status': STATUSES.RECEIVED_AT_DEPOT,
           'Aggregator': resolvedBin.aggregator?.name || 'Unassigned',
-          'Kilograms': eventData.inbound_litres != null ? eventData.inbound_litres.toFixed(1) + ' kg' : '—',
+          'Quantity': qtyValue != null ? qtyValue.toFixed(1) + ' ' + unitValue : '—',
           'Oil Type': eventData.oil_type ?? '—',
           'Notes': eventData.notes ?? '—',
           'Files': eventData.photo_url ?? '—',

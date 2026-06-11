@@ -79,6 +79,9 @@ function AddressAutocomplete({ onAddressSelect, value }: {
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.onload = initializeAutocomplete;
+      script.onerror = () => {
+        console.warn('Google Maps failed to load — falling back to manual address entry');
+      };
       document.head.appendChild(script);
     };
 
@@ -144,8 +147,20 @@ function AddressAutocomplete({ onAddressSelect, value }: {
       type="text"
       className="form-input"
       placeholder="Start typing your South African business address..."
-      defaultValue={value}
-      required
+      value={value}
+      onChange={(e) => onAddressSelect({
+        formatted_address: e.target.value,
+        street_number: '',
+        route: '',
+        locality: '',
+        administrative_area_level_1: '',
+        postal_code: '',
+        country: 'South Africa',
+        place_id: '',
+        latitude: null,
+        longitude: null
+      })}
+      autoComplete="off"
     />
   );
 }
