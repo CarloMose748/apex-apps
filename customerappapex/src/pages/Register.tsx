@@ -62,9 +62,163 @@ interface BusinessDetails {
   marketingConsent: boolean;
 }
 
-// Google Places Autocomplete Component
-function AddressAutocomplete({ onAddressSelect, value }: { 
-  onAddressSelect: (address: any) => void; 
+// AddressFields — manual address entry + optional Google autocomplete
+function AddressFields({ onAddressChange, address }: {
+  onAddressChange: (address: any) => void;
+  address: any;
+}) {
+  const streetInputRef = useRef<HTMLInputElement>(null);
+  const [googleReady, setGoogleReady] = useState(false);
+
+  // Try to load Google Places in the background; do NOT block manual entry.
+  useEffect(() => {
+    const init = () => {
+      if (!streetInputRef.current || !window.google?.maps?.places) return;
+      try {
+        const ac = new window.google.maps.places.Autocomplete(streetInputRef.current, {
+          types: ['address'],
+          componentRestrictions: { country: 'za' },
+          fields: ['address_components', 'formatted_address', 'place_id', 'geometry']
+        });
+        ac.addListener('place_changed', () => {
+          const place = ac.getPlace();
+          if (!place.address_components) return;
+          const next = parsePlace(place);
+          onAddressChange(next);
+        });
+        setGoogleReady(true);
+      } catch (e) {
+        console.warn('Google Autocomplete failed to initialise:', e);
+      }
+    };
+
+    if (window.google && window.google.maps) { init(); return; }
+    if (document.querySelector('script[data-google-maps]')) return; // already loading
+
+    const s = document.createElement('script');
+    s.setAttribute('data-google-maps', '1');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+    s.onload = init;
+    s.onerror = () => console.warn('Google Maps script failed to load — manual entry is still available');
+    document.head.appendChild(s);
+  }, [onAddressChange]);
+
+  const update = (field: string, value: string) => {
+    onAddressChange({ ...address, [field]: value });
+  };
+
+  return (
+    <div className="address-fields">
+      <div className="form-group">
+        <label>Street address *</label>
+        <input
+          ref={streetInputRef}
+          type="text"
+          className="form-input"
+          placeholder={googleReady ? 'Start typing — Google will suggest addresses' : 'e.g. 12 Marine Drive'}
+          value={address?.route ? `${address.street_number ? address.street_number + ' ' : ''}${address.route}` : ''}
+          onChange={(e) => {
+            // Mirror raw text into route for now; user can refine city/postcode below
+            onAddressChange({ ...address, formatted_address: e.target.value, route: e.target.value, street_number: '' });
+          }}
+          autoComplete="off"
+          required
+        />
+        {googleReady && (
+          <small className="form-help" style={{ color: '#16a34a' }}>
+            ✓ Google address suggestions are active
+          </small>
+        )}
+      </div>
+      <div className="form-row">
+        <div className="form-group">
+          <label>City / Town *</label>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="e.g. Durban"
+            value={address?.locality || ''}
+            onChange={(e) => update('locality', e.target.value)}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label>Province *</label>
+          <select
+            className="form-input"
+            value={address?.administrative_area_level_1 || ''}
+            onChange={(e) => update('administrative_area_level_1', e.target.value)}
+            required
+          >
+            <option value="">Select province</option>
+            <option value="EC">Eastern Cape</option>
+            <option value="FS">Free State</option>
+            <option value="GP">Gauteng</option>
+            <option value="KZN">KwaZulu-Natal</option>
+            <option value="LP">Limpopo</option>
+            <option value="MP">Mpumalanga</option>
+            <option value="NC">Northern Cape</option>
+            <option value="NW">North West</option>
+            <option value="WC">Western Cape</option>
+          </select>
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-group">
+          <label>Postal code *</label>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="e.g. 4001"
+            value={address?.postal_code || ''}
+            onChange={(e) => update('postal_code', e.target.value)}
+            maxLength={10}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label>Country</label>
+          <input
+            type="text"
+            className="form-input"
+            value={address?.country || 'South Africa'}
+            onChange={(e) => update('country', e.target.value)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helper: turn a Google Place into our address shape
+function parsePlace(place: any) {
+  const out: any = {
+    formatted_address: place.formatted_address || '',
+    street_number: '',
+    route: '',
+    locality: '',
+    administrative_area_level_1: '',
+    postal_code: '',
+    country: 'South Africa',
+    place_id: place.place_id || '',
+    latitude: place.geometry?.location?.lat() ?? null,
+    longitude: place.geometry?.location?.lng() ?? null
+  };
+  (place.address_components || []).forEach((c: any) => {
+    if (c.types.includes('street_number')) out.street_number = c.long_name;
+    if (c.types.includes('route'))         out.route = c.long_name;
+    if (c.types.includes('locality'))      out.locality = c.long_name;
+    if (c.types.includes('administrative_area_level_1')) out.administrative_area_level_1 = c.short_name;
+    if (c.types.includes('postal_code'))   out.postal_code = c.long_name;
+    if (c.types.includes('country'))       out.country = c.long_name;
+  });
+  return out;
+}
+
+// Legacy single-input Google autocomplete — kept for any other callers, but
+// the registration form now uses AddressFields above.
+function AddressAutocomplete({ onAddressSelect, value }: {
+  onAddressSelect: (address: any) => void;
   value: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -253,8 +407,13 @@ export function Register() {
         }
         break;
       case 2:
-        if (!formData.businessName || !formData.businessType || !formData.businessAddress.formatted_address) {
-          setError('Please fill in all business details');
+        if (!formData.businessName || !formData.businessType) {
+          setError('Please fill in your business name and type');
+          return false;
+        }
+        const a = formData.businessAddress;
+        if (!a.route || !a.locality || !a.administrative_area_level_1 || !a.postal_code) {
+          setError('Please complete the full business address (street, city, province, postal code)');
           return false;
         }
         if (!formData.termsAccepted) {
@@ -274,18 +433,30 @@ export function Register() {
     setError('');
     
     try {
+      // Compose a readable single-line address from the structured fields so
+      // the customer record's `address` column is never empty when manual
+      // entry is used (no Google autocomplete).
+      const a = formData.businessAddress || {};
+      const composedAddress = [
+        [a.street_number, a.route].filter(Boolean).join(' '),
+        a.locality,
+        a.administrative_area_level_1,
+        a.postal_code,
+        a.country
+      ].filter(Boolean).join(', ');
+
       // Prepare customer data for database
       const customerData = {
         email: formData.email,
         password: formData.password,
         full_name: `${formData.firstName} ${formData.lastName}`,
         phone_number: formData.phone,
-        address: formData.businessAddress?.formatted_address || '',
+        address: a.formatted_address || composedAddress,
         business_name: formData.businessName,
         business_type: formData.businessType,
         business_registration: formData.businessRegistration,
-        latitude: formData.businessAddress?.latitude || null,
-        longitude: formData.businessAddress?.longitude || null
+        latitude: a.latitude ?? null,
+        longitude: a.longitude ?? null
       };
 
       console.log('Submitting customer data:', customerData);
@@ -442,17 +613,13 @@ export function Register() {
             
             <div className="form-group">
               <label>Business Address *</label>
-              <AddressAutocomplete
-                value={formData.businessAddress.formatted_address}
-                onAddressSelect={(address) => updateFormData('businessAddress', address)}
+              <AddressFields
+                address={formData.businessAddress}
+                onAddressChange={(address) => updateFormData('businessAddress', address)}
               />
-              {formData.businessAddress.formatted_address && (
-                <div className="address-preview">
-                  <small className="form-help">
-                    Selected: {formData.businessAddress.locality}, {formData.businessAddress.administrative_area_level_1} {formData.businessAddress.postal_code}
-                  </small>
-                </div>
-              )}
+              <small className="form-help" style={{ color: '#6b7280' }}>
+                Type your address — Google suggestions may appear if available, otherwise fill the fields manually.
+              </small>
             </div>
             
             <div className="form-group">

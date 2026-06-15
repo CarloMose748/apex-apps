@@ -670,6 +670,22 @@
   margin: 0;
 }
 
+/* Address Fields (manual address entry) */
+.address-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 12px);
+  margin-top: var(--space-xs, 6px);
+  padding: var(--space-sm, 12px);
+  background-color: #f8fafc;
+  border-radius: var(--border-radius, 8px);
+  border: 1px solid #e5e7eb;
+}
+
+.address-fields .form-group {
+  margin-bottom: 0;
+}
+
 @media (max-width: 480px) {
   .login-logo__image {
     width: min(210px, 78%);
