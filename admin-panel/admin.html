@@ -1167,6 +1167,21 @@
                     <div id="pendingCustomersList" class="loading">Loading customers...</div>
                 </div>
 
+                <!-- RLS migration hint (only shown if list is empty) -->
+                <div id="pendingRlsHint" style="display:none; margin-top: 24px; background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6e 100%); border: 1px solid #3b82f6; border-radius: 12px; padding: 16px 20px;">
+                    <h4 style="margin: 0 0 8px 0; color: #93c5fd;"><i class="fa-solid fa-circle-info"></i> Pending list is empty?</h4>
+                    <p style="margin: 0 0 10px 0; color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;">
+                        If customers are signing up successfully but never appear here, the admin's read is being blocked by Supabase Row Level Security.
+                        Run the migration <code style="color:#fef08a;">customerappapex/fix-admin-rls-2026-06-17.sql</code> in the Supabase SQL Editor, then click <strong>Refresh</strong> below.
+                    </p>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button onclick="loadPendingVerifications()" style="background:#3b82f6; color:#fff; border:none; border-radius:8px; padding:8px 18px; font-weight:600; cursor:pointer;">
+                            <i class="fa-solid fa-rotate"></i> Refresh
+                        </button>
+                        <span style="color:#94a3b8; font-size:0.85rem;">(No data changes when refreshed &mdash; safe to click repeatedly)</span>
+                    </div>
+                </div>
+
                 <div id="pendingDepot" style="margin-top: 30px;">
                     <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6e 100%); border: 1px solid #3b82f6; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px;">
                         <h4 style="margin: 0 0 6px 0; color: #93c5fd;"><i class="fa-solid fa-warehouse"></i> Pending Depot Manager Registrations (<span id="pendingDepotCount">0</span>)</h4>
@@ -2053,7 +2068,7 @@
         async function loadPendingVerifications() {
             try {
                 const pending = await AdminService.getPendingVerifications();
-                
+
                 // Update counts
                 document.getElementById('pendingDriverCount').textContent = pending.drivers.length;
                 document.getElementById('pendingCustomerCount').textContent = pending.customers.length;
@@ -2070,20 +2085,25 @@
                         badge.style.display = 'none';
                     }
                 }
-                
+
                 // Display pending drivers
                 displayPendingUsers(pending.drivers, 'driver', 'pendingDriversList');
-                
+
                 // Display pending customers
                 displayPendingUsers(pending.customers, 'customer', 'pendingCustomersList');
 
                 // Display pending depot managers
                 displayDepotUsers(pending.depot || [], 'pendingDepotList');
-                
+
+                // If no pending customers/drivers but recent signups may exist,
+                // show a hint about the RLS migration that unlocks the list.
+                if (totalPending === 0) {
+                    showPendingRlsHintIfNeeded();
+                }
             } catch (error) {
                 console.error('Error loading pending verifications:', error);
                 showError('Failed to load pending verifications');
-                
+
                 // Remove loading classes and show error state
                 document.getElementById('pendingDriversList').classList.remove('loading');
                 document.getElementById('pendingCustomersList').classList.remove('loading');
@@ -2092,6 +2112,18 @@
                 document.getElementById('pendingCustomersList').innerHTML = '<div class="no-data">Error loading customers</div>';
                 document.getElementById('pendingDepotList').innerHTML = '<div class="no-data">Error loading depot managers</div>';
             }
+        }
+
+        // If the table appears empty but customers ARE being registered, the
+        // most common cause is RLS blocking the admin's read. Show a one-time
+        // migration hint so the admin knows what to run.
+        function showPendingRlsHintIfNeeded() {
+            // Only show once per session, only on the pending page
+            if (sessionStorage.getItem('pendingRlsHintShown')) return;
+            const hintHost = document.getElementById('pendingRlsHint');
+            if (!hintHost) return;
+            hintHost.style.display = 'block';
+            sessionStorage.setItem('pendingRlsHintShown', '1');
         }
 
         function displayDepotUsers(users, containerId) {
