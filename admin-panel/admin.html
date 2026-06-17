@@ -2207,7 +2207,19 @@
             container.innerHTML = html;
         }
 
-        function showSection(section) {
+        async function searchUserById(userId) {
+            // Jump to the Search Users section, pre-fill the ID, and search.
+            showSection('search');
+            setTimeout(() => {
+                const input = document.getElementById('searchUserInput');
+                if (input) {
+                    input.value = userId;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }, 100);
+        }
+
+function showSection(section) {
             // Update navigation - find the clicked button or the matching one
             // Update nav active state (match by onclick target or visible text)
             document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -4351,6 +4363,8 @@
                                     <th>Oil Type</th>
                                     <th>Quantity</th>
                                     <th>Notes</th>
+                                    <th>Photos / Docs</th>
+                                    <th>Customer</th>
                                     <th>Storage Location</th>
                                     <th>User ID</th>
                                     <th>Timestamp</th>
@@ -4366,12 +4380,22 @@
                     if (event.inbound_kg != null) qtyStr = `${event.inbound_kg} kg`;
                     else if (event.inbound_litres != null) qtyStr = `${event.inbound_litres} L`;
                     if (event.drainage_litres) qtyStr += ` <small style="color:#dc2626;">(${event.drainage_litres}L drained)</small>`;
+                    // Customer-link pill (if we have a customer_id) — opens that record
+                    const customerCell = event.customer_id
+                        ? `<a href="javascript:void(0)" onclick="searchUserById('${event.customer_id}')" style="color:#2563eb; text-decoration:underline; cursor:pointer;" title="${event.customer_id}">${event.customer_name || event.customer_id.slice(0, 8)}</a>`
+                        : '<span style="color:#9ca3af;">—</span>';
+                    // Photos / docs as comma-separated names
+                    const photoCell = event.photo_url
+                        ? `<span title="${String(event.photo_url).replace(/"/g,'&quot;')}" style="font-size:0.8em; color:#0e7490;">${event.photo_url.length > 32 ? event.photo_url.slice(0, 32) + '…' : event.photo_url}</span>`
+                        : '—';
                     html += `<tr>
                         <td style="font-weight:600;">${event.bin_id || 'N/A'}</td>
                         <td><span style="background:${eventTypeBg}; color:${eventTypeColor}; padding:4px 8px; border-radius:6px; font-size:0.85em; font-weight:600;">${event.event_type || 'N/A'}</span></td>
                         <td>${event.oil_type || 'N/A'}</td>
                         <td style="color:#059669; font-weight:600;">${qtyStr}</td>
                         <td style="font-size: 0.85em; max-width: 220px; word-wrap: break-word;">${event.notes ? event.notes.replace(/</g, '&lt;') : '—'}</td>
+                        <td style="font-size:0.85em;">${photoCell}</td>
+                        <td>${customerCell}</td>
                         <td style="font-weight:500; color:#7c3aed;">${event.location_id || 'N/A'}</td>
                         <td style="font-size: 0.85em;">${event.user_id || 'N/A'}</td>
                         <td>${new Date(event.timestamp).toLocaleString()}</td>
