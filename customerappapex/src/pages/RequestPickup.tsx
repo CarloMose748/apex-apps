@@ -242,10 +242,74 @@ export function RequestPickup() {
 
               <Button
                 variant="primary"
-                onClick={() => setShowManualEntry(true)}
+                onClick={() => setShowManualEntry(!showManualEntry)}
               >
-                <FiPlus /> Use Manual Bin Entry
+                <FiPlus /> {showManualEntry ? 'Hide Manual Bin Entry' : 'Use Manual Bin Entry'}
               </Button>
+
+              {showManualEntry && (
+                <div style={{ display: 'grid', gap: '12px', textAlign: 'left', marginTop: '20px', maxWidth: '520px', margin: '20px auto 0' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                      Bin Serial Number
+                    </label>
+                    <input
+                      type="text"
+                      value={manualBin.serial}
+                      onChange={e => setManualBin(prev => ({ ...prev, serial: e.target.value }))}
+                      placeholder="e.g., BIN-001 or IBC-A23"
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', background: 'var(--bg)' }}
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                        Bin Type
+                      </label>
+                      <select
+                        value={manualBin.type}
+                        onChange={e => setManualBin(prev => ({ ...prev, type: e.target.value }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', background: 'var(--bg)' }}
+                      >
+                        <option>Standard (110.4 kg)</option>
+                        <option>Large (220.8 kg)</option>
+                        <option>Small (73.6 kg)</option>
+                        <option>Commercial (607.2 kg)</option>
+                        <option>Industrial (920.0 kg IBC)</option>
+                        <option>Drum (193.2 kg)</option>
+                        <option>Storage Tank</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                        Urgency
+                      </label>
+                      <select
+                        value={manualBin.urgency}
+                        onChange={e => setManualBin(prev => ({ ...prev, urgency: e.target.value }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', background: 'var(--bg)' }}
+                      >
+                        <option value="normal">Normal</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="scheduled">Scheduled</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                      Additional Notes
+                    </label>
+                    <textarea
+                      value={manualBin.notes}
+                      onChange={e => setManualBin(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Location details, special instructions, etc."
+                      rows={3}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', resize: 'vertical', background: 'var(--bg)' }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         ) : (
