@@ -38,6 +38,9 @@ export function RequestPickup() {
     notes: '',
     urgency: 'normal'
   });
+  const [pickupMode, setPickupMode] = useState<'bin' | 'quick'>('bin');
+  const [estimatedQuantity, setEstimatedQuantity] = useState('');
+  const [oilType, setOilType] = useState('UCO');
   const [storeLocation, setStoreLocation] = useState({
     address: '',
     lat: '',
@@ -149,8 +152,13 @@ export function RequestPickup() {
   };
 
   const handleSubmit = async () => {
-    if (selectedBins.size === 0 && !manualBin.serial.trim()) {
-      setError('Please select at least one bin or enter a bin manually');
+    // For quick (no-bin) mode, require an estimated quantity so the driver knows what to expect
+    if (pickupMode === 'quick' && !estimatedQuantity.trim()) {
+      setError('Please enter an estimated quantity (e.g. 20L or 15kg) so the driver knows what to expect.');
+      return;
+    }
+    if (pickupMode === 'bin' && selectedBins.size === 0 && !manualBin.serial.trim()) {
+      setError('Please select at least one bin, enter a bin manually, or switch to "Just fetch the oil".');
       return;
     }
 
@@ -178,7 +186,20 @@ export function RequestPickup() {
 
       // Create a job for the selected bins
       const selectedBinsList = bins.filter(bin => selectedBins.has(bin.id));
-      
+
+      // Build the description + notes depending on mode
+      let description: string;
+      let notes: string;
+      const baseNotes = `Customer ID: ${userId}\nUrgency: ${manualBin.urgency}${storeLocation.lat && storeLocation.lng ? `\nGPS Location: ${storeLocation.lat}, ${storeLocation.lng}` : ''}${storeLocation.address ? `\nStore Address: ${storeLocation.address}` : ''}${manualBin.notes ? `\nAdditional Notes: ${manualBin.notes}` : ''}`;
+
+      if (pickupMode === 'quick') {
+        description = `Ad-hoc oil collection (~${estimatedQuantity} ${oilType !== 'OTHER' ? oilType : ''}) — no bin scanned, depot to weigh on arrival`;
+        notes = `Mode: QUICK_PICKUP (no bin)\nEstimated quantity: ${estimatedQuantity}\nOil type: ${oilType}\n${baseNotes}`;
+      } else {
+        description = `Oil collection for ${selectedBins.size} bin(s)${manualBin.serial ? ` + manual bin: ${manualBin.serial} (${manualBin.type})` : ''}`;
+        notes = `Mode: BIN_PICKUP\nBin Serial Numbers: ${selectedBinsList.map(b => b.bin_serial_number).join(', ')}${manualBin.serial ? `\nManual Bin: ${manualBin.serial} (${manualBin.type})` : ''}\nBin IDs: ${Array.from(selectedBins).join(', ')}\n${baseNotes}`;
+      }
+
       const jobData = {
         customer_name: customerData.full_name,
         customer_phone: customerData.phone_number || '',
@@ -186,9 +207,9 @@ export function RequestPickup() {
         pickup_address: storeLocation.address || customerData.address || '',
         dropoff_address: 'Apex Oil Collection Center',
         job_type: 'oil_collection',
-        description: `Oil collection for ${selectedBins.size} bin(s)${manualBin.serial ? ` + manual bin: ${manualBin.serial} (${manualBin.type})` : ''}`,
+        description,
         status: 'pending',
-        notes: `Customer ID: ${userId}\nBin Serial Numbers: ${selectedBinsList.map(b => b.bin_serial_number).join(', ')}${manualBin.serial ? `\nManual Bin: ${manualBin.serial} (${manualBin.type})` : ''}\nBin IDs: ${Array.from(selectedBins).join(', ')}\nUrgency: ${manualBin.urgency}${storeLocation.lat && storeLocation.lng ? `\nGPS Location: ${storeLocation.lat}, ${storeLocation.lng}` : ''}${storeLocation.address ? `\nStore Address: ${storeLocation.address}` : ''}${manualBin.notes ? `\nAdditional Notes: ${manualBin.notes}` : ''}`
+        notes
       };
 
       const { error: jobError } = await supabase
@@ -206,7 +227,7 @@ export function RequestPickup() {
       // Success - navigate back to home with success message
       alert('Pickup request submitted successfully! A driver will be assigned soon.');
       navigate('/');
-      
+
     } catch (err) {
       console.error('Error submitting pickup request:', err);
       setError('An unexpected error occurred. Please try again.');
@@ -246,7 +267,50 @@ export function RequestPickup() {
               <p className="text-muted">Loading your bins...</p>
             </div>
           </Card>
-        ) : bins.length === 0 ? (
+        ) : (
+          <>
+            {/* Mode selector — choose bin-based or ad-hoc quick pickup */}
+            <Card>
+              <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Pickup type:</span>
+                <button
+                  type="button"
+                  onClick={() => setPickupMode('bin')}
+                  style={{
+                    flex: 1, minWidth: 180,
+                    padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
+                    border: pickupMode === 'bin' ? '2px solid var(--primary)' : '1px solid var(--border)',
+                    background: pickupMode === 'bin' ? 'rgba(99,102,241,0.1)' : 'var(--bg)',
+                    color: 'var(--text-primary)', fontWeight: 600, textAlign: 'left'
+                  }}
+                >
+                  <FiPackage style={{ verticalAlign: 'middle', marginRight: 6 }} />
+                  From a bin
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400, marginTop: 2 }}>
+                    I have a bin to scan or select
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPickupMode('quick')}
+                  style={{
+                    flex: 1, minWidth: 180,
+                    padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
+                    border: pickupMode === 'quick' ? '2px solid #f59e0b' : '1px solid var(--border)',
+                    background: pickupMode === 'quick' ? 'rgba(245,158,11,0.1)' : 'var(--bg)',
+                    color: 'var(--text-primary)', fontWeight: 600, textAlign: 'left'
+                  }}
+                >
+                  <span style={{ marginRight: 6 }}>🛢️</span>
+                  Just fetch the oil
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400, marginTop: 2 }}>
+                    No bin yet — depot will weigh on arrival
+                  </div>
+                </button>
+              </div>
+            </Card>
+
+            {pickupMode === 'bin' && bins.length === 0 ? (
           <Card>
             <div style={{ padding: '32px', textAlign: 'center' }}>
               <FiPackage size={48} style={{ margin: '0 auto 16px', color: 'var(--text-muted)' }} />
@@ -344,7 +408,8 @@ export function RequestPickup() {
           </Card>
         ) : (
           <>
-            <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
+            {pickupMode === 'bin' && bins.length > 0 && (
+              <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
               {bins.map((bin) => {
                 // Calculate days until next collection for priority indication
                 const nextCollection = bin.next_scheduled_collection 
@@ -458,6 +523,67 @@ export function RequestPickup() {
               );
             })}
             </div>
+            )}
+
+            {pickupMode === 'quick' && (
+              <Card>
+                <div style={{ padding: 20 }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>🛢️</span> Quick pickup details
+                  </h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+                    No bin? No problem. Tell us roughly what you have and the depot will weigh it on arrival.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                        Estimated quantity *
+                      </label>
+                      <input
+                        type="text"
+                        value={estimatedQuantity}
+                        onChange={e => setEstimatedQuantity(e.target.value)}
+                        placeholder="e.g. 20L, 15kg, 2 drums"
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', background: 'var(--bg)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                        Oil type
+                      </label>
+                      <select
+                        value={oilType}
+                        onChange={e => setOilType(e.target.value)}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', background: 'var(--bg)', color: 'var(--text-primary)' }}
+                      >
+                        <option value="UCO">UCO (Used Cooking Oil)</option>
+                        <option value="WINTERIZED">Winterized Oil</option>
+                        <option value="ACID_OIL">Acid Oil</option>
+                        <option value="GUM_OIL">Gum Oil</option>
+                        <option value="MIXED_OIL">Mixed Gums</option>
+                        <option value="DRAINED_OIL">Drained Oil</option>
+                        <option value="BLACK_OIL">Black Oil</option>
+                        <option value="OTHER">Other / Not sure</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 12 }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px', color: 'var(--text-muted)' }}>
+                      Urgency
+                    </label>
+                    <select
+                      value={manualBin.urgency}
+                      onChange={e => setManualBin(prev => ({ ...prev, urgency: e.target.value }))}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.875rem', background: 'var(--bg)', color: 'var(--text-primary)' }}
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="urgent">Urgent</option>
+                      <option value="scheduled">Scheduled</option>
+                    </select>
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* Store Location */}
             <div style={{ marginBottom: '24px' }}><Card>
@@ -620,11 +746,17 @@ export function RequestPickup() {
 
               <Button 
                 onClick={handleSubmit}
-                disabled={(selectedBins.size === 0 && !manualBin.serial.trim()) || submitting}
+                disabled={
+                  (pickupMode === 'bin' && selectedBins.size === 0 && !manualBin.serial.trim()) ||
+                  (pickupMode === 'quick' && !estimatedQuantity.trim()) ||
+                  submitting
+                }
               >
                 {submitting ? 'Submitting...' : 'Request Pickup'}
               </Button>
             </div>
+          </>
+        )}
           </>
         )}
       </div>
