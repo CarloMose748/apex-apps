@@ -13,6 +13,7 @@ import { Certificates } from '../pages/Certificates';
 import { Requests } from '../pages/Requests';
 import { Account } from '../pages/Account';
 import { RequestPickup } from '../pages/RequestPickup';
+import { BinDetail } from '../pages/BinDetail';
 import { SarsForm } from '../pages/SarsForm';
 import { IsccForm } from '../pages/IsccForm';
 import { VatCollectionForm } from '../pages/VatCollectionForm';
@@ -34,6 +35,7 @@ export function Router() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/request-pickup" element={<RequestPickup />} />
+                  <Route path="/bins/:id" element={<BinDetail />} />
                   <Route path="/collections" element={<OilCollections />} />
                   <Route path="/collections/:id" element={<CollectionDetail />} />
                   <Route path="/reports" element={<Reports />} />

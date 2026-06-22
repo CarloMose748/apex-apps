@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '../components/UI/Card';
 import { Button } from '../components/UI/Button';
-import { FiPackage, FiCheckCircle, FiAlertCircle, FiPlus, FiMapPin, FiNavigation } from 'react-icons/fi';
+import { FiPackage, FiCheckCircle, FiAlertCircle, FiPlus, FiMapPin, FiNavigation, FiCamera, FiEye } from 'react-icons/fi';
+import { BinScanner } from '../components/BinScanner';
 import { supabase } from '../lib/supabase';
 import { formatKilograms } from '../lib/units';
 
@@ -29,6 +30,8 @@ export function RequestPickup() {
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string>('');
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanFlash, setScanFlash] = useState<string | null>(null);
   const [manualBin, setManualBin] = useState({
     serial: '',
     type: 'Standard (110.4 kg)',
@@ -128,6 +131,23 @@ export function RequestPickup() {
     setSelectedBins(newSelection);
   };
 
+  // Handle a QR scan — match the scanned serial to one of the customer's bins,
+  // select it, and flash a confirmation.
+  const handleBinScanned = (serial: string) => {
+    const matched = bins.find(b => b.bin_serial_number === serial);
+    if (!matched) {
+      setError(`Scanned bin "${serial}" is not linked to your account. Please contact admin.`);
+      setShowScanner(false);
+      return;
+    }
+    setShowScanner(false);
+    setError('');
+    // Auto-select the scanned bin
+    setSelectedBins(new Set([matched.id]));
+    setScanFlash(matched.id);
+    setTimeout(() => setScanFlash(null), 2200);
+  };
+
   const handleSubmit = async () => {
     if (selectedBins.size === 0 && !manualBin.serial.trim()) {
       setError('Please select at least one bin or enter a bin manually');
@@ -200,6 +220,16 @@ export function RequestPickup() {
       <div className="page__header">
         <h1 className="page__title">Request Pickup</h1>
         <p className="page__subtitle">Select the bins you'd like collected</p>
+        {bins.length > 0 && (
+          <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Button variant="primary" onClick={() => setShowScanner(true)}>
+              <FiCamera /> Scan Bin QR
+            </Button>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', alignSelf: 'center' }}>
+              Or tap a bin below to select it
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="page__content">
@@ -332,12 +362,12 @@ export function RequestPickup() {
                 <div
                   key={bin.id}
                   onClick={() => toggleBinSelection(bin.id)}
-                  style={{ 
+                  style={{
                     cursor: 'pointer',
                     borderRadius: 'var(--border-radius)',
-                    border: selectedBins.has(bin.id) ? '2px solid var(--primary)' : '1px solid var(--border)',
+                    border: scanFlash === bin.id ? '2px solid #10b981' : (selectedBins.has(bin.id) ? '2px solid var(--primary)' : '1px solid var(--border)'),
                     transition: 'all 0.2s ease',
-                    background: 'var(--bg)',
+                    background: scanFlash === bin.id ? 'rgba(16,185,129,0.1)' : 'var(--bg)',
                     padding: '20px'
                   }}
                 >
@@ -412,6 +442,15 @@ export function RequestPickup() {
                             Last collected: {new Date(bin.last_collection_date).toLocaleDateString()}
                           </p>
                         )}
+                        <div style={{ marginTop: 10, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                          <Link
+                            to={`/bins/${encodeURIComponent(bin.bin_serial_number)}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.82rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}
+                          >
+                            <FiEye size={14} /> View details
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -589,6 +628,15 @@ export function RequestPickup() {
           </>
         )}
       </div>
+
+      {showScanner && (
+        <BinScanner
+          onScan={handleBinScanned}
+          onClose={() => setShowScanner(false)}
+          expectedSerials={bins.map(b => b.bin_serial_number)}
+          title="Scan a Bin QR"
+        />
+      )}
     </div>
   );
 }

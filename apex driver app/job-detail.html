@@ -1178,7 +1178,9 @@
         <div class="job-address">
           <span class="icon icon-location icon-sm" aria-hidden="true"></span> ${safeAddress}
         </div>
-        
+
+        <div id="jobBinsSection" style="margin-top: 12px;"></div>
+
         <div class="action-buttons">
           <button type="button" class="btn-accept-job" onclick="acceptJob()" aria-label="Accept ${safeName}">
             <span class="icon icon-car icon-sm" aria-hidden="true"></span> Accept This Job
@@ -1186,7 +1188,53 @@
           <button type="button" class="btn-get-directions" onclick="getDirections()" aria-label="Get directions to ${safeName}">
             <span class="icon icon-location icon-sm" aria-hidden="true"></span> Get Directions
           </button>
-        
+
+        </div>
+      `;
+
+      // Populate the expected-bins list
+      renderJobBins();
+    }
+
+    // Extract bin serial numbers from notes / description
+    function extractBinSerials(text) {
+      if (!text) return [];
+      const found = new Set();
+      const labelled = text.match(/Bin Serial Numbers?:\s*([^\n\r]+)/i);
+      if (labelled) {
+        labelled[1].split(/[,;\s]+/).forEach(s => {
+          const t = s.trim();
+          if (t && /^[A-Za-z0-9_-]{3,}$/.test(t)) found.add(t);
+        });
+      }
+      const manualMatch = text.match(/Manual Bin:\s*([A-Za-z0-9_-]+)/i);
+      if (manualMatch) found.add(manualMatch[1]);
+      const genericMatches = text.match(/\b[A-Z]{2,5}[-_]?\d{1,4}[A-Z]?\b/g) || [];
+      genericMatches.forEach(s => found.add(s));
+      return Array.from(found).slice(0, 8);
+    }
+
+    function renderJobBins() {
+      const target = document.getElementById('jobBinsSection');
+      if (!target || !jobData) return;
+      const serials = extractBinSerials(jobData.notes || jobData.description || '');
+      if (serials.length === 0) {
+        target.innerHTML = '';
+        return;
+      }
+      target.innerHTML = `
+        <div style="background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.3); border-radius: 10px; padding: 12px 14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom: 8px;">
+            <span style="font-size: 1.05rem;">📦</span>
+            <span style="font-weight: 700; color: #6366f1; font-size: 0.95rem;">Expected bins to collect</span>
+            <span style="margin-left: auto; font-size: 0.75rem; color: #94a3b8;">${serials.length} bin${serials.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            ${serials.map(s => `<span style="background:#0f172a; color:#cbd5e1; padding:4px 12px; border-radius:14px; font-size:0.85rem; font-weight:600; font-family:monospace; border: 1px solid #334155;">${s}</span>`).join('')}
+          </div>
+          <div style="margin-top: 8px; font-size: 0.78rem; color: #94a3b8;">
+            Verify each bin's serial number matches before pickup.
+          </div>
         </div>
       `;
     }

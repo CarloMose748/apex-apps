@@ -402,8 +402,8 @@
 
   async function updateBinStatus(binId, status, storedAt = null) {
     try {
-      const updateData = { 
-        status, 
+      const updateData = {
+        status,
         last_event_ts: nowTs()
       };
       if (storedAt !== null) {
@@ -414,12 +414,46 @@
         .from('high_aggregator_bins')
         .update(updateData)
         .eq('id', binId);
-      
+
       if (error) throw error;
       return true;
     } catch (e) {
       console.error('Error updating bin status:', e);
       return false;
+    }
+  }
+
+  // Sync the bin status to the customer-facing `bins` table so the
+  // customer app's BinDetail page shows the current status in real time.
+  // We look up the customer bin by the aggregator bin's serial number and
+  // update last_status + last_status_at. The update is best-effort; if the
+  // bin isn't linked to a customer yet (unassigned) this is a no-op.
+  async function syncBinStatusToCustomer(binSerial, status, extra = {}) {
+    if (!binSerial || !status) return;
+    try {
+      const friendly = {
+        IN_FIELD: 'in_field',
+        IN_TRANSIT: 'in_transit',
+        RECEIVED_AT_DEPOT: 'received',
+        STORED: 'stored',
+        DISPATCHED: 'dispatched',
+        CLOSED: 'closed'
+      }[status] || status.toLowerCase();
+      const { error } = await supabase
+        .from('bins')
+        .update({
+          last_status: friendly,
+          last_status_at: new Date().toISOString(),
+          ...extra
+        })
+        .eq('bin_serial_number', binSerial);
+      if (error) {
+        // Don't throw — the depot workflow shouldn't fail just because the
+        // customer-table update failed.
+        console.warn('Sync bin status to customer table failed:', error);
+      }
+    } catch (e) {
+      console.warn('Sync bin status exception:', e);
     }
   }
 
@@ -714,6 +748,9 @@
           setMessage(msgEl, 'Error updating bin status', 'error');
           return;
         }
+        // Sync the status to the customer-facing bins table so the
+        // customer's BinDetail page reflects the new state.
+        await syncBinStatusToCustomer(resolvedBin.id, STATUSES.RECEIVED_AT_DEPOT);
 
         setMessage(msgEl, `✅ Receipt confirmed! Bin ${resolvedBin.id} received at ${DEPOT.name}`, 'success');
         renderKV(receiveBinInfo, {
@@ -863,6 +900,8 @@
             setMessage(storeMsgEl, 'Error updating bin status', 'error');
             return;
           }
+          // Sync the status to the customer-facing bins table.
+          await syncBinStatusToCustomer(binId, STATUSES.STORED, { stored_at: new Date().toISOString() });
 
           setMessage(storeMsgEl, `✅ Oil has been stored successfully`, 'success');
           renderBinList();
