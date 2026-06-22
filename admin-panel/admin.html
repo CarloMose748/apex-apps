@@ -1156,7 +1156,8 @@
                     <span><i class="fa-solid fa-hourglass-half"></i> Pending Verifications</span>
                     <button class="nav-btn" onclick="refreshPendingList()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
                 </h3>
-                
+                <div id="pendingDiag" style="margin-bottom: 14px; padding: 8px 12px; background: rgba(59,130,246,0.08); border-radius: 8px; color: #94a3b8;"></div>
+
                 <div id="pendingDrivers">
                     <h4><i class="fa-solid fa-id-card"></i> Pending Drivers (<span id="pendingDriverCount">0</span>)</h4>
                     <div id="pendingDriversList" class="loading">Loading drivers...</div>
@@ -2095,6 +2096,10 @@
                 // Display pending depot managers
                 displayDepotUsers(pending.depot || [], 'pendingDepotList');
 
+                // Diagnostic: show what was returned (always, so the admin
+                // can confirm the query is working even if the UI is empty).
+                showPendingDiag(pending);
+
                 // If no pending customers/drivers but recent signups may exist,
                 // show a hint about the RLS migration that unlocks the list.
                 if (totalPending === 0) {
@@ -2112,6 +2117,79 @@
                 document.getElementById('pendingCustomersList').innerHTML = '<div class="no-data">Error loading customers</div>';
                 document.getElementById('pendingDepotList').innerHTML = '<div class="no-data">Error loading depot managers</div>';
             }
+        }
+
+        // Diagnostic strip — shows the raw response so the admin can see
+        // exactly what the server returned. Hidden by default to keep the
+        // UI clean, but always populated.
+        function showPendingDiag(pending) {
+            const el = document.getElementById('pendingDiag');
+            if (!el) return;
+            const ts = new Date().toLocaleTimeString();
+            const total = pending.drivers.length + pending.customers.length + (pending.depot || []).length;
+            el.innerHTML = `<small>Last loaded at <strong>${ts}</strong> &middot; ` +
+                `${pending.drivers.length} drivers, ${pending.customers.length} customers, ` +
+                `${(pending.depot || []).length} depot managers &middot; ` +
+                `total pending: <strong>${total}</strong></small>` +
+                ` &nbsp; <button onclick="loadAllCustomersRaw()" style="background:#0e7490; color:#fff; border:none; border-radius:6px; padding:4px 12px; font-size:0.78rem; cursor:pointer;">Show All Customers (raw)</button>`;
+        }
+
+        // Direct, unfiltered fetch — bypasses the verification_status filter
+        // so the admin can confirm the connection is working.
+        async function loadAllCustomersRaw() {
+            const target = document.getElementById('pendingCustomersList');
+            target.innerHTML = '<div style="color:#9ca3af; padding:12px;">Loading raw customer list…</div>';
+            try {
+                const client = window.getSupabaseClient ? window.getSupabaseClient() : null;
+                if (!client) throw new Error('Supabase client not available');
+                const { data, error } = await client
+                    .from('customers')
+                    .select('id, full_name, email, verification_status, status, created_at, address, business_name')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    target.innerHTML = '<div class="no-data">Raw query returned 0 rows. Check the browser console (F12) for the actual error.</div>';
+                    return;
+                }
+                let html = '<div style="background:#fef9c3; border:1px solid #facc15; border-radius:8px; padding:10px 14px; margin-bottom:10px; font-size:0.85rem; color:#854d0e;">' +
+                    '<strong>Debug view:</strong> raw fetch of the customers table (bypasses filters). ' +
+                    'This proves whether the admin can read the table.</div>';
+                html += '<table class="user-table"><thead><tr><th>Name</th><th>Email</th><th>Verification</th><th>Status</th><th>Created</th><th>Address</th><th>Actions</th></tr></thead><tbody>';
+                data.forEach(c => {
+                    const approve = c.verification_status === 'pending'
+                        ? `<button class="btn-small btn-approve" onclick="quickApproveCustomer('${c.id}')">Approve</button> <button class="btn-small btn-reject" onclick="quickRejectCustomer('${c.id}')">Reject</button>`
+                        : `<span class="status-badge status-${c.verification_status}">${c.verification_status}</span>`;
+                    html += `<tr>
+                        <td>${c.full_name || '—'}</td>
+                        <td>${c.email || '—'}</td>
+                        <td><span class="status-badge status-${c.verification_status}">${c.verification_status || '—'}</span></td>
+                        <td>${c.status || '—'}</td>
+                        <td>${new Date(c.created_at).toLocaleDateString()}</td>
+                        <td style="font-size:0.82em; color:#6b7280;">${c.address || '—'}</td>
+                        <td>${approve}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                target.innerHTML = html;
+            } catch (err) {
+                target.innerHTML = `<div class="no-data" style="color:#dc2626;">Raw fetch error: ${err.message || err}</div>`;
+            }
+        }
+
+        async function quickApproveCustomer(id) {
+            if (!confirm('Approve this customer?')) return;
+            const client = window.getSupabaseClient();
+            const { error } = await client.from('customers').update({ verification_status: 'approved', status: 'active' }).eq('id', id);
+            if (error) { alert('Error: ' + error.message); return; }
+            loadAllCustomersRaw();
+        }
+        async function quickRejectCustomer(id) {
+            if (!confirm('Reject this customer?')) return;
+            const client = window.getSupabaseClient();
+            const { error } = await client.from('customers').update({ verification_status: 'rejected' }).eq('id', id);
+            if (error) { alert('Error: ' + error.message); return; }
+            loadAllCustomersRaw();
         }
 
         // If the table appears empty but customers ARE being registered, the
