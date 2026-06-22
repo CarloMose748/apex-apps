@@ -765,6 +765,7 @@
                         if (section === 'drivers') loadAllDrivers();
                         if (section === 'pending') loadPendingVerifications();
                         if (section === 'dashboard') initializeDashboard();
+                        if (section === 'bins') loadAllBins();
                         if (section === 'highaggregators') {
                             // Small delay to ensure section is visible
                             setTimeout(() => loadHighAggregators(), 100);
@@ -1255,12 +1256,24 @@
         <div id="binsSection" class="section" style="display: none;">
             <div class="section-card">
                 <h3 class="section-title"><i class="fa-solid fa-boxes-stacked"></i> Bins Management</h3>
-                
-                <div style="margin-bottom: 20px;">
+
+                <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6e 100%); border: 1px solid #3b82f6; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 8px 0; color: #93c5fd;"><i class="fa-solid fa-circle-info"></i> How bin management works</h4>
+                    <ol style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 0.92rem; line-height: 1.7;">
+                        <li>Allocate a bin to a customer by clicking <strong>Add Bin</strong>. The bin is created in the <code style="color:#fef08a;">bins</code> table with the customer's <code>customer_id</code>.</li>
+                        <li>Click the <strong style="color:#4ade80;">QR</strong> button on a row to generate and download a printable QR code for that bin.</li>
+                        <li>Print the QR, stick it on the physical bin. The customer can scan it in the <strong>Customer App</strong> to see their bin, and the depot can scan it in the <strong>Aggregator App</strong> when receiving the bin.</li>
+                        <li>The <strong>Driver App</strong> sees the bin serial in the pickup job's notes and uses it for confirmation.</li>
+                    </ol>
+                </div>
+
+                <div style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
                     <button class="nav-btn" onclick="loadAllBins()"><i class="fa-solid fa-arrows-rotate"></i> Refresh Bins</button>
                     <button class="nav-btn" style="margin-left: 10px;" onclick="openAddBinModal()"><i class="fa-solid fa-plus"></i> Add Bin</button>
+                    <button class="nav-btn" onclick="openBulkBinModal()" style="background: #0e7490; color: #fff;"><i class="fa-solid fa-layer-group"></i> Bulk Generate</button>
+                    <div id="binsCount" style="margin-left: auto; color: #94a3b8; font-size: 0.9rem;"></div>
                 </div>
-                
+
                 <div id="binsResults">
                     <div class="loading">Loading bins data...</div>
                 </div>
@@ -1652,6 +1665,72 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Generate Bins Modal -->
+    <div id="bulkBinModal" class="modal">
+        <div class="modal-content" style="max-width: 1100px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-layer-group"></i> Bulk Generate Bins + QR Codes</h3>
+                <button class="close-btn" onclick="closeBulkBinModal()">&times;</button>
+            </div>
+
+            <div style="padding: 18px;">
+                <p style="margin: 0 0 14px 0; color: var(--text-secondary); font-size: 0.9rem;">
+                    Create many bins at once. Each bin gets a unique serial, is assigned to the selected customer (or left unassigned),
+                    and a printable QR code is generated for every bin.
+                </p>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div>
+                        <label style="display:block; font-size:0.83rem; color: var(--text-muted); margin-bottom:4px;">Prefix (e.g. BIN, IBC, DRUM)</label>
+                        <input id="bulkBinPrefix" type="text" value="BIN" maxlength="20" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:6px; background: var(--bg-secondary, #1a2433); color: var(--text-primary);">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.83rem; color: var(--text-muted); margin-bottom:4px;">From number</label>
+                        <input id="bulkBinFrom" type="number" value="1" min="1" max="9999" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:6px; background: var(--bg-secondary, #1a2433); color: var(--text-primary);">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.83rem; color: var(--text-muted); margin-bottom:4px;">To number</label>
+                        <input id="bulkBinTo" type="number" value="10" min="1" max="200" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:6px; background: var(--bg-secondary, #1a2433); color: var(--text-primary);">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.83rem; color: var(--text-muted); margin-bottom:4px;">Pad digits (e.g. 3 → 001)</label>
+                        <input id="bulkBinPad" type="number" value="3" min="0" max="4" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:6px; background: var(--bg-secondary, #1a2433); color: var(--text-primary);">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div>
+                        <label style="display:block; font-size:0.83rem; color: var(--text-muted); margin-bottom:4px;">Assign to customer (optional)</label>
+                        <select id="bulkBinCustomerId" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:6px; background: var(--bg-secondary, #1a2433); color: var(--text-primary);">
+                            <option value="">— Unassigned (print QR codes only) —</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.83rem; color: var(--text-muted); margin-bottom:4px;">Bin type</label>
+                        <select id="bulkBinType" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:6px; background: var(--bg-secondary, #1a2433); color: var(--text-primary);">
+                            <option value="standard">Standard (120L)</option>
+                            <option value="large">Large (240L)</option>
+                            <option value="small">Small (80L)</option>
+                            <option value="commercial">Commercial (660L)</option>
+                            <option value="industrial">Industrial (1000L IBC)</option>
+                            <option value="drum">Drum (210L)</option>
+                            <option value="tank">Storage Tank</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                    <button class="nav-btn" onclick="runBulkBinGeneration()"><i class="fa-solid fa-bolt"></i> Generate Bins + QR Codes</button>
+                    <button class="nav-btn" onclick="downloadAllBulkBins()" id="bulkBinDownloadAll" style="display:none; background:#10b981;"><i class="fa-solid fa-download"></i> Download All PNGs</button>
+                </div>
+
+                <div id="bulkBinError" style="color:#f87171; font-size:0.85rem; margin: 6px 0; display:none;"></div>
+                <div id="bulkBinStatus" style="color: #93c5fd; font-size: 0.88rem; margin: 6px 0;"></div>
+                <div id="bulkBinResults" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-top: 12px;"></div>
             </div>
         </div>
     </div>
@@ -2805,9 +2884,11 @@ function showSection(section) {
 
         function displayBins(bins) {
             const container = document.getElementById('binsResults');
-            
+            const countEl = document.getElementById('binsCount');
+            if (countEl) countEl.textContent = bins && bins.length ? `${bins.length} bin${bins.length !== 1 ? 's' : ''}` : 'No bins';
+
             if (!bins || bins.length === 0) {
-                container.innerHTML = '<div class="no-data">No bins assigned yet</div>';
+                container.innerHTML = '<div class="no-data">No bins assigned yet — click <strong>Add Bin</strong> to allocate one to a customer.</div>';
                 return;
             }
 
@@ -3035,6 +3116,148 @@ function showSection(section) {
                 console.error('Add bin error:', error);
                 showError(error.message || 'Failed to add bin');
             }
+        }
+
+        async function openBulkBinModal() {
+            const modal = document.getElementById('bulkBinModal');
+            if (modal) modal.style.display = 'flex';
+            // Populate customer dropdown if not already populated
+            const sel = document.getElementById('bulkBinCustomerId');
+            if (sel && sel.options.length <= 1) {
+                try {
+                    const client = window.getSupabaseClient ? window.getSupabaseClient() : null;
+                    if (!client) return;
+                    const { data: customers } = await client
+                        .from('customers')
+                        .select('id, full_name, email')
+                        .order('full_name', { ascending: true });
+                    if (customers) {
+                        customers.forEach(c => {
+                            const opt = document.createElement('option');
+                            opt.value = c.id;
+                            opt.textContent = `${c.full_name} (${c.email})`;
+                            sel.appendChild(opt);
+                        });
+                    }
+                } catch (e) {
+                    console.warn('Could not load customers for bulk modal:', e);
+                }
+            }
+        }
+
+        function closeBulkBinModal() {
+            const modal = document.getElementById('bulkBinModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function runBulkBinGeneration() {
+            const errEl = document.getElementById('bulkBinError');
+            const statusEl = document.getElementById('bulkBinStatus');
+            const results = document.getElementById('bulkBinResults');
+            errEl.style.display = 'none';
+            errEl.textContent = '';
+            results.innerHTML = '';
+            document.getElementById('bulkBinDownloadAll').style.display = 'none';
+
+            const prefix = document.getElementById('bulkBinPrefix').value.trim().toUpperCase();
+            const from = parseInt(document.getElementById('bulkBinFrom').value, 10);
+            const to = parseInt(document.getElementById('bulkBinTo').value, 10);
+            const pad = parseInt(document.getElementById('bulkBinPad').value, 10) || 0;
+            const customerId = document.getElementById('bulkBinCustomerId').value || null;
+            const binType = document.getElementById('bulkBinType').value;
+
+            if (!prefix) { errEl.textContent = 'Please enter a prefix.'; errEl.style.display = 'block'; return; }
+            if (isNaN(from) || isNaN(to) || from < 1 || to < from) { errEl.textContent = 'Enter a valid range (From ≤ To).'; errEl.style.display = 'block'; return; }
+            if (to - from > 49) { errEl.textContent = 'Maximum 50 bins at a time.'; errEl.style.display = 'block'; return; }
+
+            const client = window.getSupabaseClient ? window.getSupabaseClient() : null;
+            if (!client) { errEl.textContent = 'Database not available.'; errEl.style.display = 'block'; return; }
+            try { await ensureQrLibLoaded(); } catch (e) { errEl.textContent = 'Could not load QR library.'; errEl.style.display = 'block'; return; }
+
+            statusEl.textContent = `Generating ${to - from + 1} bins and QR codes…`;
+
+            const createdSerials = [];
+            for (let i = from; i <= to; i++) {
+                const serial = `${prefix}${String(i).padStart(pad, '0')}`;
+                try {
+                    const { data, error } = await client
+                        .from('bins')
+                        .insert({
+                            bin_serial_number: serial,
+                            qr_payload: serial,
+                            bin_type: binType,
+                            bin_status: customerId ? 'active' : 'unassigned',
+                            customer_id: customerId,
+                            assigned_by: customerId ? 'bulk-generate' : null,
+                            assigned_date: customerId ? new Date().toISOString() : null
+                        })
+                        .select();
+                    if (error) {
+                        console.warn(`Failed to create bin ${serial}:`, error);
+                        continue;
+                    }
+                    createdSerials.push(serial);
+                } catch (e) {
+                    console.warn(`Exception for ${serial}:`, e);
+                }
+            }
+
+            if (createdSerials.length === 0) {
+                errEl.textContent = 'No bins were created. They may already exist.';
+                errEl.style.display = 'block';
+                statusEl.textContent = '';
+                return;
+            }
+
+            statusEl.textContent = `Created ${createdSerials.length} bins. Generating QR codes…`;
+
+            // Render QR cards
+            let html = '';
+            for (const serial of createdSerials) {
+                html += `<div style="background: var(--bg-secondary, #1a2433); border:1px solid var(--border-color); border-radius:10px; padding:12px; text-align:center;">
+                    <div style="font-weight:700; color: var(--text-primary); margin-bottom:8px; font-size:0.95rem;">${serial}</div>
+                    <canvas id="bulkqr-${serial}" width="140" height="140" style="background:#fff; border-radius:6px; margin:0 auto; display:block;"></canvas>
+                    <button onclick="downloadBulkBinQR('${serial}')" style="margin-top:8px; background:#3b82f6; color:#fff; border:none; border-radius:6px; padding:5px 12px; cursor:pointer; font-size:0.78rem;">Download PNG</button>
+                </div>`;
+            }
+            results.innerHTML = html;
+
+            // Render QR for each
+            for (const serial of createdSerials) {
+                const canvas = document.getElementById(`bulkqr-${serial}`);
+                if (canvas && QRCode && QRCode.toCanvas) {
+                    try {
+                        const payload = JSON.stringify({ type: 'bin', version: 1, serial, customer_id: customerId || null, issued_at: new Date().toISOString() });
+                        await QRCode.toCanvas(canvas, payload, { errorCorrectionLevel: 'M', margin: 1, scale: 4, width: 140, color: { dark: '#000000', light: '#FFFFFF' } });
+                    } catch (e) {
+                        console.warn(`QR render failed for ${serial}`, e);
+                    }
+                }
+            }
+
+            document.getElementById('bulkBinDownloadAll').style.display = 'inline-block';
+            statusEl.textContent = `✅ Done. ${createdSerials.length} bins created. Use Download PNG for each, or Download All.`;
+
+            // Reload main bins table
+            await loadAllBins();
+        }
+
+        async function downloadBulkBinQR(serial) {
+            const canvas = document.getElementById(`bulkqr-${serial}`);
+            if (!canvas) return;
+            const link = document.createElement('a');
+            link.download = `APEX-BIN-${serial}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        async function downloadAllBulkBins() {
+            const buttons = document.querySelectorAll('#bulkBinResults button');
+            let delay = 0;
+            buttons.forEach(btn => {
+                setTimeout(() => btn.click(), delay);
+                delay += 250;
+            });
         }
 
         async function ensureQrLibLoaded() {
