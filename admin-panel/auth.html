@@ -649,7 +649,21 @@
         });
 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(() => {});
+            navigator.serviceWorker.register('/sw.js').then((reg) => {
+                if (reg.waiting) { reg.waiting.postMessage('SKIP_WAITING'); }
+                reg.addEventListener('updatefound', () => {
+                    const sw = reg.installing;
+                    if (!sw) return;
+                    sw.addEventListener('statechange', () => {
+                        if (sw.state === 'activated' && navigator.serviceWorker.controller) {
+                            if (!sessionStorage.getItem('admin-sw-reloaded')) {
+                                sessionStorage.setItem('admin-sw-reloaded', '1');
+                                window.location.reload();
+                            }
+                        }
+                    });
+                });
+            }).catch(() => {});
         }
     </script>
 </body>
