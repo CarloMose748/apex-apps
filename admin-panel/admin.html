@@ -1622,6 +1622,8 @@
                             <option value="other">Other (Manual Entry)</option>
                         </select>
                         <input type="text" id="addCustomBinType" placeholder="Enter custom bin type" style="display:none; margin-top:8px;">
+                        <label style="display:block; font-size:0.78rem; color:#6b7280; margin-top:6px;">Capacity (litres) — override the preset</label>
+                        <input type="number" id="addBinSizeLiters" min="1" max="100000" placeholder="e.g. 17, 18, 100, 350" style="width:100%; padding:6px 10px; border:1px solid #d1d5db; border-radius:6px; margin-top:2px;">
                     </div>
 
                     <div class="form-group">
@@ -1719,7 +1721,10 @@
                             <option value="industrial">Industrial (1000L IBC)</option>
                             <option value="drum">Drum (210L)</option>
                             <option value="tank">Storage Tank</option>
+                            <option value="other">Other (Manual Entry)</option>
                         </select>
+                        <label style="display:block; font-size:0.78rem; color:#94a3b8; margin-top:6px;">Custom capacity (litres) — overrides preset</label>
+                        <input type="number" id="bulkBinSizeLiters" min="1" max="100000" placeholder="e.g. 17, 18, 100, 350" style="width:100%; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; margin-top:2px; background: var(--bg-secondary, #1a2433); color: var(--text-primary);">
                     </div>
                 </div>
 
@@ -3022,12 +3027,15 @@ function showSection(section) {
             clearMessages();
             document.getElementById('addBinSerial').value = '';
             document.getElementById('addBinType').value = 'standard';
+            document.getElementById('addCustomBinType').value = '';
+            document.getElementById('addCustomBinType').style.display = 'none';
+            document.getElementById('addBinSizeLiters').value = '';
             document.getElementById('addBinFrequency').value = 'weekly';
             document.getElementById('addBinLocation').value = '';
             document.getElementById('addBinInstructions').value = '';
             document.getElementById('qrSection').style.display = 'none';
             document.getElementById('addBinModal').style.display = 'flex';
-            
+
             // Load customers into dropdown
             await loadCustomersDropdown();
         }
@@ -3070,6 +3078,8 @@ function showSection(section) {
                 const customerId = document.getElementById('addBinCustomerId').value;
                 const serial = document.getElementById('addBinSerial').value.trim();
                 const binType = document.getElementById('addBinType').value;
+                const customBinType = document.getElementById('addCustomBinType').value.trim();
+                const customSizeRaw = document.getElementById('addBinSizeLiters').value.trim();
                 const collectionFrequency = document.getElementById('addBinFrequency').value;
                 const locationNotes = document.getElementById('addBinLocation').value.trim();
                 const specialInstructions = document.getElementById('addBinInstructions').value.trim();
@@ -3083,14 +3093,23 @@ function showSection(section) {
                     return;
                 }
 
-                const binSizes = { standard: 120, large: 240, small: 80, commercial: 660 };
+                // Resolve bin type — use the custom text when "Other" is selected.
+                const resolvedBinType = (binType === 'other' && customBinType) ? customBinType : binType;
+                // Resolve bin size — manual entry wins, otherwise use the preset map.
+                const binSizePresets = {
+                    standard: 120, large: 240, small: 80,
+                    commercial: 660, industrial: 1000, drum: 210, tank: 5000
+                };
+                const customSize = parseInt(customSizeRaw, 10);
+                const resolvedBinSize = (!isNaN(customSize) && customSize > 0) ? customSize : binSizePresets[binType];
+
                 const binData = {
                     binSerialNumber: serial,
-                    binType,
+                    binType: resolvedBinType,
                     collectionFrequency,
                     locationNotes,
                     specialInstructions,
-                    binSizeLiters: binSizes[binType]
+                    binSizeLiters: resolvedBinSize
                 };
 
                 const result = await AdminService.assignBinToCustomer(customerId, binData);
@@ -3165,6 +3184,15 @@ function showSection(section) {
             const pad = parseInt(document.getElementById('bulkBinPad').value, 10) || 0;
             const customerId = document.getElementById('bulkBinCustomerId').value || null;
             const binType = document.getElementById('bulkBinType').value;
+            const customSizeRaw = document.getElementById('bulkBinSizeLiters').value.trim();
+            const customSize = parseInt(customSizeRaw, 10);
+            const binSizePresets = {
+                standard: 120, large: 240, small: 80,
+                commercial: 660, industrial: 1000, drum: 210, tank: 5000
+            };
+            const binSizeLiters = (!isNaN(customSize) && customSize > 0)
+                ? customSize
+                : (binSizePresets[binType] || null);
 
             if (!prefix) { errEl.textContent = 'Please enter a prefix.'; errEl.style.display = 'block'; return; }
             if (isNaN(from) || isNaN(to) || from < 1 || to < from) { errEl.textContent = 'Enter a valid range (From ≤ To).'; errEl.style.display = 'block'; return; }
@@ -3180,17 +3208,21 @@ function showSection(section) {
             for (let i = from; i <= to; i++) {
                 const serial = `${prefix}${String(i).padStart(pad, '0')}`;
                 try {
+                    const insertPayload = {
+                        bin_serial_number: serial,
+                        qr_payload: serial,
+                        bin_type: binType,
+                        bin_status: customerId ? 'active' : 'unassigned',
+                        customer_id: customerId,
+                        assigned_by: customerId ? 'bulk-generate' : null,
+                        assigned_date: customerId ? new Date().toISOString() : null
+                    };
+                    if (binSizeLiters) insertPayload.bin_size_liters = binSizeLiters;
+                    if (binSizeLiters) insertPayload.bin_size = `${binSizeLiters}L`;
+
                     const { data, error } = await client
                         .from('bins')
-                        .insert({
-                            bin_serial_number: serial,
-                            qr_payload: serial,
-                            bin_type: binType,
-                            bin_status: customerId ? 'active' : 'unassigned',
-                            customer_id: customerId,
-                            assigned_by: customerId ? 'bulk-generate' : null,
-                            assigned_date: customerId ? new Date().toISOString() : null
-                        })
+                        .insert(insertPayload)
                         .select();
                     if (error) {
                         console.warn(`Failed to create bin ${serial}:`, error);
