@@ -378,6 +378,45 @@
         }
         .stat-label { color: var(--text-muted); font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
 
+        /* ===== Pickup Forecast ===== */
+        .forecast-toolbar {
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+            margin-bottom: 18px;
+        }
+        .forecast-toolbar select, .forecast-toolbar button {
+            padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border-color);
+            background: var(--bg-card); color: var(--text-primary); font-size: 0.85rem; cursor: pointer;
+        }
+        .forecast-toolbar button.active {
+            border-color: var(--accent); background: rgba(99,102,241,0.12); color: var(--accent-light);
+        }
+        .forecast-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 22px; }
+        .forecast-kpi {
+            background: var(--bg-card); padding: 16px; border-radius: 12px;
+            border: 1px solid var(--border-color); border-left: 3px solid var(--accent);
+        }
+        .forecast-kpi .v { font-size: 1.6rem; font-weight: 700; color: var(--accent-light); line-height: 1.1; }
+        .forecast-kpi .l { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 4px; }
+        .forecast-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+        @media (max-width: 900px) { .forecast-cols { grid-template-columns: 1fr; } }
+        .forecast-subtitle { font-size: 0.95rem; font-weight: 600; margin: 0 0 10px 0; color: var(--text-primary); }
+        .area-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .area-table th { text-align: left; padding: 8px 10px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border-color); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.4px; }
+        .area-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); }
+        .area-table tr:last-child td { border-bottom: none; }
+        .area-table .area-name { font-weight: 600; }
+        .area-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .forecast-chart { display: flex; align-items: flex-end; gap: 10px; height: 180px; padding: 10px 4px 0 4px; border-bottom: 1px solid var(--border-color); }
+        .forecast-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+        .forecast-bar { width: 70%; min-height: 4px; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, var(--accent), #06b6d4); position: relative; transition: height 0.4s ease; }
+        .forecast-bar.history { background: linear-gradient(180deg, #64748b, #475569); opacity: 0.55; }
+        .forecast-bar .tip { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+        .forecast-x-labels { display: flex; gap: 10px; margin-top: 6px; }
+        .forecast-x-labels span { flex: 1; text-align: center; font-size: 0.72rem; color: var(--text-muted); }
+        .forecast-legend { display: flex; gap: 16px; margin-top: 10px; font-size: 0.78rem; color: var(--text-muted); }
+        .forecast-legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+        .forecast-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 0.88rem; }
+
         /* Section Cards */
         .section-card {
             background: var(--bg-card); backdrop-filter: blur(12px);
@@ -1020,6 +1059,41 @@
                     <div class="stat-card">
                         <div class="stat-value" id="customersTotal">-</div>
                         <div class="stat-label">Total Customers</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Pickup Forecast (litres / kg by area + 7-day outlook) ===== -->
+            <div class="section-card">
+                <h3 class="section-title"><i class="fa-solid fa-chart-column"></i> Pickup Forecast</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: -16px 0 16px 0;">Potential oil collection by area and a 7-day outlook. Numbers are estimates from customer requests; actual yield is weighed at the depot.</p>
+
+                <div class="forecast-toolbar">
+                    <button id="fcUnitL" class="active" onclick="Forecast.setUnit('L')">Litres</button>
+                    <button id="fcUnitKg" onclick="Forecast.setUnit('kg')">Kilograms</button>
+                    <span style="flex:1"></span>
+                    <button onclick="Forecast.reload()" style="border-color: var(--accent);"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                </div>
+
+                <div class="forecast-kpis" id="forecastKpis">
+                    <div class="forecast-kpi"><div class="v" id="fcTodayL">-</div><div class="l">Today (est.)</div></div>
+                    <div class="forecast-kpi"><div class="v" id="fcWeekL">-</div><div class="l">Next 7 days (est.)</div></div>
+                    <div class="forecast-kpi"><div class="v" id="fcPendingCount">-</div><div class="l">Pending pickups</div></div>
+                    <div class="forecast-kpi"><div class="v" id="fcTopArea">-</div><div class="l">Top area by volume</div></div>
+                </div>
+
+                <div class="forecast-cols">
+                    <div>
+                        <p class="forecast-subtitle">Today by area</p>
+                        <div id="forecastAreaTable"><div class="forecast-empty">Loading…</div></div>
+                    </div>
+                    <div>
+                        <p class="forecast-subtitle">7-day outlook <span style="font-weight:400; color:var(--text-muted); font-size:0.78rem;">(jobs + 4-week weekday average)</span></p>
+                        <div id="forecastChart"><div class="forecast-empty">Loading…</div></div>
+                        <div class="forecast-legend">
+                            <span><span class="sw" style="background: var(--accent);"></span>Confirmed jobs</span>
+                            <span><span class="sw" style="background: #64748b; opacity:0.55;"></span>Historical average</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2099,12 +2173,214 @@
                 document.getElementById('customersTotal').textContent = stats.customers.total;
 
                 await loadAppSourceOverview(stats);
+
+                // Load the pickup forecast card (non-blocking — don't fail the dashboard if it errors)
+                Forecast.load().catch(e => console.warn('Forecast load failed:', e));
                 
             } catch (error) {
                 console.error('Error loading dashboard stats:', error);
                 showError('Failed to load statistics');
             }
         }
+
+        // =====================================================================
+        // Pickup Forecast module
+        //   Reads jobs (job_type='oil_collection'), aggregates by area + day,
+        //   and renders: KPIs, today-by-area table, 7-day outlook bar chart.
+        //   Forecast = confirmed jobs for that day + 4-week weekday average.
+        // =====================================================================
+        const Forecast = (function () {
+            const supabaseUrl = 'https://ishhgfitddfeqaatimwl.supabase.co';
+            const anonKey = (typeof SUPABASE_CONFIG !== 'undefined' && SUPABASE_CONFIG.anonKey)
+                ? SUPABASE_CONFIG.anonKey
+                : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzaGhnZml0ZGRmZXFhYXRpbXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1Nzk1MDAsImV4cCI6MjA3MzE1NTUwMH0.VcBhmUFJu6Yi8Kkn8ihn3rNJsgyKsyVD7qpWh_XjRQ8';
+            const KG_PER_L = 0.92;
+            const DAY = 86400000;
+
+            let unit = 'L';        // 'L' or 'kg'
+            let cache = null;       // last fetched rows
+
+            function todayStr() { return new Date().toISOString().slice(0, 10); }
+            function fmt(n) { return n == null || isNaN(n) ? '0' : Math.round(n).toLocaleString(); }
+            function toUnit(litres) { return unit === 'kg' ? (litres || 0) * KG_PER_L : (litres || 0); }
+            function unitSuffix() { return unit === 'kg' ? 'kg' : 'L'; }
+
+            async function fetchJobs() {
+                // Last 35 days (for 4-week history) + all pending future jobs
+                const since = new Date(Date.now() - 35 * DAY).toISOString();
+                const url = `${supabaseUrl}/rest/v1/jobs?select=estimated_liters,estimated_kg,area,status,scheduled_date,created_at,pickup_mode&job_type=eq.oil_collection&or=(created_at.gte.${since},status.eq.pending)&limit=2000`;
+                const res = await fetch(url, {
+                    headers: {
+                        apikey: anonKey,
+                        Authorization: `Bearer ${anonKey}`,
+                        Accept: 'application/json'
+                    }
+                });
+                if (!res.ok) throw new Error(`jobs fetch ${res.status}`);
+                return res.json();
+            }
+
+            function litreOf(row) {
+                // Prefer the structured column; fall back to estimated_kg / 0.92; else 0
+                const l = parseFloat(row.estimated_liters);
+                if (Number.isFinite(l) && l > 0) return l;
+                const kg = parseFloat(row.estimated_kg);
+                if (Number.isFinite(kg) && kg > 0) return kg / KG_PER_L;
+                return 0;
+            }
+
+            function dateOf(row) {
+                if (row.scheduled_date) return row.scheduled_date.slice(0, 10);
+                if (row.created_at) return row.created_at.slice(0, 10);
+                return todayStr();
+            }
+
+            function weekdayName(d) {
+                return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(d + 'T00:00:00').getDay()];
+            }
+
+            function shortDate(d) {
+                const dt = new Date(d + 'T00:00:00');
+                return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+            }
+
+            function render(rows) {
+                const today = todayStr();
+
+                // ---- Today's jobs by area ----
+                const todayRows = rows.filter(r => dateOf(r) === today);
+                const byArea = {};
+                todayRows.forEach(r => {
+                    const a = r.area || 'Unknown';
+                    if (!byArea[a]) byArea[a] = { pending: 0, other: 0 };
+                    if (r.status === 'pending') byArea[a].pending += litreOf(r);
+                    else byArea[a].other += litreOf(r);
+                });
+                const areas = Object.keys(byArea).sort((a, b) =>
+                    (byArea[b].pending + byArea[b].other) - (byArea[a].pending + byArea[a].other));
+
+                const todayTotalL = todayRows.reduce((s, r) => s + litreOf(r), 0);
+                const pendingCount = rows.filter(r => r.status === 'pending').length;
+
+                // KPIs
+                const week7 = build7DayOutlook(rows, today);
+                const week7TotalL = week7.reduce((s, d) => s + d.total, 0);
+                const topArea = areas[0] || '-';
+
+                document.getElementById('fcTodayL').textContent = `${fmt(toUnit(todayTotalL))} ${unitSuffix()}`;
+                document.getElementById('fcWeekL').textContent = `${fmt(toUnit(week7TotalL))} ${unitSuffix()}`;
+                document.getElementById('fcPendingCount').textContent = fmt(pendingCount);
+                document.getElementById('fcTopArea').textContent = topArea;
+
+                // Area table
+                const tbl = document.getElementById('forecastAreaTable');
+                if (areas.length === 0) {
+                    tbl.innerHTML = '<div class="forecast-empty">No pickups scheduled for today yet.</div>';
+                } else {
+                    let h = '<table class="area-table"><thead><tr><th>Area</th><th class="num">Pending</th><th class="num">Confirmed</th><th class="num">Total</th></tr></thead><tbody>';
+                    areas.forEach(a => {
+                        const v = byArea[a];
+                        h += `<tr><td class="area-name">${escapeHtml(a)}</td>` +
+                             `<td class="num">${fmt(toUnit(v.pending))}</td>` +
+                             `<td class="num">${fmt(toUnit(v.other))}</td>` +
+                             `<td class="num">${fmt(toUnit(v.pending + v.other))}</td></tr>`;
+                    });
+                    h += '</tbody></table>';
+                    tbl.innerHTML = h;
+                }
+
+                // 7-day chart
+                renderChart(week7, today);
+            }
+
+            function build7DayOutlook(rows, todayStr) {
+                // historical averages per weekday over the last 28 days (excluding today onward)
+                const histByWd = {}; // 0-6 → [litres...]
+                const todayMs = new Date(todayStr + 'T00:00:00').getTime();
+                rows.forEach(r => {
+                    const d = dateOf(r);
+                    const ms = new Date(d + 'T00:00:00').getTime();
+                    if (ms >= todayMs) return; // future / today handled separately
+                    if (todayMs - ms > 28 * DAY) return; // only last 4 weeks
+                    const wd = new Date(d + 'T00:00:00').getDay();
+                    if (!histByWd[wd]) histByWd[wd] = [];
+                    histByWd[wd].push(litreOf(r));
+                });
+                const avgByWd = {};
+                for (let wd = 0; wd < 7; wd++) {
+                    const arr = histByWd[wd] || [];
+                    avgByWd[wd] = arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : 0;
+                }
+
+                // Next 7 days
+                const out = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(todayMs + i * DAY);
+                    const ds = d.toISOString().slice(0, 10);
+                    const wd = d.getDay();
+                    const jobsForDay = rows
+                        .filter(r => dateOf(r) === ds)
+                        .reduce((s, r) => s + litreOf(r), 0);
+                    const hist = i === 0 ? 0 : avgByWd[wd]; // today: use real jobs only
+                    out.push({
+                        date: ds,
+                        label: i === 0 ? 'Today' : weekdayName(ds),
+                        sub: shortDate(ds),
+                        jobs: jobsForDay,
+                        history: hist,
+                        total: jobsForDay + (i === 0 ? 0 : hist * 0.5) // blend: weight history 50%
+                    });
+                    // For today use pure jobs; for future days blend jobs + history
+                    out[out.length - 1].total = i === 0 ? jobsForDay : jobsForDay + hist * 0.5;
+                }
+                return out;
+            }
+
+            function renderChart(days) {
+                const el = document.getElementById('forecastChart');
+                const maxVal = Math.max(1, ...days.map(d => Math.max(d.jobs, d.history, d.total)));
+                let h = '<div class="forecast-chart">';
+                days.forEach(d => {
+                    const jobsH = (d.jobs / maxVal) * 100;
+                    const histH = (d.history / maxVal) * 100;
+                    h += `<div class="forecast-bar-col">`;
+                    h += `<div class="forecast-bar history" style="height:${histH}%;" title="History avg: ${fmt(toUnit(d.history))} ${unitSuffix()}"></div>`;
+                    h += `<div class="forecast-bar" style="height:${jobsH}%;" title="Jobs: ${fmt(toUnit(d.jobs))} ${unitSuffix()}"><span class="tip">${fmt(toUnit(d.total))}</span></div>`;
+                    h += `</div>`;
+                });
+                h += '</div>';
+                h += '<div class="forecast-x-labels">';
+                days.forEach(d => { h += `<span>${d.label}<br><span style="opacity:0.6">${d.sub}</span></span>`; });
+                h += '</div>';
+                el.innerHTML = h;
+            }
+
+            function escapeHtml(s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            }
+
+            async function load() {
+                try {
+                    cache = await fetchJobs();
+                    render(cache);
+                } catch (e) {
+                    console.error('Forecast load error:', e);
+                    document.getElementById('forecastAreaTable').innerHTML =
+                        `<div class="forecast-empty" style="color:#dc2626;">Could not load forecast. ${escapeHtml(e.message)}</div>`;
+                    document.getElementById('forecastChart').innerHTML = '';
+                }
+            }
+
+            function setUnit(u) {
+                unit = u;
+                document.getElementById('fcUnitL').classList.toggle('active', u === 'L');
+                document.getElementById('fcUnitKg').classList.toggle('active', u === 'kg');
+                if (cache) render(cache);
+            }
+
+            return { load, setUnit, reload: () => load() };
+        })();
 
         function toggleProjectsMenu(event) {
             event.stopPropagation();

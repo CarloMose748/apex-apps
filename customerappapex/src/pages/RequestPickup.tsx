@@ -5,7 +5,7 @@ import { Button } from '../components/UI/Button';
 import { FiPackage, FiCheckCircle, FiAlertCircle, FiPlus, FiMapPin, FiNavigation, FiCamera, FiEye } from 'react-icons/fi';
 import { BinScanner } from '../components/BinScanner';
 import { supabase } from '../lib/supabase';
-import { formatKilograms } from '../lib/units';
+import { formatKilograms, parseQuantityToLitres, parseAreaFromAddress } from '../lib/units';
 
 interface Bin {
   id: string;
@@ -192,6 +192,17 @@ export function RequestPickup() {
       let notes: string;
       const baseNotes = `Customer ID: ${userId}\nUrgency: ${manualBin.urgency}${storeLocation.lat && storeLocation.lng ? `\nGPS Location: ${storeLocation.lat}, ${storeLocation.lng}` : ''}${storeLocation.address ? `\nStore Address: ${storeLocation.address}` : ''}${manualBin.notes ? `\nAdditional Notes: ${manualBin.notes}` : ''}`;
 
+      // Structured forecast fields (parsed from mode + quantity + address)
+      const parsedQty = pickupMode === 'quick' ? parseQuantityToLitres(estimatedQuantity) : null;
+      // For bin mode, sum the capacities of selected bins so we still get a litre estimate
+      const binLitres = pickupMode === 'bin'
+        ? selectedBinsList.reduce((sum, b) => sum + (b.bin_size_liters || 0), 0)
+        : 0;
+      const finalLiters = parsedQty?.liters ?? (binLitres > 0 ? binLitres : null);
+      const finalKg = parsedQty?.kg ?? (binLitres > 0 ? Math.round(binLitres * 0.92 * 100) / 100 : null);
+      const fullAddress = storeLocation.address || customerData.address || '';
+      const area = parseAreaFromAddress(fullAddress);
+
       if (pickupMode === 'quick') {
         description = `Ad-hoc oil collection (~${estimatedQuantity} ${oilType !== 'OTHER' ? oilType : ''}) — no bin scanned, depot to weigh on arrival`;
         notes = `Mode: QUICK_PICKUP (no bin)\nEstimated quantity: ${estimatedQuantity}\nOil type: ${oilType}\n${baseNotes}`;
@@ -204,12 +215,20 @@ export function RequestPickup() {
         customer_name: customerData.full_name,
         customer_phone: customerData.phone_number || '',
         customer_email: customerData.email || '',
-        pickup_address: storeLocation.address || customerData.address || '',
+        pickup_address: fullAddress,
         dropoff_address: 'Apex Oil Collection Center',
         job_type: 'oil_collection',
         description,
         status: 'pending',
-        notes
+        notes,
+        // New structured forecast columns:
+        pickup_mode: pickupMode,
+        oil_type: pickupMode === 'quick' ? oilType : 'UCO',
+        estimated_quantity: pickupMode === 'quick' ? estimatedQuantity : null,
+        estimated_liters: finalLiters,
+        estimated_kg: finalKg,
+        area,
+        scheduled_date: new Date().toISOString().slice(0, 10),
       };
 
       const { error: jobError } = await supabase
