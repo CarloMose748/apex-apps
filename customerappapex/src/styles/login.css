@@ -686,6 +686,33 @@
   margin-bottom: 0;
 }
 
+/* Photon autocomplete suggestion list */
+.photon-suggestions {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  max-height: 260px;
+  overflow-y: auto;
+}
+.photon-suggestion {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+}
+.photon-suggestion:last-child { border-bottom: none; }
+.photon-suggestion:hover { background: #f1f5f9; }
+.ph-suggestion-main { font-weight: 600; font-size: 0.9rem; color: #0f172a; }
+.ph-suggestion-sub  { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
+
 @media (max-width: 480px) {
   .login-logo__image {
     width: min(210px, 78%);

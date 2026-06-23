@@ -17,6 +17,8 @@
   <script src="js/supabase-config.js"></script>
   <script src="js/auth-service.js"></script>
   <script src="js/apex-driver-service.js"></script>
+  <!-- Mapbox config (gitignored; edit the token there) -->
+  <script src="js/mapbox-config.js"></script>
   
   <style>
     body {
@@ -519,22 +521,24 @@
       loadJobData();
       initializePanelSliding();
       initializeMapResizeObserver();
-      
-      // Try to initialize map every 500ms until Google Maps is available
-      const mapInitInterval = setInterval(() => {
-        if (typeof google !== 'undefined' && google.maps && jobData && !map) {
-          console.log('Google Maps available, initializing...');
-          clearInterval(mapInitInterval);
+
+      // Mapbox is loaded synchronously via the <script> tag above; init when job data is ready.
+      const tryInit = () => {
+        if (typeof mapboxgl !== 'undefined' && jobData && !map) {
+          console.log('Mapbox + jobData ready, initializing map...');
           initializeMapWithJob();
+        } else if (!map) {
+          // Retry briefly in case the job data fetch is still in flight.
+          setTimeout(tryInit, 200);
         }
-      }, 500);
-      
+      };
+      tryInit();
+
       // Stop trying after 10 seconds
       setTimeout(() => {
-        clearInterval(mapInitInterval);
         if (!map) {
           console.error('Failed to initialize map after 10 seconds');
-          document.getElementById('loadingOverlay').innerHTML = 
+          document.getElementById('loadingOverlay').innerHTML =
             '<div class="loading-content"><p>Failed to load map. Please refresh the page.</p><button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">Refresh</button></div>';
         }
       }, 10000);
@@ -709,12 +713,12 @@
             if (map && mapElement) {
               const newHeight = entry.contentRect.height;
               console.log('Map container resized to:', newHeight);
-              
+
               // Force map element height
               mapElement.style.height = newHeight + 'px';
-              
-              // Trigger map resize
-              google.maps.event.trigger(map, 'resize');
+
+              // Trigger Mapbox resize (replaces google.maps.event.trigger(map, 'resize'))
+              map.resize();
             }
           }
         });
@@ -744,28 +748,28 @@
         mapElement.style.width = mapContainer.offsetWidth + 'px';
       }
       
-      // Multiple resize triggers with different timing strategies
-      google.maps.event.trigger(map, 'resize');
-      
+      // Multiple resize triggers with different timing strategies (Mapbox)
+      map.resize();
+
       // Force immediate resize
       setTimeout(() => {
-        google.maps.event.trigger(map, 'resize');
+        map.resize();
         if (mapElement) {
           mapElement.style.height = mapContainer.offsetHeight + 'px';
         }
       }, 10);
-      
+
       // Additional resize after brief delay
       setTimeout(() => {
-        google.maps.event.trigger(map, 'resize');
+        map.resize();
         if (mapElement) {
           mapElement.style.height = mapContainer.offsetHeight + 'px';
         }
       }, 100);
-      
+
       // Final resize
       setTimeout(() => {
-        google.maps.event.trigger(map, 'resize');
+        map.resize();
         if (mapElement) {
           mapElement.style.height = mapContainer.offsetHeight + 'px';
         }
@@ -812,17 +816,14 @@
         mapContainer.classList.remove('expanding');
       }
       
-      // Throttled map resize trigger for performance
+      // Throttled map resize trigger for performance (Mapbox)
       if (map && mapResizeTimeout === null) {
         mapResizeTimeout = setTimeout(() => {
-          // Multiple resize triggers to ensure map fills the space
-          google.maps.event.trigger(map, 'resize');
+          map.resize();
           if (mapElement) {
             mapElement.style.height = mapContainer.offsetHeight + 'px';
           }
-          setTimeout(() => {
-            google.maps.event.trigger(map, 'resize');
-          }, 20);
+          setTimeout(() => { map.resize(); }, 20);
           mapResizeTimeout = null;
         }, 30); // Reduced throttle for more responsive updates
       }
@@ -872,23 +873,16 @@
             
             if (userLocation) {
               // If we have both user and job locations, fit bounds with more padding
-              const bounds = new google.maps.LatLngBounds();
               const userPos = { lat: parseFloat(userLocation.lat), lng: parseFloat(userLocation.lng) };
-              
-              bounds.extend(jobPosition);
-              bounds.extend(userPos);
-              
-              // Fit with padding for better full-screen view
-              map.fitBounds(bounds, {
-                top: 20,
-                right: 20,
-                bottom: 100, // More bottom padding since panel is still partially visible
-                left: 20
-              });
+              const bounds = new mapboxgl.LngLatBounds();
+              bounds.extend([jobPosition.lng, jobPosition.lat]);
+              bounds.extend([userPos.lng, userPos.lat]);
+
+              // Mapbox takes a single padding value (uniform) — use bottom padding for the visible panel
+              map.fitBounds(bounds, { padding: { top: 20, right: 20, bottom: 100, left: 20 }, maxZoom: 15, duration: 600 });
             } else {
               // Just center on job location with appropriate zoom for full map view
-              map.setCenter(jobPosition);
-              map.setZoom(15); // Slightly zoomed out for better overview
+              map.flyTo({ center: [jobPosition.lng, jobPosition.lat], zoom: 15 });
             }
           }, 100); // Increased delay to ensure resize is processed
         }
@@ -917,24 +911,16 @@
             const jobPosition = { lat: parseFloat(jobData.lat), lng: parseFloat(jobData.lng) };
             
             if (userLocation) {
-              // Fit bounds with padding appropriate for smaller map area
-              const bounds = new google.maps.LatLngBounds();
               const userPos = { lat: parseFloat(userLocation.lat), lng: parseFloat(userLocation.lng) };
-              
-              bounds.extend(jobPosition);
-              bounds.extend(userPos);
-              
-              // Fit with padding for the reduced map area
-              map.fitBounds(bounds, {
-                top: 20,
-                right: 20,
-                bottom: 20,
-                left: 20
-              });
+              const bounds = new mapboxgl.LngLatBounds();
+              bounds.extend([jobPosition.lng, jobPosition.lat]);
+              bounds.extend([userPos.lng, userPos.lat]);
+
+              // Fit with padding for the reduced map area (Mapbox)
+              map.fitBounds(bounds, { padding: 20, maxZoom: 16, duration: 600 });
             } else {
-              // Center on job location with closer zoom for detailed view
-              map.setCenter(jobPosition);
-              map.setZoom(16); // Closer zoom for detail view
+              // Center on job location with closer zoom for detailed view (Mapbox)
+              map.flyTo({ center: [jobPosition.lng, jobPosition.lat], zoom: 16 });
             }
           }, 50); // Small delay to ensure resize is processed
         }
@@ -988,44 +974,50 @@
       }
 
       const jobPosition = { lat: parseFloat(jobData.lat), lng: parseFloat(jobData.lng) };
-      
-      console.log('Initializing map with job position:', jobPosition);
+
+      console.log('Initializing Mapbox map with job position:', jobPosition);
       console.log('Map container element:', document.getElementById("map"));
-      
-      if (typeof google === 'undefined' || !google.maps) {
-        console.error('Google Maps not loaded');
+
+      if (typeof mapboxgl === 'undefined') {
+        console.error('Mapbox GL not loaded');
         return;
       }
 
       try {
-        // Create map with simple configuration
-        map = new google.maps.Map(document.getElementById("map"), {
-          center: jobPosition,
-          zoom: 16,
-          mapTypeId: google.maps.MapTypeId.ROADMAP
+        // Initialise the Mapbox access token (free tier — get yours at account.mapbox.com)
+        mapboxgl.accessToken = (window.MAPBOX_CONFIG && window.MAPBOX_CONFIG.token) || '';
+
+        map = new mapboxgl.Map({
+          container: 'map',
+          style: 'mapbox://styles/mapbox/streets-v12',
+          center: [jobPosition.lng, jobPosition.lat],
+          zoom: 16
         });
 
-        console.log('Map created successfully');
+        console.log('Mapbox map created successfully');
 
-        // Wait for map to be ready, then add markers
-        google.maps.event.addListenerOnce(map, 'tilesloaded', function() {
-          console.log('Map tiles loaded');
-          
+        // Add a navigation control (zoom in/out + compass) — replaces Google's default UI
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        // Wait for the map style to load before adding markers
+        map.on('load', function () {
+          console.log('Mapbox style loaded');
+
           // Add job marker
           createJobMarker(jobPosition);
-          
+
           // Add user marker if available
           if (userLocation) {
             const userPos = { lat: parseFloat(userLocation.lat), lng: parseFloat(userLocation.lng) };
             createUserMarker(userPos);
-            
+
             // Fit bounds to show both markers
-            const bounds = new google.maps.LatLngBounds();
-            bounds.extend(jobPosition);
-            bounds.extend(userPos);
-            map.fitBounds(bounds);
+            const bounds = new mapboxgl.LngLatBounds();
+            bounds.extend([jobPosition.lng, jobPosition.lat]);
+            bounds.extend([userPos.lng, userPos.lat]);
+            map.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 600 });
           }
-          
+
           // Hide loading overlay
           setTimeout(() => {
             const overlay = document.getElementById('loadingOverlay');
@@ -1033,62 +1025,55 @@
               overlay.style.display = 'none';
             }
             console.log('Loading overlay hidden');
-          }, 1000);
+          }, 600);
         });
 
       } catch (error) {
         console.error('Error initializing map:', error);
-        document.getElementById('loadingOverlay').innerHTML = 
+        document.getElementById('loadingOverlay').innerHTML =
           '<div class="loading-content"><p>Error loading map: ' + error.message + '</p></div>';
       }
     }
 
-    // Create job marker
+    // Create job marker — Mapbox equivalent of the red Google circle marker
     function createJobMarker(position) {
       console.log('Creating job marker at:', position);
-      
+
       try {
-        // Create a prominent red marker for the job location
-        jobMarker = new google.maps.Marker({
-          position: position,
-          map: map,
-          title: jobData.name,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: '#ff4444',
-            fillOpacity: 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 3,
-            scale: 15
-          },
-          zIndex: 1000,
-          animation: google.maps.Animation.DROP
-        });
+        // Build the marker DOM element (red circle with white border)
+        const el = document.createElement('div');
+        el.style.cssText = `
+          width: 30px; height: 30px; border-radius: 50%;
+          background: #ff4444; border: 3px solid #ffffff;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.35); cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; font-weight: bold; font-size: 14px;
+        `;
+        el.textContent = '📍';
+        el.title = jobData.name;
+
+        // Popup content
+        const popupHtml = `
+          <div style="max-width: 280px; padding: 12px; font-family: inherit;">
+            <h3 style="margin: 0 0 8px 0; color: #333; font-size: 18px;">${getJobTypeEmoji(jobData.jobType)} ${jobData.name}</h3>
+            <div style="margin: 0 0 8px 0; font-weight: bold; color: #0066cc; font-size: 20px;">${jobData.payment}</div>
+            <div style="margin: 0 0 8px 0; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; display: inline-block; font-size: 14px; color: #666;">${jobData.jobType}</div>
+            <div style="margin: 8px 0 0 0; font-size: 13px; color: #666; line-height: 1.4;">${jobData.address}</div>
+            <div style="margin: 8px 0 0 0; font-size: 13px; color: #666;">⏱️ Est. ${jobData.estimatedTime}</div>
+          </div>`;
+
+        jobMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([position.lng, position.lat])
+          .setPopup(new mapboxgl.Popup({ offset: 18, closeButton: true }).setHTML(popupHtml))
+          .addTo(map);
 
         console.log('Job marker created successfully');
 
-        // Add info window
-        const infoWindow = new google.maps.InfoWindow({
-          content: `
-            <div style="max-width: 280px; padding: 12px;">
-              <h3 style="margin: 0 0 8px 0; color: #333; font-size: 18px;">${getJobTypeEmoji(jobData.jobType)} ${jobData.name}</h3>
-              <div style="margin: 0 0 8px 0; font-weight: bold; color: #0066cc; font-size: 20px;">${jobData.payment}</div>
-              <div style="margin: 0 0 8px 0; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; display: inline-block; font-size: 14px; color: #666;">${jobData.jobType}</div>
-              <div style="margin: 8px 0 0 0; font-size: 13px; color: #666; line-height: 1.4;"><span class="icon icon-location icon-sm"></span> ${jobData.address}</div>
-              <div style="margin: 8px 0 0 0; font-size: 13px; color: #666;">⏱️ Est. ${jobData.estimatedTime}</div>
-            </div>
-          `
-        });
-
-        jobMarker.addListener('click', () => {
-          infoWindow.open(map, jobMarker);
-        });
-
-        // Auto-open info window after a delay
+        // Auto-open popup after a small delay
         setTimeout(() => {
-          infoWindow.open(map, jobMarker);
-          console.log('Job info window opened');
-        }, 1500);
+          jobMarker.togglePopup();
+          console.log('Job popup opened');
+        }, 1200);
 
         return jobMarker;
 
@@ -1098,33 +1083,25 @@
       }
     }
 
-    // Create user location marker
+    // Create user location marker — Mapbox equivalent of the blue Google circle marker
     function createUserMarker(position) {
       console.log('Creating user marker at:', position);
-      
+
       try {
-        userMarker = new google.maps.Marker({
-          position: position,
-          map: map,
-          title: "Your Location",
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: '#1E88E5',
-            fillOpacity: 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 3,
-            scale: 12
-          },
-          zIndex: 999
-        });
+        const el = document.createElement('div');
+        el.style.cssText = `
+          width: 24px; height: 24px; border-radius: 50%;
+          background: #1E88E5; border: 3px solid #ffffff;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.35); cursor: pointer;
+        `;
+        el.title = 'Your Location';
 
-        const userInfoWindow = new google.maps.InfoWindow({
-          content: '<div style="padding: 8px;"><strong><span class="icon icon-location icon-sm"></span> Your Location</strong></div>'
-        });
-
-        userMarker.addListener('click', () => {
-          userInfoWindow.open(map, userMarker);
-        });
+        userMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([position.lng, position.lat])
+          .setPopup(new mapboxgl.Popup({ offset: 14, closeButton: true }).setHTML(
+            '<div style="padding: 8px;"><strong>📍 Your Location</strong></div>'
+          ))
+          .addTo(map);
 
         console.log('User marker created successfully');
         return userMarker;
@@ -1291,7 +1268,8 @@
     });
   </script>
 
-  <!-- Google Maps API -->
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBvYq6yNASqpfBkXWuUUliHe5dJmg5mlJs&libraries=places"></script>
+  <!-- Mapbox GL JS — vector map tiles -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
 </body>
 </html>

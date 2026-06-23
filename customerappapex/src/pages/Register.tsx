@@ -2,14 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { signUpCustomer } from '../lib/supabase';
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyBvYq6yNASqpfBkXWuUUliHe5dJmg5mlJs';
-
-// Google Maps types
-declare global {
-  interface Window {
-    google: any;
-  }
-}
+// Address search uses Photon (https://photon.komoot.io) — free, OSM-backed, no API key.
+// Geocoding result → our address shape (street, city, province, postcode, lat, lng).
 
 interface BusinessDetails {
   // Personal Details
@@ -62,46 +56,49 @@ interface BusinessDetails {
   marketingConsent: boolean;
 }
 
-// AddressFields — manual address entry + optional Google autocomplete
+// AddressFields — manual address entry + Photon-powered autocomplete (no API key)
 function AddressFields({ onAddressChange, address }: {
   onAddressChange: (address: any) => void;
   address: any;
 }) {
   const streetInputRef = useRef<HTMLInputElement>(null);
-  const [googleReady, setGoogleReady] = useState(false);
+  const [suggestions, setSuggestions] = useState<PhotonHit[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [photonReady, setPhotonReady] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Try to load Google Places in the background; do NOT block manual entry.
-  useEffect(() => {
-    const init = () => {
-      if (!streetInputRef.current || !window.google?.maps?.places) return;
+  // Debounced Photon search; populates the suggestion dropdown.
+  const searchPhoton = (q: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!q || q.length < 3) { setSuggestions([]); return; }
+    debounceRef.current = setTimeout(async () => {
       try {
-        const ac = new window.google.maps.places.Autocomplete(streetInputRef.current, {
-          types: ['address'],
-          componentRestrictions: { country: 'za' },
-          fields: ['address_components', 'formatted_address', 'place_id', 'geometry']
-        });
-        ac.addListener('place_changed', () => {
-          const place = ac.getPlace();
-          if (!place.address_components) return;
-          const next = parsePlace(place);
-          onAddressChange(next);
-        });
-        setGoogleReady(true);
+        // Bias results to South Africa (ZA) via the `lang` param + the user typing
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5&lang=en`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        const hits: PhotonHit[] = (data.features || []).filter(
+          (f: any) => f.properties?.country === 'South Africa' || f.properties?.countrycode === 'ZA'
+        );
+        setSuggestions(hits);
       } catch (e) {
-        console.warn('Google Autocomplete failed to initialise:', e);
+        // Network error — silently fall back to manual entry.
       }
-    };
+    }, 250);
+  };
 
-    if (window.google && window.google.maps) { init(); return; }
-    if (document.querySelector('script[data-google-maps]')) return; // already loading
+  // Mark Photon as "ready" on first keystroke (lazy — no script to load).
+  useEffect(() => { setPhotonReady(true); }, []);
 
-    const s = document.createElement('script');
-    s.setAttribute('data-google-maps', '1');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
-    s.onload = init;
-    s.onerror = () => console.warn('Google Maps script failed to load — manual entry is still available');
-    document.head.appendChild(s);
-  }, [onAddressChange]);
+  const acceptSuggestion = (hit: PhotonHit) => {
+    const next = photonHitToAddress(hit);
+    onAddressChange(next);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    // Move focus to city field so user can correct if needed
+    streetInputRef.current?.blur();
+  };
 
   const update = (field: string, value: string) => {
     onAddressChange({ ...address, [field]: value });
@@ -109,24 +106,43 @@ function AddressFields({ onAddressChange, address }: {
 
   return (
     <div className="address-fields">
-      <div className="form-group">
+      <div className="form-group" style={{ position: 'relative' }}>
         <label>Street address *</label>
         <input
           ref={streetInputRef}
           type="text"
           className="form-input"
-          placeholder={googleReady ? 'Start typing — Google will suggest addresses' : 'e.g. 12 Marine Drive'}
-          value={address?.route ? `${address.street_number ? address.street_number + ' ' : ''}${address.route}` : ''}
+          placeholder="Start typing your business address..."
+          value={address?.route ? `${address.street_number ? address.street_number + ' ' : ''}${address.route}` : (address?.formatted_address || '')}
           onChange={(e) => {
-            // Mirror raw text into route for now; user can refine city/postcode below
-            onAddressChange({ ...address, formatted_address: e.target.value, route: e.target.value, street_number: '' });
+            const v = e.target.value;
+            onAddressChange({ ...address, formatted_address: v, route: v, street_number: '' });
+            setShowSuggestions(true);
+            searchPhoton(v);
           }}
+          onFocus={() => setShowSuggestions(true)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
           autoComplete="off"
           required
         />
-        {googleReady && (
+        {photonReady && showSuggestions && suggestions.length > 0 && (
+          <ul className="photon-suggestions" role="listbox">
+            {suggestions.map((s, i) => (
+              <li
+                key={i}
+                role="option"
+                className="photon-suggestion"
+                onMouseDown={(e) => { e.preventDefault(); acceptSuggestion(s); }}
+              >
+                <div className="ph-suggestion-main">{s.properties.name || s.properties.street || s.properties.city || 'Address'}</div>
+                <div className="ph-suggestion-sub">{[s.properties.street, s.properties.city, s.properties.state, s.properties.country].filter(Boolean).join(', ')}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {photonReady && (
           <small className="form-help" style={{ color: '#16a34a' }}>
-            ✓ Google address suggestions are active
+            ✓ Address suggestions are active (powered by OpenStreetMap)
           </small>
         )}
       </div>
@@ -190,29 +206,48 @@ function AddressFields({ onAddressChange, address }: {
   );
 }
 
-// Helper: turn a Google Place into our address shape
-function parsePlace(place: any) {
-  const out: any = {
-    formatted_address: place.formatted_address || '',
-    street_number: '',
-    route: '',
-    locality: '',
-    administrative_area_level_1: '',
-    postal_code: '',
-    country: 'South Africa',
-    place_id: place.place_id || '',
-    latitude: place.geometry?.location?.lat() ?? null,
-    longitude: place.geometry?.location?.lng() ?? null
+// Photon GeoJSON feature returned by /api/?q=...
+interface PhotonHit {
+  type: 'Feature';
+  geometry: { type: 'Point'; coordinates: [number, number] }; // [lng, lat]
+  properties: {
+    osm_id?: number;
+    osm_type?: string;
+    name?: string;
+    street?: string;
+    housenumber?: string;
+    postcode?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    countrycode?: string;
+    type?: string;
   };
-  (place.address_components || []).forEach((c: any) => {
-    if (c.types.includes('street_number')) out.street_number = c.long_name;
-    if (c.types.includes('route'))         out.route = c.long_name;
-    if (c.types.includes('locality'))      out.locality = c.long_name;
-    if (c.types.includes('administrative_area_level_1')) out.administrative_area_level_1 = c.short_name;
-    if (c.types.includes('postal_code'))   out.postal_code = c.long_name;
-    if (c.types.includes('country'))       out.country = c.long_name;
-  });
-  return out;
+}
+
+// Map a Photon hit → our address shape (same shape Google Places used to fill)
+function photonHitToAddress(hit: PhotonHit) {
+  const p = hit.properties || {};
+  // Province code (Photon gives e.g. "KwaZulu-Natal" — map to "KZN" if possible)
+  const stateMap: Record<string, string> = {
+    'Eastern Cape': 'EC', 'Free State': 'FS', 'Gauteng': 'GP',
+    'KwaZulu-Natal': 'KZN', 'Limpopo': 'LP', 'Mpumalanga': 'MP',
+    'Northern Cape': 'NC', 'North West': 'NW', 'Western Cape': 'WC'
+  };
+  const provinceCode = stateMap[p.state || ''] || p.state || '';
+  const formatted = [p.housenumber, p.street, p.city, p.state, p.country].filter(Boolean).join(', ');
+  return {
+    formatted_address: formatted,
+    street_number: p.housenumber || '',
+    route: p.street || '',
+    locality: p.city || '',
+    administrative_area_level_1: provinceCode,
+    postal_code: p.postcode || '',
+    country: p.country || 'South Africa',
+    place_id: p.osm_id ? `osm:${p.osm_type || 'node'}:${p.osm_id}` : '',
+    latitude: hit.geometry?.coordinates?.[1] ?? null,
+    longitude: hit.geometry?.coordinates?.[0] ?? null
+  };
 }
 
 export function Register() {
