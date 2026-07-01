@@ -1415,6 +1415,9 @@
                     <button class="aggregator-tab-btn" onclick="showAggregatorTab('locations')" style="padding:12px 24px; background:none; border:none; border-bottom:3px solid transparent; color: var(--text-muted); font-weight:600; cursor:pointer; transition:all 0.3s;">
                         <i class="fa-solid fa-location-dot"></i> Storage Locations
                     </button>
+                    <button class="aggregator-tab-btn" onclick="showAggregatorTab('depotops')" style="padding:12px 24px; background:none; border:none; border-bottom:3px solid transparent; color: var(--text-muted); font-weight:600; cursor:pointer; transition:all 0.3s;">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Purchases, Invoices &amp; Lab Results
+                    </button>
                 </div>
 
                 <!-- Bins Tab -->
@@ -1509,6 +1512,31 @@
                 <div id="aggregatorLocationsTab" class="aggregator-tab-content" style="display:none; overflow-x:auto; width:100%;">
                     <div id="aggregatorLocationsList" class="loading" style="min-height: 160px;">
                         <div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;">Loading locations...</div>
+                    </div>
+                </div>
+
+                <!-- Purchases, Invoices & Lab Results Tab -->
+                <div id="aggregatorDepotOpsTab" class="aggregator-tab-content" style="display:none; overflow-x:auto; width:100%;">
+                    <p style="color: var(--text-muted); margin: 0 0 16px 0; font-size: 0.95rem;">Data captured by depot managers in the Depot app (purchase orders, supplier invoices, samples and lab test results). This is read-only here.</p>
+
+                    <h4 style="margin: 24px 0 12px 0; color: var(--text-primary);"><i class="fa-solid fa-cart-shopping"></i> Purchase Orders</h4>
+                    <div id="aggregatorPurchaseOrdersList" class="loading" style="min-height: 100px;">
+                        <div style="padding: 24px; text-align: center; color: var(--accent);">Loading purchase orders...</div>
+                    </div>
+
+                    <h4 style="margin: 24px 0 12px 0; color: var(--text-primary);"><i class="fa-solid fa-file-invoice"></i> Invoices</h4>
+                    <div id="aggregatorInvoicesList" class="loading" style="min-height: 100px;">
+                        <div style="padding: 24px; text-align: center; color: var(--accent);">Loading invoices...</div>
+                    </div>
+
+                    <h4 style="margin: 24px 0 12px 0; color: var(--text-primary);"><i class="fa-solid fa-flask-vial"></i> Samples</h4>
+                    <div id="aggregatorSamplesList" class="loading" style="min-height: 100px;">
+                        <div style="padding: 24px; text-align: center; color: var(--accent);">Loading samples...</div>
+                    </div>
+
+                    <h4 style="margin: 24px 0 12px 0; color: var(--text-primary);"><i class="fa-solid fa-vial-circle-check"></i> Lab Test Results</h4>
+                    <div id="aggregatorTestResultsList" class="loading" style="min-height: 100px;">
+                        <div style="padding: 24px; text-align: center; color: var(--accent);">Loading test results...</div>
                     </div>
                 </div>
             </div>
@@ -4652,7 +4680,11 @@ function showSection(section) {
                     loadAggregatorBins(),
                     loadAggregatorBranches(),
                     loadAggregatorEvents(),
-                    loadAggregatorLocations()
+                    loadAggregatorLocations(),
+                    loadAggregatorPurchaseOrders(),
+                    loadAggregatorInvoices(),
+                    loadAggregatorSamples(),
+                    loadAggregatorTestResults()
                 ]);
                 
                 updateAggregatorStats();
@@ -4811,6 +4843,146 @@ function showSection(section) {
                         <i class="fa-solid fa-triangle-exclamation"></i><br><br>
                         Error loading locations: ${errorMsg}${helpText}
                     </div>`;
+            }
+        }
+
+        // Generic renderer for the read-only depot-ops tables (purchase orders,
+        // invoices, samples, test results). These tables are populated by the
+        // Depot app (aggregator/) and were previously not visible anywhere on
+        // the admin panel.
+        function renderDepotOpsTable(containerId, rows, columns, emptyLabel) {
+            const container = document.getElementById(containerId);
+            if (!rows || rows.length === 0) {
+                container.innerHTML = `<div class="no-data" style="padding: 20px; text-align: center; color: var(--text-muted);">No ${emptyLabel} yet.</div>`;
+                return;
+            }
+            const thead = columns.map(c => `<th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.8rem; text-transform:uppercase;">${c.label}</th>`).join('');
+            const rowsHtml = rows.map(row => {
+                const cells = columns.map(c => {
+                    let val = row[c.key];
+                    if (val === null || val === undefined || val === '') val = '-';
+                    else if (c.type === 'date' && val !== '-') val = new Date(val).toLocaleString();
+                    else if (c.type === 'currency' && val !== '-') val = `R${Number(val).toFixed(2)}`;
+                    else if (c.type === 'number' && val !== '-') val = Number(val).toLocaleString();
+                    return `<td style="padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.05); color: var(--text-primary); font-size:0.88rem;">${val}</td>`;
+                }).join('');
+                return `<tr>${cells}</tr>`;
+            }).join('');
+            container.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse;"><thead><tr>${thead}</tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+        }
+
+        async function loadAggregatorPurchaseOrders() {
+            const containerId = 'aggregatorPurchaseOrdersList';
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) throw new Error('Supabase not initialized. Please refresh the page.');
+                const { data, error } = await client
+                    .from('aggregator_purchase_orders')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(200);
+                if (error) throw error;
+                renderDepotOpsTable(containerId, data, [
+                    { key: 'po_number', label: 'PO #' },
+                    { key: 'depot_id', label: 'Depot' },
+                    { key: 'supplier', label: 'Supplier' },
+                    { key: 'volume_litres', label: 'Volume (L)', type: 'number' },
+                    { key: 'price_per_litre', label: 'Price/L', type: 'currency' },
+                    { key: 'total_amount', label: 'Total', type: 'currency' },
+                    { key: 'status', label: 'Status' },
+                    { key: 'po_date', label: 'PO Date', type: 'date' },
+                    { key: 'created_at', label: 'Created', type: 'date' }
+                ], 'purchase orders');
+            } catch (error) {
+                console.error('Error loading purchase orders:', error);
+                document.getElementById(containerId).innerHTML =
+                    `<div class="no-data" style="padding: 20px; text-align: center; color: #dc2626;">Error loading purchase orders: ${error.message || 'Unknown error'}</div>`;
+            }
+        }
+
+        async function loadAggregatorInvoices() {
+            const containerId = 'aggregatorInvoicesList';
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) throw new Error('Supabase not initialized. Please refresh the page.');
+                const { data, error } = await client
+                    .from('aggregator_invoices')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(200);
+                if (error) throw error;
+                renderDepotOpsTable(containerId, data, [
+                    { key: 'invoice_number', label: 'Invoice #' },
+                    { key: 'po_number', label: 'PO #' },
+                    { key: 'depot_id', label: 'Depot' },
+                    { key: 'supplier', label: 'Supplier' },
+                    { key: 'volume_litres', label: 'Volume (L)', type: 'number' },
+                    { key: 'price_per_litre', label: 'Price/L', type: 'currency' },
+                    { key: 'total_amount', label: 'Total', type: 'currency' },
+                    { key: 'ffa_percent', label: 'FFA %', type: 'number' },
+                    { key: 'moisture_percent', label: 'Moisture %', type: 'number' },
+                    { key: 'created_at', label: 'Created', type: 'date' }
+                ], 'invoices');
+            } catch (error) {
+                console.error('Error loading invoices:', error);
+                document.getElementById(containerId).innerHTML =
+                    `<div class="no-data" style="padding: 20px; text-align: center; color: #dc2626;">Error loading invoices: ${error.message || 'Unknown error'}</div>`;
+            }
+        }
+
+        async function loadAggregatorSamples() {
+            const containerId = 'aggregatorSamplesList';
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) throw new Error('Supabase not initialized. Please refresh the page.');
+                const { data, error } = await client
+                    .from('aggregator_samples')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(200);
+                if (error) throw error;
+                renderDepotOpsTable(containerId, data, [
+                    { key: 'reference', label: 'Reference' },
+                    { key: 'depot_id', label: 'Depot' },
+                    { key: 'bin_id', label: 'Bin' },
+                    { key: 'test_type', label: 'Test Type' },
+                    { key: 'sample_size', label: 'Sample Size', type: 'number' },
+                    { key: 'unit', label: 'Unit' },
+                    { key: 'created_at', label: 'Created', type: 'date' }
+                ], 'samples');
+            } catch (error) {
+                console.error('Error loading samples:', error);
+                document.getElementById(containerId).innerHTML =
+                    `<div class="no-data" style="padding: 20px; text-align: center; color: #dc2626;">Error loading samples: ${error.message || 'Unknown error'}</div>`;
+            }
+        }
+
+        async function loadAggregatorTestResults() {
+            const containerId = 'aggregatorTestResultsList';
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) throw new Error('Supabase not initialized. Please refresh the page.');
+                const { data, error } = await client
+                    .from('aggregator_test_results')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(200);
+                if (error) throw error;
+                renderDepotOpsTable(containerId, data, [
+                    { key: 'lab_reference', label: 'Lab Ref' },
+                    { key: 'depot_id', label: 'Depot' },
+                    { key: 'bin_id', label: 'Bin' },
+                    { key: 'ffa_percent', label: 'FFA %', type: 'number' },
+                    { key: 'moisture_percent', label: 'Moisture %', type: 'number' },
+                    { key: 'density', label: 'Density', type: 'number' },
+                    { key: 'temperature', label: 'Temp (°C)', type: 'number' },
+                    { key: 'result_status', label: 'Status' },
+                    { key: 'created_at', label: 'Created', type: 'date' }
+                ], 'test results');
+            } catch (error) {
+                console.error('Error loading test results:', error);
+                document.getElementById(containerId).innerHTML =
+                    `<div class="no-data" style="padding: 20px; text-align: center; color: #dc2626;">Error loading test results: ${error.message || 'Unknown error'}</div>`;
             }
         }
 
@@ -5176,7 +5348,8 @@ function showSection(section) {
                 'bins': 'aggregatorBinsTab',
                 'branches': 'aggregatorBranchesTab',
                 'events': 'aggregatorEventsTab',
-                'locations': 'aggregatorLocationsTab'
+                'locations': 'aggregatorLocationsTab',
+                'depotops': 'aggregatorDepotOpsTab'
             };
             
             document.getElementById(tabMap[tabName]).style.display = 'block';
