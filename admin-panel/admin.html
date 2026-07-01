@@ -940,6 +940,16 @@
                     <div id="collectionsStatus" style="color: #0b69ff; font-weight:600;">Collections: Loading...</div>
                 </div>
 
+                <!-- Pending Pickups by Area (for buyer team tip sheets) -->
+                <div style="margin-bottom: 24px;">
+                    <h4 style="margin: 0 0 12px 0; color: var(--text-primary); display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-map-location-dot"></i> Pending Pickups by Area
+                    </h4>
+                    <div id="pendingByAreaList" style="border-radius: 12px; background: var(--bg-card); padding: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                        <div style="padding: 16px; text-align: center; color: var(--text-muted);">Loading...</div>
+                    </div>
+                </div>
+
                 <!-- Collections List -->
                 <div id="collectionsList" class="loading" style="margin-top: 0; min-height: 160px; border-radius: 12px; background: var(--bg-card); padding: 20px; overflow-x: auto; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05);"></div>
             </div>
@@ -3983,6 +3993,7 @@ function showSection(section) {
                             driver: driver,
                             customer_name: job?.customer_name || 'Unknown Customer',
                             customer_address: job?.pickup_address || job?.address || '',
+                            area: job?.area || '',
                             _source: 'oil_collections'
                         };
                     });
@@ -4021,6 +4032,10 @@ function showSection(section) {
                             notes: job.notes || job.description || '',
                             customer_name: job.customer_name || 'Unknown Customer',
                             customer_address: job.pickup_address || job.address || '',
+                            customer_phone: job.customer_phone || '',
+                            area: job.area || '',
+                            oil_type: job.oil_type || '',
+                            estimated_quantity: job.estimated_quantity || '',
                             driver: driver,
                             _source: 'jobs'
                         };
@@ -4031,6 +4046,7 @@ function showSection(section) {
                 await calculateCollectionsStats();
                 populateFilterDropdowns();
                 displayCollections(collections, collections.length > 0 ? collections[0]._source !== 'oil_collections' : false);
+                renderPendingByArea(collections);
                 
                 const sourceInfo = collections.length > 0 ? 
                     (collections[0]._source === 'oil_collections' ? 'from oil_collections table' : 'from jobs table (fallback)') : '';
@@ -4054,6 +4070,109 @@ function showSection(section) {
                 container.classList.remove('loading');
                 document.getElementById('collectionsStatus').textContent = 'Collections: Error';
             }
+        }
+
+        // Groups pending pickups by area so the buyer team can quickly see how
+        // many pickups are outstanding per area (e.g. Pinetown) and print a
+        // tip sheet to hand to drivers, instead of manually scanning the full
+        // collections list.
+        function renderPendingByArea(collections) {
+            const container = document.getElementById('pendingByAreaList');
+            const pendingStatuses = ['pending', 'scheduled', 'requested'];
+            const pending = (collections || []).filter(c => pendingStatuses.includes((c.status || '').toLowerCase()));
+
+            if (pending.length === 0) {
+                container.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted);">No pending pickups.</div>';
+                return;
+            }
+
+            const groups = {};
+            pending.forEach(c => {
+                const area = (c.area || c.job?.area || 'Unspecified Area').trim() || 'Unspecified Area';
+                if (!groups[area]) groups[area] = [];
+                groups[area].push(c);
+            });
+
+            const sortedAreas = Object.keys(groups).sort((a, b) => groups[b].length - groups[a].length);
+
+            const rows = sortedAreas.map(area => {
+                const count = groups[area].length;
+                const areaKey = encodeURIComponent(area);
+                return `<tr>
+                    <td style="padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); color: var(--text-primary); font-weight:600;">${area}</td>
+                    <td style="padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); color: var(--text-primary);">${count} pickup${count === 1 ? '' : 's'}</td>
+                    <td style="padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <button onclick="printTipSheet('${areaKey}')" style="background: var(--accent); color:#fff; border:none; border-radius:8px; padding:6px 14px; font-size:0.85rem; font-weight:600; cursor:pointer;">
+                            <i class="fa-solid fa-print"></i> Print Tip Sheet
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            container.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse;">
+                <thead><tr>
+                    <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.8rem; text-transform:uppercase;">Area</th>
+                    <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.8rem; text-transform:uppercase;">Pending Pickups</th>
+                    <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.8rem; text-transform:uppercase;">Action</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table></div>`;
+
+            // Stash the grouped data so printTipSheet() can look it up by area
+            // without re-filtering allCollections.
+            window._pendingByAreaGroups = groups;
+        }
+
+        // Opens a printable tip sheet for a given area listing every pending
+        // pickup's customer name, address, phone and oil details so the buyer
+        // team can hand it directly to the driver assigned to that area.
+        function printTipSheet(areaKey) {
+            const area = decodeURIComponent(areaKey);
+            const groups = window._pendingByAreaGroups || {};
+            const items = groups[area] || [];
+            if (items.length === 0) {
+                alert('No pending pickups found for this area.');
+                return;
+            }
+
+            const rowsHtml = items.map((c, i) => {
+                const job = c.job || {};
+                const phone = c.customer_phone || job.customer_phone || '-';
+                const oilType = c.oil_type || job.oil_type || '-';
+                const quantity = c.estimated_quantity || job.estimated_quantity || '-';
+                const address = c.customer_address || job.pickup_address || '-';
+                const notes = c.notes || job.notes || job.description || '';
+                return `<tr>
+                    <td style="padding:8px; border:1px solid #ccc;">${i + 1}</td>
+                    <td style="padding:8px; border:1px solid #ccc;">${c.customer_name || 'Unknown Customer'}</td>
+                    <td style="padding:8px; border:1px solid #ccc;">${phone}</td>
+                    <td style="padding:8px; border:1px solid #ccc;">${address}</td>
+                    <td style="padding:8px; border:1px solid #ccc;">${oilType}</td>
+                    <td style="padding:8px; border:1px solid #ccc;">${quantity}</td>
+                    <td style="padding:8px; border:1px solid #ccc;">${notes}</td>
+                </tr>`;
+            }).join('');
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`<!DOCTYPE html><html><head><title>Tip Sheet - ${area}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+                    h1 { font-size: 20px; margin-bottom: 4px; }
+                    .meta { color: #555; margin-bottom: 20px; font-size: 13px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+                    th { text-align: left; padding: 8px; border: 1px solid #ccc; background: #f3f4f6; }
+                </style>
+                </head><body>
+                <h1>Pickup Tip Sheet - ${area}</h1>
+                <div class="meta">Generated: ${new Date().toLocaleString()} &nbsp;|&nbsp; Total pickups: ${items.length}</div>
+                <table>
+                    <thead><tr><th>#</th><th>Customer</th><th>Phone</th><th>Address</th><th>Oil Type</th><th>Est. Qty</th><th>Notes</th></tr></thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+                </body></html>`);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
         }
 
         async function calculateCollectionsStats() {
