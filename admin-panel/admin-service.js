@@ -262,6 +262,45 @@ class AdminService {
             
             if (updateError) throw updateError;
 
+            // Keep user_roles.status in sync — this is the gate the login flow
+            // actually checks first. Without this, an "approved" driver/customer
+            // can still be blocked at login with "pending admin approval".
+            const roleStatus = action === 'approved' ? 'active' : 'rejected';
+            const supabase = this.getSupabaseClient();
+            const { data: existingRole, error: roleFetchError } = await supabase
+                .from('user_roles')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('platform', userType)
+                .maybeSingle();
+
+            if (roleFetchError) {
+                console.error('AdminService: Could not check user_roles for sync:', roleFetchError);
+            } else if (existingRole) {
+                const { error: roleUpdateError } = await supabase
+                    .from('user_roles')
+                    .update({ status: roleStatus, updated_at: now })
+                    .eq('id', existingRole.id);
+                if (roleUpdateError) {
+                    console.error('AdminService: Could not sync user_roles status:', roleUpdateError);
+                }
+            } else {
+                const { error: roleInsertError } = await supabase
+                    .from('user_roles')
+                    .insert({
+                        user_id: userId,
+                        email: currentData[0].email,
+                        platform: userType,
+                        platform_role: userType,
+                        status: roleStatus,
+                        created_at: now,
+                        updated_at: now
+                    });
+                if (roleInsertError) {
+                    console.error('AdminService: Could not create user_roles row during sync:', roleInsertError);
+                }
+            }
+
             // Record verification history
             await this.recordVerificationHistory(userId, userType, action, oldStatus, notes);
 

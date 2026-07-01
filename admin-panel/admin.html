@@ -2542,6 +2542,7 @@
             const client = window.getSupabaseClient();
             const { error } = await client.from('customers').update({ verification_status: 'approved', status: 'active' }).eq('id', id);
             if (error) { alert('Error: ' + error.message); return; }
+            await syncUserRoleStatus(client, id, 'customer', 'active');
             loadAllCustomersRaw();
         }
         async function quickRejectCustomer(id) {
@@ -2549,7 +2550,60 @@
             const client = window.getSupabaseClient();
             const { error } = await client.from('customers').update({ verification_status: 'rejected' }).eq('id', id);
             if (error) { alert('Error: ' + error.message); return; }
+            await syncUserRoleStatus(client, id, 'customer', 'rejected');
             loadAllCustomersRaw();
+        }
+
+        // Keeps user_roles.status in sync with a driver/customer verification
+        // decision. The login flow on the driver/customer apps gates access on
+        // user_roles.status BEFORE checking the drivers/customers table, so any
+        // approval path that skips this sync leaves the user stuck on
+        // "pending admin approval" even though they were approved.
+        async function syncUserRoleStatus(client, userId, platform, status) {
+            try {
+                const { data: existingRole, error: fetchError } = await client
+                    .from('user_roles')
+                    .select('id')
+                    .eq('user_id', userId)
+                    .eq('platform', platform)
+                    .maybeSingle();
+                if (fetchError) {
+                    console.error('syncUserRoleStatus: fetch failed', fetchError);
+                    return;
+                }
+                const now = new Date().toISOString();
+                if (existingRole) {
+                    const { error: updateError } = await client
+                        .from('user_roles')
+                        .update({ status, updated_at: now })
+                        .eq('id', existingRole.id);
+                    if (updateError) console.error('syncUserRoleStatus: update failed', updateError);
+                } else {
+                    const { data: sourceRecord, error: sourceError } = await client
+                        .from(platform === 'driver' ? 'drivers' : 'customers')
+                        .select('email')
+                        .eq('id', userId)
+                        .maybeSingle();
+                    if (sourceError || !sourceRecord) {
+                        console.error('syncUserRoleStatus: could not resolve email for insert', sourceError);
+                        return;
+                    }
+                    const { error: insertError } = await client
+                        .from('user_roles')
+                        .insert({
+                            user_id: userId,
+                            email: sourceRecord.email,
+                            platform,
+                            platform_role: platform,
+                            status,
+                            created_at: now,
+                            updated_at: now
+                        });
+                    if (insertError) console.error('syncUserRoleStatus: insert failed', insertError);
+                }
+            } catch (e) {
+                console.error('syncUserRoleStatus: unexpected error', e);
+            }
         }
 
         // If the table appears empty but customers ARE being registered, the
