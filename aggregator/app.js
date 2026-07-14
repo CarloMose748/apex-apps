@@ -464,11 +464,33 @@
         .insert([eventData])
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     } catch (e) {
       console.error('Error creating event:', e);
+      return null;
+    }
+  }
+
+  // Uploads a single photo/doc file to the 'depot-event-files' Supabase
+  // Storage bucket and returns its public URL. Files are namespaced by
+  // bin_id so multiple receipts of the same bin don't collide.
+  async function uploadDepotFile(binId, file) {
+    try {
+      const safeName = (file.name || `upload_${Date.now()}`).replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${binId}/${Date.now()}_${safeName}`;
+      const { data, error } = await supabase.storage
+        .from('depot-event-files')
+        .upload(path, file, { upsert: false, contentType: file.type || undefined });
+      if (error) {
+        console.error('uploadDepotFile error:', error);
+        return null;
+      }
+      const { data: pub } = supabase.storage.from('depot-event-files').getPublicUrl(data.path);
+      return pub?.publicUrl || null;
+    } catch (e) {
+      console.error('uploadDepotFile exception:', e);
       return null;
     }
   }
@@ -713,9 +735,23 @@
         
         // Allow bins to be received multiple times (no status check)
 
-        let photoNames = '';
+        // Upload any attached photos/docs to the depot-event-files bucket
+        // and store the resulting public URLs (comma-separated) on the event
+        // row. The admin panel will then render these as clickable thumbnails
+        // / file links instead of the previous (broken) plain-text filenames.
+        let photoUrls = '';
         if (photoEl && photoEl.files && photoEl.files.length > 0) {
-          photoNames = Array.from(photoEl.files).map(f => f.name).join(', ');
+          setMessage(msgEl, `Uploading ${photoEl.files.length} file(s)...`, '');
+          const uploadedUrls = [];
+          for (const file of Array.from(photoEl.files)) {
+            const url = await uploadDepotFile(resolvedBin.id, file);
+            if (url) uploadedUrls.push(url);
+          }
+          if (uploadedUrls.length > 0) {
+            photoUrls = uploadedUrls.join(', ');
+          } else {
+            setMessage(msgEl, 'Failed to upload files; saving receipt without photos', '');
+          }
         }
 
         setMessage(msgEl, 'Saving receipt...', '');
@@ -734,7 +770,7 @@
           quantity_unit: unitValue,
           oil_type: oilTypeEl && oilTypeEl.value ? oilTypeEl.value : null,
           notes: notesEl && (notesEl.value || '').trim() ? (notesEl.value || '').trim() : null,
-          photo_url: photoNames || null
+          photo_url: photoUrls || null
         };
 
         const event = await createEvent(eventData);

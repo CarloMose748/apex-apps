@@ -5370,10 +5370,29 @@ function showSection(section) {
                     const customerCell = event.customer_id
                         ? `<a href="javascript:void(0)" onclick="searchUserById('${event.customer_id}')" style="color:#2563eb; text-decoration:underline; cursor:pointer;" title="${event.customer_id}">${event.customer_name || event.customer_id.slice(0, 8)}</a>`
                         : '<span style="color:#9ca3af;">—</span>';
-                    // Photos / docs as comma-separated names
-                    const photoCell = event.photo_url
-                        ? `<span title="${String(event.photo_url).replace(/"/g,'&quot;')}" style="font-size:0.8em; color:#0e7490;">${event.photo_url.length > 32 ? event.photo_url.slice(0, 32) + '…' : event.photo_url}</span>`
-                        : '—';
+                    // Photos / docs: photo_url is now a comma-separated list of
+                    // public URLs uploaded to the depot-event-files bucket.
+                    // Render images as inline thumbnails (clickable to full size)
+                    // and other files as named download links.
+                    let photoCell = '—';
+                    if (event.photo_url) {
+                        const urls = String(event.photo_url).split(',').map(s => s.trim()).filter(Boolean);
+                        if (urls.length > 0) {
+                            const items = urls.map(u => {
+                                const safe = String(u).replace(/"/g, '&quot;').replace(/</g, '&lt;');
+                                const lower = u.toLowerCase();
+                                const isImg = /\.(jpe?g|png|gif|webp|bmp)(\?|#|$)/i.test(lower);
+                                if (isImg) {
+                                    return `<a href="${safe}" target="_blank" rel="noopener" style="display:inline-block; margin:2px;"><img src="${safe}" alt="receipt file" style="width:54px; height:54px; object-fit:cover; border-radius:6px; border:1px solid var(--border-color);" /></a>`;
+                                }
+                                const fname = safe.split('/').pop().split('?')[0] || 'file';
+                                const ext = (fname.split('.').pop() || '').toLowerCase();
+                                const isPdf = ext === 'pdf';
+                                return `<a href="${safe}" target="_blank" rel="noopener" title="${safe}" style="display:inline-block; margin:2px; padding:4px 8px; font-size:0.78em; background:${isPdf ? '#fee2e2' : '#e0e7ff'}; color:${isPdf ? '#991b1b' : '#3730a3'}; border-radius:6px; text-decoration:none;"><i class="fa-solid fa-${isPdf ? 'file-pdf' : 'file'}"></i> ${fname.length > 22 ? fname.slice(0, 22) + '…' : fname}</a>`;
+                            });
+                            photoCell = `<div style="display:flex; flex-wrap:wrap; gap:2px; max-width:240px;">${items.join('')}</div>`;
+                        }
+                    }
                     html += `<tr>
                         <td style="font-weight:600;">${event.bin_id || 'N/A'}</td>
                         <td><span style="background:${eventTypeBg}; color:${eventTypeColor}; padding:4px 8px; border-radius:6px; font-size:0.85em; font-weight:600;">${event.event_type || 'N/A'}</span></td>
