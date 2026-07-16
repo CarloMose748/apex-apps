@@ -113,6 +113,7 @@
         .nav-btn.tab-collections { border-left-color: #3b82f6; }
         .nav-btn.tab-collections.active, .nav-btn.tab-collections:hover { border-left-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.2); }
         .nav-btn.tab-highaggregators { border-left-color: #8b5cf6; }
+        .nav-btn.tab-compliance { border-left-color: #ef4444; }
         .nav-btn.tab-highaggregators.active, .nav-btn.tab-highaggregators:hover { border-left-color: #8b5cf6; box-shadow: 0 4px 12px rgba(139,92,246,0.2); }
         .nav-btn.tab-carboncredits { border-left-color: #10b981; }
         .nav-btn.tab-carboncredits.active, .nav-btn.tab-carboncredits:hover { border-left-color: #10b981; box-shadow: 0 4px 12px rgba(16,185,129,0.2); }
@@ -683,6 +684,7 @@
             <button class="nav-btn tab-highaggregators" onclick="showSection('highaggregators')"><i class="fa-solid fa-building-wheat"></i> Aggregator Depot</button>
             <button class="nav-btn tab-qrcodes" onclick="showSection('qrcodes')"><i class="fa-solid fa-qrcode"></i> Depot QR Codes</button>
             <button class="nav-btn tab-customers" onclick="showSection('customers')"><i class="fa-solid fa-users"></i> Customers &amp; Stores</button>
+            <button class="nav-btn tab-compliance" onclick="showSection('compliance')"><i class="fa-solid fa-file-circle-check"></i> Customer Compliance</button>
                     <!-- Drivers Section -->
                     <div id="driversSection" class="section" style="display: none; width: 100%; padding: 0;">
                         <div class="section-card" style="width: 100%; max-width: 100vw; margin: 0 auto 32px auto; border-radius: 32px; background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.3); padding: 40px 32px 32px 32px;">
@@ -787,7 +789,8 @@
                         collections: 'collectionsSection',
                         highaggregators: 'highaggregatorsSection',
                         qrcodes: 'qrcodesSection',
-                        customers: 'customersSection'
+                        customers: 'customersSection',
+                        compliance: 'complianceSection'
                     };
                     function showSection(section) {
                         currentSection = section;
@@ -813,6 +816,9 @@
                         }
                         if (section === 'customers') {
                             setTimeout(() => loadCustomersSection(), 100);
+                        }
+                        if (section === 'compliance') {
+                            setTimeout(() => loadComplianceSection(), 100);
                         }
                     }
                     </script>
@@ -1394,6 +1400,90 @@
                     <button onclick="closeCustomerDetailModal()" style="background:none; border:none; color: var(--text-muted); font-size:1.4rem; cursor:pointer;">&times;</button>
                 </div>
                 <div id="customerDetailContent">Loading…</div>
+            </div>
+        </div>
+
+        <!-- Customer Compliance Section -->
+        <div id="complianceSection" class="section" style="display: none;">
+            <div class="section-card">
+                <h3 class="section-title"><i class="fa-solid fa-file-circle-check"></i> Customer Compliance</h3>
+                <p style="color: var(--text-muted); margin: 0 0 20px 0; font-size: 0.95rem;">All compliance artefacts submitted by customers through the Customer app: SARS declarations, customer-uploaded collection photos, ISCC self-declaration PDFs and VAT declarations.</p>
+
+                <!-- Summary Stats -->
+                <div class="stats-grid" style="margin-bottom: 24px;">
+                    <div class="stat-card" style="border-left: 3px solid #ef4444;">
+                        <div class="stat-value" style="color: #f87171;" id="complianceSarsCount">0</div>
+                        <div class="stat-label">SARS Declarations</div>
+                    </div>
+                    <div class="stat-card" style="border-left: 3px solid #0ea5e9;">
+                        <div class="stat-value" style="color: #38bdf8;" id="compliancePhotosCount">0</div>
+                        <div class="stat-label">Customer Photos</div>
+                    </div>
+                    <div class="stat-card" style="border-left: 3px solid #10b981;">
+                        <div class="stat-value" style="color: #34d399;" id="complianceIsccCount">0</div>
+                        <div class="stat-label">ISCC Submissions</div>
+                    </div>
+                    <div class="stat-card" style="border-left: 3px solid #f59e0b;">
+                        <div class="stat-value" style="color: #fbbf24;" id="complianceVatCount">0</div>
+                        <div class="stat-label">VAT Declarations</div>
+                    </div>
+                </div>
+
+                <!-- Tab buttons -->
+                <div style="display:flex; gap:8px; margin-bottom:18px; border-bottom:1px solid var(--border-color); flex-wrap:wrap;">
+                    <button class="compliance-tab-btn active" onclick="showComplianceTab('sars')" id="complianceTabSars" style="padding:10px 18px; background:none; border:none; border-bottom:3px solid var(--accent); color:var(--accent-light); font-weight:600; cursor:pointer; transition:all 0.3s;">
+                        <i class="fa-solid fa-landmark"></i> SARS Declarations
+                    </button>
+                    <button class="compliance-tab-btn" onclick="showComplianceTab('photos')" id="complianceTabPhotos" style="padding:10px 18px; background:none; border:none; border-bottom:3px solid transparent; color: var(--text-muted); font-weight:600; cursor:pointer; transition:all 0.3s;">
+                        <i class="fa-solid fa-camera"></i> Collection Photos
+                    </button>
+                    <button class="compliance-tab-btn" onclick="showComplianceTab('iscc')" id="complianceTabIscc" style="padding:10px 18px; background:none; border:none; border-bottom:3px solid transparent; color: var(--text-muted); font-weight:600; cursor:pointer; transition:all 0.3s;">
+                        <i class="fa-solid fa-leaf"></i> ISCC Submissions
+                    </button>
+                    <button class="compliance-tab-btn" onclick="showComplianceTab('vat')" id="complianceTabVat" style="padding:10px 18px; background:none; border:none; border-bottom:3px solid transparent; color: var(--text-muted); font-weight:600; cursor:pointer; transition:all 0.3s;">
+                        <i class="fa-solid fa-percent"></i> VAT Declarations
+                    </button>
+                </div>
+
+                <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
+                    <button class="nav-btn" onclick="loadComplianceSection()" style="padding:8px 16px; font-size:14px;"><i class="fa-solid fa-arrows-rotate"></i> Refresh All</button>
+                    <input id="complianceSearchInput" type="text" placeholder="Search by company, email, reference…" oninput="filterComplianceTable()" style="flex:1; min-width:240px; padding:8px 12px; border-radius:10px; border:1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary); font-size:14px;" />
+                </div>
+
+                <!-- SARS Tab -->
+                <div id="complianceSarsTab" class="compliance-tab-content">
+                    <div id="complianceSarsList" class="loading" style="min-height: 160px; border-radius: 12px; background: var(--bg-card); padding: 20px; overflow-x: auto; width: 100%;">
+                        <div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading SARS declarations...</div>
+                    </div>
+                </div>
+
+                <!-- Photos Tab -->
+                <div id="compliancePhotosTab" class="compliance-tab-content" style="display:none;">
+                    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                        <button class="compliance-photo-type-btn active" onclick="filterPhotosByType('all')" data-type="all" style="padding:6px 14px; background:var(--accent); color:#fff; border:none; border-radius:8px; font-size:0.85em; font-weight:600; cursor:pointer;">All</button>
+                        <button class="compliance-photo-type-btn" onclick="filterPhotosByType('certificate')" data-type="certificate" style="padding:6px 14px; background:rgba(255,255,255,0.08); color: var(--text-primary); border:1px solid var(--border-color); border-radius:8px; font-size:0.85em; font-weight:600; cursor:pointer;">Certificates</button>
+                        <button class="compliance-photo-type-btn" onclick="filterPhotosByType('before')" data-type="before" style="padding:6px 14px; background:rgba(255,255,255,0.08); color: var(--text-primary); border:1px solid var(--border-color); border-radius:8px; font-size:0.85em; font-weight:600; cursor:pointer;">Before</button>
+                        <button class="compliance-photo-type-btn" onclick="filterPhotosByType('after')" data-type="after" style="padding:6px 14px; background:rgba(255,255,255,0.08); color: var(--text-primary); border:1px solid var(--border-color); border-radius:8px; font-size:0.85em; font-weight:600; cursor:pointer;">After</button>
+                        <button class="compliance-photo-type-btn" onclick="filterPhotosByType('other')" data-type="other" style="padding:6px 14px; background:rgba(255,255,255,0.08); color: var(--text-primary); border:1px solid var(--border-color); border-radius:8px; font-size:0.85em; font-weight:600; cursor:pointer;">Other</button>
+                    </div>
+                    <div id="compliancePhotosList" class="loading" style="min-height: 160px; border-radius: 12px; background: var(--bg-card); padding: 20px;">
+                        <div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading photos...</div>
+                    </div>
+                </div>
+
+                <!-- ISCC Tab -->
+                <div id="complianceIsccTab" class="compliance-tab-content" style="display:none;">
+                    <div id="complianceIsccList" class="loading" style="min-height: 160px; border-radius: 12px; background: var(--bg-card); padding: 20px;">
+                        <div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading ISCC submissions...</div>
+                    </div>
+                </div>
+
+                <!-- VAT Tab -->
+                <div id="complianceVatTab" class="compliance-tab-content" style="display:none;">
+                    <div id="complianceVatList" class="loading" style="min-height: 160px; border-radius: 12px; background: var(--bg-card); padding: 20px;">
+                        <div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading VAT declarations...</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2975,6 +3065,371 @@
         function closeCustomerDetailModal() {
             const modal = document.getElementById('customerDetailModal');
             if (modal) modal.style.display = 'none';
+        }
+
+        // =====================================================================
+        // Customer Compliance section
+        // Surfaces everything customers submit through the Customer app that
+        // was previously invisible to admins:
+        //   - SARS declarations (sars_declarations table)
+        //   - Customer collection photos (oil_collection_photos table)
+        //   - ISCC self-declaration PDFs (storage: compliance-submissions/iscc/)
+        //   - VAT declaration PDFs (storage: compliance-submissions/vat/)
+        // All read-only.
+        // =====================================================================
+
+        let complianceSarsRows = [];
+        let compliancePhotoRows = [];
+        let complianceCurrentPhotoType = 'all';
+        let complianceBucketFiles = { iscc: [], vat: [] };
+
+        function showComplianceTab(tabName) {
+            const tabs = ['sars', 'photos', 'iscc', 'vat'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`compliance${t.charAt(0).toUpperCase() + t.slice(1)}Tab`);
+                const btn = document.getElementById(`complianceTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                if (el) el.style.display = (t === tabName) ? '' : 'none';
+                if (btn) {
+                    btn.style.borderBottomColor = (t === tabName) ? 'var(--accent)' : 'transparent';
+                    btn.style.color = (t === tabName) ? 'var(--accent-light)' : 'var(--text-muted)';
+                }
+            });
+        }
+
+        async function loadComplianceSection() {
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) throw new Error('Supabase client not initialised.');
+
+                // 1. SARS declarations
+                try {
+                    const { data, error } = await client
+                        .from('sars_declarations')
+                        .select('*')
+                        .order('declaration_date', { ascending: false, nullsFirst: false })
+                        .limit(500);
+                    if (error) {
+                        console.warn('Compliance: SARS load warning:', error);
+                        complianceSarsRows = [];
+                    } else {
+                        complianceSarsRows = data || [];
+                    }
+                } catch (e) {
+                    console.warn('Compliance: SARS load failed:', e);
+                    complianceSarsRows = [];
+                }
+
+                // 2. Collection photos
+                try {
+                    const { data, error } = await client
+                        .from('oil_collection_photos')
+                        .select('id, collection_id, photo_type, file_name, file_url, caption, taken_at, created_at')
+                        .order('created_at', { ascending: false })
+                        .limit(500);
+                    if (error) {
+                        console.warn('Compliance: photos load warning:', error);
+                        compliancePhotoRows = [];
+                    } else {
+                        compliancePhotoRows = data || [];
+                    }
+                } catch (e) {
+                    console.warn('Compliance: photos load failed:', e);
+                    compliancePhotoRows = [];
+                }
+
+                // 3. ISCC bucket files
+                complianceBucketFiles.iscc = [];
+                try {
+                    const { data, error } = await client.storage.from('compliance-submissions').list('iscc', { limit: 200 });
+                    if (error) {
+                        console.warn('Compliance: ISCC list warning:', error);
+                    } else {
+                        complianceBucketFiles.iscc = (data || []).filter(f => f.name && f.name !== '.emptyFolderPlaceholder');
+                    }
+                } catch (e) {
+                    console.warn('Compliance: ISCC list failed:', e);
+                }
+                // Recurse into user-id subfolders (OfficialPdfSubmission uses ${config.folder}/${userId})
+                for (const folder of complianceBucketFiles.iscc.filter(f => !f.metadata || f.metadata.size === undefined)) {
+                    try {
+                        const { data: sub } = await client.storage.from('compliance-submissions').list(`iscc/${folder.name}`, { limit: 200 });
+                        if (sub && sub.length) {
+                            folder._subfiles = sub.filter(f => f.name && f.name !== '.emptyFolderPlaceholder');
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+
+                // 4. VAT bucket files
+                complianceBucketFiles.vat = [];
+                try {
+                    const { data, error } = await client.storage.from('compliance-submissions').list('vat', { limit: 200 });
+                    if (error) {
+                        console.warn('Compliance: VAT list warning:', error);
+                    } else {
+                        complianceBucketFiles.vat = (data || []).filter(f => f.name && f.name !== '.emptyFolderPlaceholder');
+                    }
+                } catch (e) {
+                    console.warn('Compliance: VAT list failed:', e);
+                }
+                for (const folder of complianceBucketFiles.vat.filter(f => !f.metadata || f.metadata.size === undefined)) {
+                    try {
+                        const { data: sub } = await client.storage.from('compliance-submissions').list(`vat/${folder.name}`, { limit: 200 });
+                        if (sub && sub.length) {
+                            folder._subfiles = sub.filter(f => f.name && f.name !== '.emptyFolderPlaceholder');
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+
+                updateComplianceStats();
+                renderSarsTable(complianceSarsRows);
+                renderPhotosGallery(compliancePhotoRows);
+                renderBucketFiles('iscc', complianceBucketFiles.iscc);
+                renderBucketFiles('vat', complianceBucketFiles.vat);
+            } catch (error) {
+                console.error('loadComplianceSection error:', error);
+                const container = document.getElementById('complianceSarsList');
+                if (container) container.innerHTML = `<div class="no-data" style="padding: 24px; text-align: center; color: #dc2626;">Error loading compliance data: ${error.message || 'Unknown error'}</div>`;
+            }
+        }
+
+        function updateComplianceStats() {
+            const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            setText('complianceSarsCount', complianceSarsRows.length);
+            setText('compliancePhotosCount', compliancePhotoRows.length);
+            const flatIscc = complianceBucketFiles.iscc.reduce((acc, f) => acc + (f._subfiles ? f._subfiles.length : 1), 0);
+            const flatVat = complianceBucketFiles.vat.reduce((acc, f) => acc + (f._subfiles ? f._subfiles.length : 1), 0);
+            setText('complianceIsccCount', flatIscc);
+            setText('complianceVatCount', flatVat);
+        }
+
+        function filterComplianceTable() {
+            const q = (document.getElementById('complianceSearchInput')?.value || '').toLowerCase().trim();
+            if (!q) {
+                renderSarsTable(complianceSarsRows);
+                renderPhotosGallery(compliancePhotoRows);
+                return;
+            }
+            const filteredSars = complianceSarsRows.filter(r => {
+                return (
+                    (r.company_name || '').toLowerCase().includes(q) ||
+                    (r.user_email || '').toLowerCase().includes(q) ||
+                    (r.vat_number || '').toLowerCase().includes(q) ||
+                    (r.tax_reference || '').toLowerCase().includes(q) ||
+                    (r.waste_type || '').toLowerCase().includes(q)
+                );
+            });
+            renderSarsTable(filteredSars);
+            const filteredPhotos = compliancePhotoRows.filter(r => {
+                return (
+                    (r.file_name || '').toLowerCase().includes(q) ||
+                    (r.caption || '').toLowerCase().includes(q) ||
+                    (r.photo_type || '').toLowerCase().includes(q)
+                );
+            });
+            renderPhotosGallery(filteredPhotos);
+        }
+
+        function filterPhotosByType(type) {
+            complianceCurrentPhotoType = type;
+            document.querySelectorAll('.compliance-photo-type-btn').forEach(b => {
+                if (b.getAttribute('data-type') === type) {
+                    b.style.background = 'var(--accent)';
+                    b.style.color = '#fff';
+                    b.style.borderColor = 'var(--accent)';
+                } else {
+                    b.style.background = 'rgba(255,255,255,0.08)';
+                    b.style.color = 'var(--text-primary)';
+                    b.style.borderColor = 'var(--border-color)';
+                }
+            });
+            if (type === 'all') return renderPhotosGallery(compliancePhotoRows);
+            renderPhotosGallery(compliancePhotoRows.filter(p => (p.photo_type || '').toLowerCase() === type));
+        }
+
+        function renderSarsTable(rows) {
+            const container = document.getElementById('complianceSarsList');
+            if (!container) return;
+            if (!rows || rows.length === 0) {
+                container.innerHTML = '<div class="no-data" style="padding: 24px; text-align: center; color: var(--text-muted);">No SARS declarations submitted yet.</div>';
+                container.classList.remove('loading');
+                return;
+            }
+            const thead = `
+                <tr>
+                    <th>Company</th>
+                    <th>VAT #</th>
+                    <th>Tax Ref</th>
+                    <th>Waste Type</th>
+                    <th>Volume</th>
+                    <th>Value</th>
+                    <th>Period</th>
+                    <th>Declaration Date</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>`;
+            const body = rows.map(r => {
+                const safeId = String(r.id).replace(/'/g, '');
+                const period = (r.period_from || r.period_to) ? `${r.period_from || '—'} → ${r.period_to || '—'}` : '—';
+                return `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <td style="padding:8px 12px; vertical-align: top;">
+                        <div style="font-weight:600; color: var(--text-primary);">${r.company_name || '—'}</div>
+                        <div style="font-size:0.8em; color: var(--text-muted);">${r.user_email || ''}</div>
+                        ${r.company_registration && r.company_registration !== 'N/A' ? `<div style="font-size:0.78em; color: var(--text-muted);">Reg: ${r.company_registration}</div>` : ''}
+                    </td>
+                    <td style="padding:8px 12px; vertical-align: top; font-family: monospace; font-size:0.85em;">${r.vat_number || '—'}</td>
+                    <td style="padding:8px 12px; vertical-align: top; font-family: monospace; font-size:0.85em;">${r.tax_reference || '—'}</td>
+                    <td style="padding:8px 12px; vertical-align: top;">${r.waste_type || '—'}</td>
+                    <td style="padding:8px 12px; vertical-align: top;">${r.waste_volume != null ? r.waste_volume + ' L' : '—'}</td>
+                    <td style="padding:8px 12px; vertical-align: top;">${r.waste_value != null ? 'R' + Number(r.waste_value).toFixed(2) : '—'}</td>
+                    <td style="padding:8px 12px; vertical-align: top; font-size:0.85em; color: var(--text-muted);">${period}</td>
+                    <td style="padding:8px 12px; vertical-align: top; font-size:0.85em;">${r.declaration_date ? new Date(r.declaration_date).toLocaleDateString() : '—'}</td>
+                    <td style="padding:8px 12px; vertical-align: top;"><span style="background:rgba(239,68,68,0.15); color:#f87171; padding:3px 8px; border-radius:6px; font-size:0.78em; font-weight:600; text-transform:uppercase;">${r.status || 'submitted'}</span></td>
+                    <td style="padding:8px 12px; vertical-align: top;"><button onclick="openSarsDetail('${safeId}')" style="background:none; border:1px solid var(--border-color); color: var(--text-muted); border-radius:6px; padding:4px 8px; font-size:0.78em; cursor:pointer;">View JSON</button></td>
+                </tr>`;
+            }).join('');
+            container.innerHTML = `
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead><tr>${thead}</tr></thead>
+                        <tbody>${body}</tbody>
+                    </table>
+                </div>
+                <div style="margin-top:12px; font-size:0.82em; color: var(--text-muted);">${rows.length} SARS declaration${rows.length === 1 ? '' : 's'}.</div>`;
+            container.classList.remove('loading');
+        }
+
+        function openSarsDetail(id) {
+            const r = complianceSarsRows.find(x => x.id === id);
+            if (!r) return;
+            const w = window.open('', '_blank');
+            w.document.write(`<!DOCTYPE html><html><head><title>SARS Declaration - ${r.company_name || id}</title>
+                <style>body{font-family:Inter,Arial,sans-serif;padding:24px;color:#111;background:#f8fafc;}h1{font-size:18px;margin:0 0 4px 0;}h2{font-size:14px;margin:24px 0 8px 0;color:#475569;text-transform:uppercase;letter-spacing:.05em;}pre{background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;overflow-x:auto;font-size:12px;line-height:1.5;}table{width:100%;border-collapse:collapse;margin-top:8px;}td{padding:6px 12px;border:1px solid #e2e8f0;font-size:13px;}td:first-child{background:#f1f5f9;font-weight:600;width:200px;}</style>
+                </head><body>
+                <h1>SARS Declaration</h1>
+                <div style="color:#64748b;margin-bottom:16px;">Submitted: ${r.created_at ? new Date(r.created_at).toLocaleString() : '—'}</div>
+                <h2>Company</h2>
+                <table>
+                    <tr><td>Company name</td><td>${r.company_name || '—'}</td></tr>
+                    <tr><td>Registration #</td><td>${r.company_registration || '—'}</td></tr>
+                    <tr><td>VAT number</td><td>${r.vat_number || '—'}</td></tr>
+                    <tr><td>Tax reference</td><td>${r.tax_reference || '—'}</td></tr>
+                    <tr><td>Email</td><td>${r.user_email || '—'}</td></tr>
+                </table>
+                <h2>Declaration</h2>
+                <table>
+                    <tr><td>Waste type</td><td>${r.waste_type || '—'}</td></tr>
+                    <tr><td>Volume (L)</td><td>${r.waste_volume != null ? r.waste_volume : '—'}</td></tr>
+                    <tr><td>Value (R)</td><td>${r.waste_value != null ? r.waste_value : '—'}</td></tr>
+                    <tr><td>Period from</td><td>${r.period_from || '—'}</td></tr>
+                    <tr><td>Period to</td><td>${r.period_to || '—'}</td></tr>
+                    <tr><td>Declaration date</td><td>${r.declaration_date || '—'}</td></tr>
+                    <tr><td>Status</td><td>${r.status || 'submitted'}</td></tr>
+                </table>
+                <h2>Full form data (JSON)</h2>
+                <pre>${JSON.stringify(r.form_data || {}, null, 2)}</pre>
+                </body></html>`);
+            w.document.close();
+        }
+
+        function renderPhotosGallery(rows) {
+            const container = document.getElementById('compliancePhotosList');
+            if (!container) return;
+            if (!rows || rows.length === 0) {
+                container.innerHTML = '<div class="no-data" style="padding: 24px; text-align: center; color: var(--text-muted);">No customer-uploaded photos.</div>';
+                container.classList.remove('loading');
+                return;
+            }
+            const cards = rows.map(p => {
+                const safeUrl = p.file_url ? String(p.file_url).replace(/"/g, '&quot;') : '';
+                const safeName = String(p.file_name || '').replace(/</g, '&lt;');
+                const type = (p.photo_type || 'other').toLowerCase();
+                const typeColor = type === 'certificate' ? '#10b981' : type === 'before' ? '#f59e0b' : type === 'after' ? '#0ea5e9' : '#9ca3af';
+                return `<div style="background: rgba(255,255,255,0.04); border:1px solid var(--border-color); border-radius:10px; overflow:hidden;">
+                    ${safeUrl ? `<a href="${safeUrl}" target="_blank" rel="noopener"><img src="${safeUrl}" alt="${safeName}" loading="lazy" style="width:100%; height:140px; object-fit:cover; display:block; background:#0f172a;" onerror="this.style.display='none'"/></a>` : `<div style="width:100%; height:140px; background:#0f172a; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:0.85em;">No preview</div>`}
+                    <div style="padding:10px 12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px;">
+                            <span style="background:${typeColor}; color:#fff; padding:2px 8px; border-radius:6px; font-size:0.7em; font-weight:600; text-transform:uppercase;">${type}</span>
+                            <span style="font-size:0.72em; color: var(--text-muted);">${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}</span>
+                        </div>
+                        <div style="font-size:0.82em; color: var(--text-primary); word-break:break-all; margin-top:4px;">${safeName || 'untitled'}</div>
+                        ${p.caption ? `<div style="font-size:0.78em; color: var(--text-muted); margin-top:4px; font-style:italic;">${String(p.caption).replace(/</g, '&lt;')}</div>` : ''}
+                        ${p.collection_id ? `<div style="font-size:0.7em; color: var(--text-muted); margin-top:4px;">Collection: ${String(p.collection_id).slice(0,8)}…</div>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+            container.innerHTML = `
+                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:14px;">${cards}</div>
+                <div style="margin-top:14px; font-size:0.82em; color: var(--text-muted);">${rows.length} photo${rows.length === 1 ? '' : 's'}.</div>`;
+            container.classList.remove('loading');
+        }
+
+        function renderBucketFiles(folder, files) {
+            const container = document.getElementById(`compliance${folder.charAt(0).toUpperCase() + folder.slice(1)}List`);
+            if (!container) return;
+            if (!files || files.length === 0) {
+                container.innerHTML = '<div class="no-data" style="padding: 24px; text-align: center; color: var(--text-muted);">No ' + folder.toUpperCase() + ' submissions yet.</div>';
+                container.classList.remove('loading');
+                return;
+            }
+            const flat = [];
+            files.forEach(f => {
+                if (f._subfiles && f._subfiles.length) {
+                    f._subfiles.forEach(s => flat.push({ ...s, fullPath: `${folder}/${f.name}/${s.name}`, owner: f.name }));
+                } else {
+                    flat.push({ ...f, fullPath: `${folder}/${f.name}`, owner: null });
+                }
+            });
+            if (flat.length === 0) {
+                container.innerHTML = '<div class="no-data" style="padding: 24px; text-align: center; color: var(--text-muted);">No ' + folder.toUpperCase() + ' submissions yet.</div>';
+                container.classList.remove('loading');
+                return;
+            }
+            const rows = flat.map(f => {
+                const safeName = String(f.name || '').replace(/</g, '&lt;');
+                const safePath = String(f.fullPath).replace(/'/g, "\\'");
+                const sizeKb = f.metadata && f.metadata.size != null ? (f.metadata.size / 1024).toFixed(1) + ' KB' : '—';
+                const updated = f.updated_at ? new Date(f.updated_at).toLocaleString() : (f.created_at || '—');
+                return `<tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <td style="padding:8px 12px; vertical-align: top;">
+                        <div style="font-weight:600; color: var(--text-primary);">${safeName}</div>
+                        <div style="font-size:0.75em; color: var(--text-muted);">${f.fullPath}</div>
+                    </td>
+                    <td style="padding:8px 12px; vertical-align: top; font-size:0.82em; color: var(--text-muted);">${f.owner || '—'}</td>
+                    <td style="padding:8px 12px; vertical-align: top; font-size:0.82em;">${sizeKb}</td>
+                    <td style="padding:8px 12px; vertical-align: top; font-size:0.82em; color: var(--text-muted);">${updated}</td>
+                    <td style="padding:8px 12px; vertical-align: top;">
+                        <button onclick="openBucketFile('${safePath}')" style="background: var(--accent); color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:0.78em; cursor:pointer;"><i class="fa-solid fa-download"></i> Open</button>
+                    </td>
+                </tr>`;
+            }).join('');
+            container.innerHTML = `
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead><tr>
+                            <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.78em; text-transform:uppercase;">File</th>
+                            <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.78em; text-transform:uppercase;">Customer</th>
+                            <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.78em; text-transform:uppercase;">Size</th>
+                            <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.78em; text-transform:uppercase;">Uploaded</th>
+                            <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.78em; text-transform:uppercase;">Action</th>
+                        </tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+                <div style="margin-top:12px; font-size:0.82em; color: var(--text-muted);">${flat.length} file${flat.length === 1 ? '' : 's'} in compliance-submissions/${folder}/.</div>`;
+            container.classList.remove('loading');
+        }
+
+        async function openBucketFile(path) {
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) throw new Error('Supabase client not available');
+                const { data, error } = await client.storage.from('compliance-submissions').createSignedUrl(path, 60 * 60);
+                if (error) throw error;
+                if (data?.signedUrl) window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+            } catch (e) {
+                alert('Unable to open file: ' + (e.message || e));
+            }
         }
 
         // If the table appears empty but customers ARE being registered, the
