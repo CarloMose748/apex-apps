@@ -682,6 +682,7 @@
             <button class="nav-btn tab-bins" onclick="showSection('bins')"><i class="fa-solid fa-boxes-stacked"></i> Bins Management</button>
             <button class="nav-btn tab-highaggregators" onclick="showSection('highaggregators')"><i class="fa-solid fa-building-wheat"></i> Aggregator Depot</button>
             <button class="nav-btn tab-qrcodes" onclick="showSection('qrcodes')"><i class="fa-solid fa-qrcode"></i> Depot QR Codes</button>
+            <button class="nav-btn tab-customers" onclick="showSection('customers')"><i class="fa-solid fa-users"></i> Customers &amp; Stores</button>
                     <!-- Drivers Section -->
                     <div id="driversSection" class="section" style="display: none; width: 100%; padding: 0;">
                         <div class="section-card" style="width: 100%; max-width: 100vw; margin: 0 auto 32px auto; border-radius: 32px; background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.3); padding: 40px 32px 32px 32px;">
@@ -785,7 +786,8 @@
                         smartbins: 'smartbinsSection',
                         collections: 'collectionsSection',
                         highaggregators: 'highaggregatorsSection',
-                        qrcodes: 'qrcodesSection'
+                        qrcodes: 'qrcodesSection',
+                        customers: 'customersSection'
                     };
                     function showSection(section) {
                         currentSection = section;
@@ -808,6 +810,9 @@
                         if (section === 'highaggregators') {
                             // Small delay to ensure section is visible
                             setTimeout(() => loadHighAggregators(), 100);
+                        }
+                        if (section === 'customers') {
+                            setTimeout(() => loadCustomersSection(), 100);
                         }
                     }
                     </script>
@@ -1333,6 +1338,62 @@
                 <div id="searchResults">
                     <div class="no-data">Use the filters above to search for users</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Customers & Stores Section -->
+        <div id="customersSection" class="section" style="display: none;">
+            <div class="section-card">
+                <h3 class="section-title"><i class="fa-solid fa-users"></i> Customers &amp; Stores</h3>
+                <p style="color: var(--text-muted); margin: 0 0 20px 0; font-size: 0.95rem;">All registered customers with their business info, allocated bins (stores) and pending pickups in one place. Click a row to see full detail.</p>
+
+                <!-- Customers Summary Stats -->
+                <div class="stats-grid" style="margin-bottom: 24px;">
+                    <div class="stat-card" style="border-left: 3px solid #0ea5e9;">
+                        <div class="stat-value" style="color: #38bdf8;" id="customersTotalCount">0</div>
+                        <div class="stat-label">Total Customers</div>
+                    </div>
+                    <div class="stat-card" style="border-left: 3px solid #10b981;">
+                        <div class="stat-value" style="color: #34d399;" id="customersApprovedCount">0</div>
+                        <div class="stat-label">Approved</div>
+                    </div>
+                    <div class="stat-card" style="border-left: 3px solid #f59e0b;">
+                        <div class="stat-value" style="color: #fbbf24;" id="customersPendingCount">0</div>
+                        <div class="stat-label">Pending Approval</div>
+                    </div>
+                    <div class="stat-card" style="border-left: 3px solid #8b5cf6;">
+                        <div class="stat-value" style="color: #a78bfa;" id="customersBinsCount">0</div>
+                        <div class="stat-label">Bins Allocated (Stores)</div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+                    <input id="customersSearchInput" type="text" placeholder="Search name, business, email, phone…" oninput="filterCustomersTable()" style="flex:1; min-width:240px; padding:8px 12px; border-radius:10px; border:1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary); font-size:14px;" />
+                    <select id="customersStatusFilter" onchange="filterCustomersTable()" style="padding:8px 12px; border-radius:10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.04); color: var(--text-primary); font-size:14px;">
+                        <option value="all">All Statuses</option>
+                        <option value="approved">Approved</option>
+                        <option value="pending">Pending</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <button class="nav-btn" onclick="loadCustomersSection()" style="padding:8px 16px; font-size:14px;"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+                </div>
+
+                <!-- Customers Table -->
+                <div id="customersList" class="loading" style="min-height: 200px; border-radius: 12px; background: var(--bg-card); padding: 20px; overflow-x: auto; width: 100%;">
+                    <div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading customers...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Detail Modal -->
+        <div id="customerDetailModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y:auto;">
+            <div style="background: var(--bg-card); border-radius: 16px; padding: 28px; max-width: 720px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.4);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                    <h3 style="margin:0; color: var(--text-primary);"><i class="fa-solid fa-user"></i> <span id="customerDetailTitle">Customer</span></h3>
+                    <button onclick="closeCustomerDetailModal()" style="background:none; border:none; color: var(--text-muted); font-size:1.4rem; cursor:pointer;">&times;</button>
+                </div>
+                <div id="customerDetailContent">Loading…</div>
             </div>
         </div>
 
@@ -2642,6 +2703,278 @@
             } catch (e) {
                 console.error('syncUserRoleStatus: unexpected error', e);
             }
+        }
+
+        // =====================================================================
+        // Customers & Stores section
+        // Loads every registered customer, joins their allocated bins
+        // (bins.customer_id) to surface "stores" (the bins a customer owns),
+        // and shows pending pickup counts via jobs.customer_email. All
+        // admin-side, read-only.
+        // =====================================================================
+
+        let allCustomersForAdmin = [];
+
+        async function loadCustomersSection() {
+            const container = document.getElementById('customersList');
+            if (container) {
+                container.classList.add('loading');
+                container.innerHTML = '<div style="padding: 32px; text-align: center; color: var(--accent); font-size: 1.2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading customers...</div>';
+            }
+
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) throw new Error('Supabase client not initialised.');
+
+                // 1. Customers
+                const { data: customers, error: custErr } = await client
+                    .from('customers')
+                    .select('id, full_name, email, phone_number, address, business_name, business_type, business_registration, verification_status, status, total_orders, created_at')
+                    .order('created_at', { ascending: false })
+                    .limit(500);
+                if (custErr) throw custErr;
+
+                const customerList = customers || [];
+
+                // 2. Bins per customer (bins.customer_id -> customers.id)
+                let binsByCustomer = {};
+                try {
+                    const { data: bins, error: binsErr } = await client
+                        .from('bins')
+                        .select('id, customer_id, bin_serial_number, bin_type, bin_size_liters, bin_status, address, location_notes, assigned_date, last_collection_date, next_scheduled_collection, collection_frequency')
+                        .order('assigned_date', { ascending: false });
+                    if (binsErr) {
+                        console.warn('Customers section: bins load warning:', binsErr);
+                    } else {
+                        (bins || []).forEach(b => {
+                            if (!b.customer_id) return;
+                            if (!binsByCustomer[b.customer_id]) binsByCustomer[b.customer_id] = [];
+                            binsByCustomer[b.customer_id].push(b);
+                        });
+                    }
+                } catch (e) {
+                    console.warn('Customers section: bins load failed:', e);
+                }
+
+                // 3. Pending jobs per customer email (jobs only stores email,
+                //    not a FK — best-effort join by email)
+                let pendingJobsByEmail = {};
+                try {
+                    const { data: jobs, error: jobsErr } = await client
+                        .from('jobs')
+                        .select('id, customer_email, status, area, pickup_address')
+                        .in('status', ['pending', 'requested', 'scheduled']);
+                    if (jobsErr) {
+                        console.warn('Customers section: jobs load warning:', jobsErr);
+                    } else {
+                        (jobs || []).forEach(j => {
+                            const k = (j.customer_email || '').toLowerCase().trim();
+                            if (!k) return;
+                            if (!pendingJobsByEmail[k]) pendingJobsByEmail[k] = [];
+                            pendingJobsByEmail[k].push(j);
+                        });
+                    }
+                } catch (e) {
+                    console.warn('Customers section: jobs load failed:', e);
+                }
+
+                // Stitch it together
+                allCustomersForAdmin = customerList.map(c => {
+                    const binsForCustomer = binsByCustomer[c.id] || [];
+                    const pendingJobs = pendingJobsByEmail[(c.email || '').toLowerCase().trim()] || [];
+                    return {
+                        ...c,
+                        bins: binsForCustomer,
+                        bin_count: binsForCustomer.length,
+                        pending_jobs_count: pendingJobs.length
+                    };
+                });
+
+                renderCustomersTable(allCustomersForAdmin);
+                updateCustomersStats(allCustomersForAdmin);
+            } catch (error) {
+                console.error('loadCustomersSection error:', error);
+                if (container) {
+                    container.innerHTML = `<div class="no-data" style="padding: 24px; text-align: center; color: #dc2626;">
+                        <i class="fa-solid fa-triangle-exclamation"></i><br><br>
+                        Error loading customers: ${error.message || 'Unknown error'}
+                    </div>`;
+                    container.classList.remove('loading');
+                }
+            }
+        }
+
+        function updateCustomersStats(rows) {
+            const total = rows.length;
+            const approved = rows.filter(r => r.verification_status === 'approved').length;
+            const pending = rows.filter(r => r.verification_status === 'pending').length;
+            const totalBins = rows.reduce((acc, r) => acc + (r.bin_count || 0), 0);
+            const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            setText('customersTotalCount', total);
+            setText('customersApprovedCount', approved);
+            setText('customersPendingCount', pending);
+            setText('customersBinsCount', totalBins);
+        }
+
+        function filterCustomersTable() {
+            const q = (document.getElementById('customersSearchInput')?.value || '').toLowerCase().trim();
+            const status = document.getElementById('customersStatusFilter')?.value || 'all';
+            const filtered = allCustomersForAdmin.filter(c => {
+                if (status !== 'all' && c.verification_status !== status) return false;
+                if (!q) return true;
+                return (
+                    (c.full_name || '').toLowerCase().includes(q) ||
+                    (c.business_name || '').toLowerCase().includes(q) ||
+                    (c.email || '').toLowerCase().includes(q) ||
+                    (c.phone_number || '').toLowerCase().includes(q) ||
+                    (c.address || '').toLowerCase().includes(q)
+                );
+            });
+            renderCustomersTable(filtered);
+        }
+
+        function renderCustomersTable(rows) {
+            const container = document.getElementById('customersList');
+            if (!container) return;
+            if (!rows || rows.length === 0) {
+                container.innerHTML = '<div class="no-data" style="padding: 24px; text-align: center; color: var(--text-muted);">No customers match the current filters.</div>';
+                return;
+            }
+            const thead = `
+                <tr>
+                    <th>Customer</th>
+                    <th>Business</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th>Stores (Bins)</th>
+                    <th>Pending Pickups</th>
+                    <th>Joined</th>
+                    <th></th>
+                </tr>`;
+            const body = rows.map(c => {
+                const statusColor = c.verification_status === 'approved' ? '#34d399' :
+                                    c.verification_status === 'pending'   ? '#fbbf24' :
+                                    c.verification_status === 'rejected'  ? '#f87171' : '#9ca3af';
+                const statusBg = c.verification_status === 'approved' ? 'rgba(16,185,129,0.15)' :
+                                 c.verification_status === 'pending'   ? 'rgba(245,158,11,0.15)' :
+                                 c.verification_status === 'rejected'  ? 'rgba(239,68,68,0.15)'  : 'rgba(156,163,175,0.15)';
+                const binBadge = c.bin_count > 0
+                    ? `<span style="background:#8b5cf6; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.82em; font-weight:600;">${c.bin_count}</span>`
+                    : `<span style="color:var(--text-muted); font-size:0.85em;">0</span>`;
+                const jobsBadge = c.pending_jobs_count > 0
+                    ? `<span style="background:#0ea5e9; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.82em; font-weight:600;">${c.pending_jobs_count}</span>`
+                    : `<span style="color:var(--text-muted); font-size:0.85em;">0</span>`;
+                const safeId = String(c.id).replace(/'/g, '');
+                return `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.06); cursor:pointer;" onclick="openCustomerDetail('${safeId}')">
+                    <td style="padding:10px 12px; vertical-align: top;">
+                        <div style="font-weight:600; color: var(--text-primary);">${c.full_name || '—'}</div>
+                        <div style="font-size:0.8em; color: var(--text-muted);">${c.email || ''}</div>
+                    </td>
+                    <td style="padding:10px 12px; vertical-align: top;">
+                        <div style="font-weight:500; color: var(--text-primary);">${c.business_name || '<span style="color:var(--text-muted);">—</span>'}</div>
+                        <div style="font-size:0.8em; color: var(--text-muted);">${c.business_type || ''}${c.business_registration && c.business_registration !== 'N/A' ? ' • Reg: ' + c.business_registration : ''}</div>
+                    </td>
+                    <td style="padding:10px 12px; vertical-align: top; font-size:0.88em;">
+                        <div style="color: var(--text-primary);">${c.phone_number || '—'}</div>
+                        <div style="font-size:0.8em; color: var(--text-muted); max-width:240px;">${c.address || ''}</div>
+                    </td>
+                    <td style="padding:10px 12px; vertical-align: top;">
+                        <span style="background:${statusBg}; color:${statusColor}; padding:3px 8px; border-radius:6px; font-size:0.78em; font-weight:600; text-transform:uppercase;">${c.verification_status || 'unknown'}</span>
+                        ${c.status && c.status !== c.verification_status ? `<div style="font-size:0.75em; color: var(--text-muted); margin-top:2px;">login: ${c.status}</div>` : ''}
+                    </td>
+                    <td style="padding:10px 12px; vertical-align: top;">${binBadge}</td>
+                    <td style="padding:10px 12px; vertical-align: top;">${jobsBadge}</td>
+                    <td style="padding:10px 12px; vertical-align: top; font-size:0.85em; color: var(--text-muted);">${c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
+                    <td style="padding:10px 12px; vertical-align: top;"><button style="background:none; border:1px solid var(--border-color); color: var(--text-muted); border-radius:6px; padding:4px 8px; font-size:0.78em; cursor:pointer;">View →</button></td>
+                </tr>`;
+            }).join('');
+            container.innerHTML = `
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead><tr>${thead}</tr></thead>
+                        <tbody>${body}</tbody>
+                    </table>
+                </div>
+                <div style="margin-top:12px; font-size:0.82em; color: var(--text-muted);">${rows.length} of ${allCustomersForAdmin.length} customer${allCustomersForAdmin.length === 1 ? '' : 's'} shown. Click any row for full detail.</div>
+            `;
+            container.classList.remove('loading');
+        }
+
+        function openCustomerDetail(customerId) {
+            const c = allCustomersForAdmin.find(x => x.id === customerId);
+            if (!c) return;
+            const titleEl = document.getElementById('customerDetailTitle');
+            const contentEl = document.getElementById('customerDetailContent');
+            const modal = document.getElementById('customerDetailModal');
+            if (titleEl) titleEl.textContent = c.full_name || c.business_name || 'Customer';
+
+            const binsHtml = (c.bins && c.bins.length > 0)
+                ? c.bins.map(b => `
+                    <div style="background: rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.3); border-radius:10px; padding:10px 12px; margin-bottom:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                            <div style="font-weight:600; color: var(--text-primary);">${b.bin_serial_number || b.id.slice(0,8)}</div>
+                            <span style="background:${b.bin_status === 'active' ? 'rgba(16,185,129,0.15)' : 'rgba(156,163,175,0.15)'}; color:${b.bin_status === 'active' ? '#34d399' : '#9ca3af'}; padding:2px 8px; border-radius:6px; font-size:0.75em; font-weight:600; text-transform:uppercase;">${b.bin_status || 'unknown'}</span>
+                        </div>
+                        <div style="font-size:0.85em; color: var(--text-muted); margin-top:4px;">
+                            ${b.bin_type || '—'}${b.bin_size_liters ? ' • ' + b.bin_size_liters + ' L' : ''}
+                            ${b.address ? ' • ' + b.address : ''}
+                        </div>
+                        ${b.assigned_date ? `<div style="font-size:0.78em; color: var(--text-muted); margin-top:4px;">Assigned: ${new Date(b.assigned_date).toLocaleDateString()}</div>` : ''}
+                        ${b.location_notes ? `<div style="font-size:0.85em; color: var(--text-primary); margin-top:6px; font-style:italic;">${b.location_notes}</div>` : ''}
+                        ${b.special_instructions ? `<div style="font-size:0.85em; color: var(--text-primary); margin-top:6px;"><strong>Instructions:</strong> ${b.special_instructions}</div>` : ''}
+                        ${b.next_scheduled_collection ? `<div style="font-size:0.78em; color: #fbbf24; margin-top:4px;"><i class="fa-solid fa-calendar"></i> Next scheduled: ${new Date(b.next_scheduled_collection).toLocaleDateString()}</div>` : ''}
+                        ${b.last_collection_date ? `<div style="font-size:0.78em; color: var(--text-muted); margin-top:2px;">Last collected: ${new Date(b.last_collection_date).toLocaleDateString()}</div>` : ''}
+                    </div>`).join('')
+                : '<div style="color: var(--text-muted); font-style:italic; padding:8px;">No bins allocated.</div>';
+
+            contentEl.innerHTML = `
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:20px;">
+                    <div>
+                        <div style="font-size:0.75em; color: var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Email</div>
+                        <div style="color: var(--text-primary);">${c.email || '—'}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.75em; color: var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Phone</div>
+                        <div style="color: var(--text-primary);">${c.phone_number || '—'}</div>
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <div style="font-size:0.75em; color: var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Address</div>
+                        <div style="color: var(--text-primary);">${c.address || '—'}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.75em; color: var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Business</div>
+                        <div style="color: var(--text-primary);">${c.business_name || '—'}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.75em; color: var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Type</div>
+                        <div style="color: var(--text-primary);">${c.business_type || '—'}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.75em; color: var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Registration #</div>
+                        <div style="color: var(--text-primary);">${c.business_registration || '—'}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.75em; color: var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Verification</div>
+                        <div style="color: var(--text-primary);">${c.verification_status || '—'}${c.verified_by ? ' (by ' + c.verified_by + ')' : ''}</div>
+                    </div>
+                </div>
+
+                <h4 style="margin: 0 0 10px 0; color: var(--text-primary);"><i class="fa-solid fa-boxes-stacked"></i> Stores / Allocated Bins (${c.bin_count || 0})</h4>
+                ${binsHtml}
+
+                <h4 style="margin: 20px 0 10px 0; color: var(--text-primary);"><i class="fa-solid fa-truck"></i> Pending Pickups (${c.pending_jobs_count || 0})</h4>
+                ${c.pending_jobs_count > 0 ? `<div style="color: var(--text-muted); font-size:0.9em;">${c.pending_jobs_count} pending job${c.pending_jobs_count === 1 ? '' : 's'} — see the Collections section for full details.</div>` : '<div style="color: var(--text-muted); font-style:italic; padding:8px;">No pending pickups.</div>'}
+
+                <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end;">
+                    <button onclick="closeCustomerDetailModal()" style="padding:8px 16px; background: var(--accent); color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Close</button>
+                </div>`;
+            modal.style.display = 'flex';
+        }
+
+        function closeCustomerDetailModal() {
+            const modal = document.getElementById('customerDetailModal');
+            if (modal) modal.style.display = 'none';
         }
 
         // If the table appears empty but customers ARE being registered, the
