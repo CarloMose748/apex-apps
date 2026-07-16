@@ -967,6 +967,17 @@
                     </div>
                 </div>
 
+                <!-- Stale Jobs: pickups that have lingered without being completed -->
+                <div style="margin-bottom: 24px;">
+                    <h4 style="margin: 0 0 12px 0; color: var(--text-primary); display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-hourglass-half"></i> Stale Jobs
+                        <span style="font-size:0.75em; font-weight:500; color: var(--text-muted);">pending &gt;72h &middot; accepted &gt;2h &middot; in_progress &gt;8h &middot; no_show</span>
+                    </h4>
+                    <div id="staleJobsList" style="border-radius: 12px; background: var(--bg-card); padding: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                        <div style="padding: 16px; text-align: center; color: var(--text-muted);">Loading...</div>
+                    </div>
+                </div>
+
                 <!-- Collections List -->
                 <div id="collectionsList" class="loading" style="margin-top: 0; min-height: 160px; border-radius: 12px; background: var(--bg-card); padding: 20px; overflow-x: auto; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05);"></div>
             </div>
@@ -5161,6 +5172,7 @@ function showSection(section) {
                 populateFilterDropdowns();
                 displayCollections(collections, collections.length > 0 ? collections[0]._source !== 'oil_collections' : false);
                 renderPendingByArea(collections);
+                await loadStaleJobs();
                 
                 const sourceInfo = collections.length > 0 ? 
                     (collections[0]._source === 'oil_collections' ? 'from oil_collections table' : 'from jobs table (fallback)') : '';
@@ -5287,6 +5299,149 @@ function showSection(section) {
             printWindow.document.close();
             printWindow.focus();
             printWindow.print();
+        }
+
+        // =====================================================================
+        // Stale Jobs panel
+        // Lists jobs that have lingered without progressing through the
+        // lifecycle:
+        //   - pending    > 72h   : no driver ever accepted
+        //   - accepted   > 2h    : driver claimed but never started
+        //   - in_progress > 8h   : driver started but never finished
+        //   - no_show            : driver reported customer wasn't available
+        // Each row has Reassign (returns to pending pool) and Cancel buttons
+        // so the admin can rectify without touching the DB directly.
+        // =====================================================================
+        async function loadStaleJobs() {
+            const container = document.getElementById('staleJobsList');
+            if (!container) return;
+            container.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted);">Loading stale jobs...</div>';
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) throw new Error('Supabase client not available');
+                const now = Date.now();
+                const cutoff72h = new Date(now - 72 * 3600 * 1000).toISOString();
+                const cutoff2h = new Date(now - 2 * 3600 * 1000).toISOString();
+                const cutoff8h = new Date(now - 8 * 3600 * 1000).toISOString();
+                const { data: jobs, error } = await client.from('jobs').select('id, customer_name, customer_email, customer_phone, pickup_address, area, status, driver_id, created_at, accepted_at, started_at, no_show_at, no_show_notes, stale_at').or(
+                    `and(status.eq.pending,created_at.lt.${cutoff72h}),and(status.eq.accepted,accepted_at.lt.${cutoff2h}),and(status.eq.in_progress,started_at.lt.${cutoff8h}),status.eq.no_show,status.eq.stale`
+                ).order('created_at', { ascending: false }).limit(100);
+                if (error) throw error;
+                renderStaleJobs(jobs || []);
+            } catch (e) {
+                console.error('loadStaleJobs error:', e);
+                container.innerHTML = `<div style="padding: 16px; text-align: center; color: #dc2626;">Error: ${e.message || e}</div>`;
+            }
+        }
+
+        function renderStaleJobs(jobs) {
+            const container = document.getElementById('staleJobsList');
+            if (!container) return;
+            if (!jobs || jobs.length === 0) {
+                container.innerHTML = '<div style="padding: 16px; text-align: center; color: #10b981;"><i class="fa-solid fa-circle-check"></i> No stale jobs. Everything is moving.</div>';
+                return;
+            }
+            const now = Date.now();
+            const reasonFor = (j) => {
+                if (j.status === 'no_show') return 'No Show';
+                if (j.status === 'stale')   return 'Flagged stale';
+                if (j.status === 'pending' && j.created_at) {
+                    const h = (now - new Date(j.created_at).getTime()) / 3600000;
+                    return `Pending ${h.toFixed(0)}h (no driver accepted)`;
+                }
+                if (j.status === 'accepted' && j.accepted_at) {
+                    const h = (now - new Date(j.accepted_at).getTime()) / 3600000;
+                    return `Driver accepted ${h.toFixed(0)}h ago, never started`;
+                }
+                if (j.status === 'in_progress' && j.started_at) {
+                    const h = (now - new Date(j.started_at).getTime()) / 3600000;
+                    return `In progress ${h.toFixed(0)}h, never completed`;
+                }
+                return j.status;
+            };
+            const colorFor = (s) => s === 'no_show' ? '#f97316' : s === 'accepted' ? '#fbbf24' : s === 'in_progress' ? '#dc2626' : '#9ca3af';
+            const rows = jobs.map(j => {
+                const safeId = String(j.id).replace(/'/g, '');
+                const ageCol = colorFor(j.status);
+                return `<tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <td style="padding:8px 12px; vertical-align: top;">
+                        <div style="font-weight:600; color: var(--text-primary);">${j.customer_name || '—'}</div>
+                        <div style="font-size:0.78em; color: var(--text-muted);">${j.customer_email || ''} ${j.customer_phone ? ' • ' + j.customer_phone : ''}</div>
+                    </td>
+                    <td style="padding:8px 12px; vertical-align: top; font-size:0.88em;">
+                        <div style="color: var(--text-primary);">${j.pickup_address || '—'}</div>
+                        <div style="font-size:0.78em; color: var(--text-muted);">${j.area || ''}</div>
+                    </td>
+                    <td style="padding:8px 12px; vertical-align: top;"><span style="background:${ageCol}; color:#fff; padding:3px 8px; border-radius:6px; font-size:0.78em; font-weight:600; text-transform:uppercase;">${j.status}</span></td>
+                    <td style="padding:8px 12px; vertical-align: top; font-size:0.85em; color: ${ageCol}; font-weight:600;">${reasonFor(j)}</td>
+                    ${j.no_show_notes ? `<td style="padding:8px 12px; vertical-align: top; font-size:0.82em; color: var(--text-muted); font-style:italic;">${String(j.no_show_notes).replace(/</g, '&lt;')}</td>` : `<td></td>`}
+                    <td style="padding:8px 12px; vertical-align: top; font-size:0.85em;">
+                        <button onclick="staleJobReassign('${safeId}')" style="background:#0ea5e9; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:0.78em; font-weight:600; cursor:pointer; margin-right:4px;" title="Return to the pending pool so another driver can accept">Reassign</button>
+                        <button onclick="staleJobCancel('${safeId}')" style="background:#dc2626; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:0.78em; font-weight:600; cursor:pointer;">Cancel</button>
+                    </td>
+                </tr>`;
+            }).join('');
+            container.innerHTML = `
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead><tr>
+                            <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.78em; text-transform:uppercase;">Customer</th>
+                            <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.78em; text-transform:uppercase;">Address</th>
+                            <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.78em; text-transform:uppercase;">Status</th>
+                            <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.78em; text-transform:uppercase;">Why stale</th>
+                            <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.78em; text-transform:uppercase;">Notes</th>
+                            <th style="text-align:left; padding:8px 12px; border-bottom:1px solid var(--border-color); color: var(--text-muted); font-size:0.78em; text-transform:uppercase;">Actions</th>
+                        </tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+                <div style="margin-top:10px; font-size:0.82em; color: var(--text-muted);">${jobs.length} stale job${jobs.length === 1 ? '' : 's'}. <strong>Reassign</strong> returns the job to the pending pool; <strong>Cancel</strong> marks it cancelled with the current admin's email.</div>`;
+        }
+
+        async function staleJobReassign(jobId) {
+            if (!confirm('Return this job to the pending pool so any driver can accept it?')) return;
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) throw new Error('Supabase client not available');
+                const { error } = await client.from('jobs').update({
+                    status: 'pending',
+                    driver_id: null,
+                    accepted_at: null,
+                    started_at: null,
+                    reverted_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                }).eq('id', jobId);
+                if (error) throw error;
+                showSuccess('Job returned to the pending pool.');
+                await loadStaleJobs();
+            } catch (e) {
+                alert('Reassign failed: ' + (e.message || e));
+            }
+        }
+
+        async function staleJobCancel(jobId) {
+            const reason = prompt('Reason for cancelling this job?', 'Cancelled by admin — no driver available');
+            if (reason === null) return;
+            try {
+                const client = window.getSupabaseClient();
+                if (!client) throw new Error('Supabase client not available');
+                let adminEmail = 'admin';
+                try {
+                    const { data: { user } } = await client.auth.getUser();
+                    if (user?.email) adminEmail = user.email;
+                } catch (_) {}
+                const { error } = await client.from('jobs').update({
+                    status: 'cancelled',
+                    cancellation_reason: reason,
+                    cancelled_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                }).eq('id', jobId);
+                if (error) throw error;
+                showSuccess('Job cancelled.');
+                await loadStaleJobs();
+            } catch (e) {
+                alert('Cancel failed: ' + (e.message || e));
+            }
         }
 
         async function calculateCollectionsStats() {

@@ -381,14 +381,17 @@ class ApexDriverService {
 
     async acceptJob(jobId, driverId) {
         this._ensureReady();
-        
+
+        // Set 'accepted' (not 'in_progress') so a driver who claims and never
+        // shows up can be detected as stale. The driver must call
+        // startCollection() to actually transition to 'in_progress'.
         const { data, error } = await this.supabase
             .from('jobs')
             .update({
                 driver_id: driverId,
-                status: 'in_progress',
+                status: 'accepted',
                 assigned_at: new Date().toISOString(),
-                started_at: new Date().toISOString()
+                accepted_at: new Date().toISOString()
             })
             .eq('id', jobId)
             .in('status', ['available', 'pending']) // Accept if available or pending
@@ -403,10 +406,60 @@ class ApexDriverService {
         return { data, error };
     }
 
+    // Mark a job as no-show (driver arrived but customer wasn't there).
+    // Returns the job back to the pending pool with a no_show flag.
+    async markJobNoShow(jobId, driverId, notes = '') {
+        this._ensureReady();
+        const { data, error } = await this.supabase
+            .from('jobs')
+            .update({
+                status: 'no_show',
+                no_show_at: new Date().toISOString(),
+                no_show_notes: notes,
+                driver_id: driverId,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', jobId)
+            .in('status', ['accepted', 'in_progress'])
+            .select()
+            .single();
+        if (data) await this.updateDriverStatus(driverId, 'active');
+        return { data, error };
+    }
+
+    // Auto-revert jobs stuck in 'accepted' for too long back to 'pending' so
+    // another driver can claim them. Called on driver-app load.
+    async revertExpiredAccepts(maxAgeHours = 2) {
+        try {
+            const cutoff = new Date(Date.now() - maxAgeHours * 3600 * 1000).toISOString();
+            const { data, error } = await this.supabase
+                .from('jobs')
+                .update({
+                    status: 'pending',
+                    driver_id: null,
+                    reverted_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('status', 'accepted')
+                .lt('accepted_at', cutoff)
+                .select('id');
+            if (error) {
+                console.warn('revertExpiredAccepts warning:', error);
+                return 0;
+            }
+            const reverted = (data || []).length;
+            if (reverted > 0) console.log(`revertExpiredAccepts: reverted ${reverted} stale acceptances`);
+            return reverted;
+        } catch (e) {
+            console.warn('revertExpiredAccepts failed:', e);
+            return 0;
+        }
+    }
+
     async updateJobStatus(jobId, status, driverId = null) {
         this._ensureReady();
         
-        const validStatuses = ['available', 'pending', 'assigned', 'in_progress', 'completed', 'cancelled'];
+        const validStatuses = ['available', 'pending', 'assigned', 'accepted', 'in_progress', 'completed', 'cancelled', 'stale', 'no_show'];
         if (!validStatuses.includes(status)) {
             return { data: null, error: { message: 'Invalid job status' } };
         }
@@ -431,6 +484,21 @@ class ApexDriverService {
             case 'cancelled':
                 updateData.cancelled_at = new Date().toISOString();
                 // Update driver status back to active if was assigned
+                if (driverId) {
+                    await this.updateDriverStatus(driverId, 'active');
+                }
+                break;
+            case 'accepted':
+                updateData.accepted_at = new Date().toISOString();
+                break;
+            case 'stale':
+                updateData.stale_at = new Date().toISOString();
+                if (driverId) {
+                    await this.updateDriverStatus(driverId, 'active');
+                }
+                break;
+            case 'no_show':
+                updateData.no_show_at = new Date().toISOString();
                 if (driverId) {
                     await this.updateDriverStatus(driverId, 'active');
                 }

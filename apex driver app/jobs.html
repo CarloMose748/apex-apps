@@ -622,6 +622,15 @@
         console.log('ApexDriverService isReady:', window.ApexDriverService?.isReady);
         console.log('window.supabaseClient exists:', !!window.supabaseClient);
         console.log('window.supabase exists:', !!window.supabase);
+
+        // Auto-revert jobs stuck in 'accepted' (driver claimed but never started)
+        // for more than 2 hours, so they reappear in the available pool.
+        try {
+          if (window.ApexDriverService && typeof window.ApexDriverService.revertExpiredAccepts === 'function') {
+            const n = await window.ApexDriverService.revertExpiredAccepts(2);
+            if (n > 0) console.log(`Reverted ${n} stale-accepted jobs.`);
+          }
+        } catch (e) { console.warn('revertExpiredAccepts failed:', e); }
         
         // Force service to be ready if it exists but isn't ready
         if (window.ApexDriverService && !window.ApexDriverService.isReady) {

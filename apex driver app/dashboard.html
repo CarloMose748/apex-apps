@@ -1170,7 +1170,18 @@
         // Load all dashboard data
         async function loadDashboardData() {
             console.log('Loading dashboard data...');
-            
+
+            // Auto-revert any jobs that have been stuck in 'accepted' (claimed
+            // by a driver) for more than 2 hours without being started.
+            // This is the customer-facing fix for "driver accepted but never
+            // showed up" — the job returns to the pending pool automatically.
+            try {
+                if (window.ApexDriverService && typeof window.ApexDriverService.revertExpiredAccepts === 'function') {
+                    const n = await window.ApexDriverService.revertExpiredAccepts(2);
+                    if (n > 0) console.log(`Reverted ${n} stale-accepted jobs back to pending.`);
+                }
+            } catch (e) { console.warn('revertExpiredAccepts failed:', e); }
+
             await Promise.all([
                 loadStatistics(),
                 loadAvailableJobs(),
@@ -1471,6 +1482,7 @@
                         <div class="action-buttons">
                             <button class="btn-small btn-view" onclick="viewJobDetail('${job.id}')">View</button>
                             ${job.status === 'accepted' ? `<button class="btn-small btn-edit" onclick="startCollection('${job.id}')">Start</button>` : ''}
+                            ${(job.status === 'accepted' || job.status === 'in_progress') ? `<button class="btn-small btn-reject" onclick="markNoShow('${job.id}')" title="Customer wasn't available">No Show</button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -1513,6 +1525,7 @@
                     <div class="mobile-card-actions">
                         <button class="btn-small btn-view" onclick="viewJobDetail('${job.id}')">View</button>
                         ${job.status === 'accepted' ? `<button class="btn-small btn-edit" onclick="startCollection('${job.id}')">Start</button>` : ''}
+                        ${(job.status === 'accepted' || job.status === 'in_progress') ? `<button class="btn-small btn-reject" onclick="markNoShow('${job.id}')" title="Customer wasn't available">No Show</button>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -2021,6 +2034,29 @@
         function startCollection(jobId) {
             localStorage.setItem('activeJob', JSON.stringify(myJobs.find(j => j.id === jobId)));
             window.location.href = 'oil-collection.html';
+        }
+
+        // Mark a job as no-show when the customer wasn't available for the
+        // scheduled pickup. Frees the driver and surfaces a clear state for
+        // the admin panel and customer history instead of an abandoned
+        // 'in_progress' job that just sits there.
+        async function markNoShow(jobId) {
+            const notes = prompt('Optional: any notes for the customer (e.g. "shop closed, gate locked")', '');
+            if (notes === null) return; // user cancelled
+            try {
+                let driverId = null;
+                if (window.supabaseClient) {
+                    const { data: { user } } = await window.supabaseClient.auth.getUser();
+                    driverId = user?.id;
+                }
+                if (!driverId) { alert('Could not identify current driver.'); return; }
+                const { error } = await window.ApexDriverService.markJobNoShow(jobId, driverId, notes);
+                if (error) { alert('Could not mark as no-show: ' + (error.message || error)); return; }
+                alert('Marked as no-show. The admin team will be notified.');
+                await loadMyJobs();
+            } catch (e) {
+                alert('Error: ' + (e.message || e));
+            }
         }
 
         function viewCollection(jobId) {
