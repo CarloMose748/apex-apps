@@ -1863,6 +1863,7 @@
                                 <option value="standard">Standard (120L)</option>
                                 <option value="large">Large (240L)</option>
                                 <option value="small">Small (80L)</option>
+                                <option value="bucket">Bucket (20L)</option>
                                 <option value="commercial">Commercial (660L)</option>
                                 <option value="industrial">Industrial (1000L IBC)</option>
                                 <option value="drum">Drum (210L)</option>
@@ -1938,6 +1939,7 @@
                             <option value="standard">Standard (120L)</option>
                             <option value="large">Large (240L)</option>
                             <option value="small">Small (80L)</option>
+                            <option value="bucket">Bucket (20L)</option>
                             <option value="commercial">Commercial (660L)</option>
                             <option value="industrial">Industrial (1000L IBC)</option>
                             <option value="drum">Drum (210L)</option>
@@ -2040,6 +2042,7 @@
                             <option value="standard">Standard (120L)</option>
                             <option value="large">Large (240L)</option>
                             <option value="small">Small (80L)</option>
+                            <option value="bucket">Bucket (20L)</option>
                             <option value="commercial">Commercial (660L)</option>
                             <option value="industrial">Industrial (1000L IBC)</option>
                             <option value="drum">Drum (210L)</option>
@@ -4276,6 +4279,7 @@ function showSection(section) {
                             'standard': 120,
                             'large': 240,
                             'small': 80,
+                            'bucket': 20,
                             'commercial': 660
                         };
                         binData.binSizeLiters = binSizes[binData.binType];
@@ -4590,7 +4594,7 @@ function showSection(section) {
                 const resolvedBinType = (binType === 'other' && customBinType) ? customBinType : binType;
                 // Resolve bin size — manual entry wins, otherwise use the preset map.
                 const binSizePresets = {
-                    standard: 120, large: 240, small: 80,
+                    standard: 120, large: 240, small: 80, bucket: 20,
                     commercial: 660, industrial: 1000, drum: 210, tank: 5000
                 };
                 const customSize = parseInt(customSizeRaw, 10);
