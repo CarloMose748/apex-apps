@@ -59,6 +59,29 @@
         }, 3000);
     </script>
     <script>
-      if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }
+      // Register the driver app service worker. The SW caches the page shell
+      // for offline use but forces /js/* requests to go to network first so
+      // any code fix takes effect on the very next page load (no hard
+      // refresh required).
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          // If a new SW is waiting (deploy happened while this tab was open),
+          // force it to take over immediately. Without this, the user would
+          // have to close every tab to see the latest JS.
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+          reg.addEventListener('updatefound', () => {
+            const newSw = reg.installing;
+            if (!newSw) return;
+            newSw.addEventListener('statechange', () => {
+              if (newSw.state === 'installed' && navigator.serviceWorker.controller) {
+                // New SW installed but waiting for old tabs to close.
+                newSw.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          });
+        }).catch(err => console.warn('SW registration failed:', err));
+      }
     </script>
 </body>
