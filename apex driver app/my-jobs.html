@@ -967,10 +967,16 @@
 
                 // Fetch oil collections data from database
                 myCollections = await fetchMyCollectionsFromDatabase(driverId);
-                
+
                 console.log('DEBUG: Loaded collections count:', myCollections.length);
                 console.log('DEBUG: myCollections data:', myCollections);
-                
+
+                // Also fetch earnings so the dashboard's Total Earnings stat
+                // reflects what the driver actually earns per collection. oil_
+                // collections has no payment_amount column - earnings live in
+                // the separate oil_collection_earnings table.
+                myEarningsByCollection = await fetchMyEarningsMap(driverId);
+
                 // Update stats (combine collections and active jobs)
                 updateCollectionStats();
                 
@@ -1078,13 +1084,52 @@
         }
 
 
+        // Map of collection_id -> { net_amount, gross_amount } for the current
+        // driver. Populated by fetchMyEarningsMap(), consumed by
+        // updateCollectionStats() so Total Earnings is no longer zero just
+        // because oil_collections has no payment_amount column.
+        let myEarningsByCollection = {};
+
+        async function fetchMyEarningsMap(driverId) {
+            try {
+                const client = window.supabaseClient || window.supabase;
+                if (!client) return {};
+                const { data, error } = await client
+                    .from('oil_collection_earnings')
+                    .select('collection_id, net_amount, gross_amount')
+                    .eq('driver_id', driverId);
+                if (error) {
+                    console.warn('fetchMyEarningsMap error:', error);
+                    return {};
+                }
+                const map = {};
+                (data || []).forEach(row => {
+                    map[row.collection_id] = {
+                        net_amount: Number(row.net_amount) || 0,
+                        gross_amount: Number(row.gross_amount) || 0
+                    };
+                });
+                return map;
+            } catch (e) {
+                console.warn('fetchMyEarningsMap exception:', e);
+                return {};
+            }
+        }
+
         function updateCollectionStats() {
             const activeJobs = inProgressJobs.length;
             const totalCollections = myCollections.length;
             const totalVolume = myCollections.reduce((sum, collection) => sum + collection.collected_volume, 0);
-            
-            // Calculate total earnings from both collections and active jobs
-            const collectionEarnings = myCollections.reduce((sum, collection) => sum + collection.payment_amount, 0);
+
+            // Total Earnings: sum the oil_collection_earnings rows joined to
+            // each of the driver's collections (net amount = what the driver
+            // actually takes home). If a collection has no earnings row yet
+            // we skip it - the list view will still show the collection, but
+            // it won't inflate the total.
+            const collectionEarnings = myCollections.reduce((sum, collection) => {
+                const e = myEarningsByCollection[collection.id];
+                return sum + (e ? e.net_amount : 0);
+            }, 0);
             const jobEarnings = inProgressJobs.reduce((sum, job) => sum + (job.price || 0), 0);
             const totalEarnings = collectionEarnings + jobEarnings;
 
