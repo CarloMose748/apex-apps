@@ -1,5 +1,5 @@
-const CACHE_NAME = 'apex-driver-v1';
-const ASSETS = ['/', '/auth.html', '/main.html', '/dashboard.html', '/jobs.html', '/my-jobs.html', '/job-detail.html', '/map.html', '/profile.html', '/oil-collection.html', '/styles/global.css', '/manifest.json'];
+const CACHE_NAME = 'apex-driver-v2';
+const ASSETS = ['/', '/auth.html', '/main.html', '/dashboard.html', '/jobs.html', '/my-jobs.html', '/job-detail.html', '/map.html', '/profile.html', '/profile.html', '/oil-collection.html', '/styles/global.css', '/manifest.json', '/js/apex-driver-service.js', '/js/oil-collection-service.js', '/js/auth-service.js', '/js/supabase-config.js'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
