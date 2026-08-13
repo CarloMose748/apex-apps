@@ -1134,8 +1134,10 @@
         if (data) {
           console.log('✅ Job accepted successfully:', data);
           
-          // Store accepted job and go to map
-          const acceptedJob = { ...job, status: 'in_progress', driver_id: driverId };
+          // Store accepted job and go to map. Mirror the status the database
+          // actually holds ('accepted'), not 'in_progress' — the job only becomes
+          // in_progress once the driver starts the collection.
+          const acceptedJob = { ...job, id: data.id, status: data.status, driver_id: driverId };
           localStorage.setItem('acceptedJob', JSON.stringify(acceptedJob));
           
           // Remove job from current list since it's now in progress

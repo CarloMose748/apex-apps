@@ -2409,41 +2409,43 @@
       }
     }
 
-    // Helper function to validate or generate UUID
-    function ensureValidUUID(value, fallbackName = 'unknown') {
-      // Check if it's already a valid UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      
-      if (value && uuidRegex.test(value)) {
-        return value; // Already a valid UUID
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    // Returns the job's real database id, or null.
+    //
+    // This used to invent a random UUID when the id looked wrong. That silently
+    // pointed the collection at a job that does not exist, so the job was never
+    // marked completed and never appeared against the driver. Fail instead.
+    function resolveJobId(jobData) {
+      const id = jobData && jobData.id;
+      if (id && UUID_REGEX.test(id)) {
+        return id;
       }
-      
-      // Generate a proper UUID v4
-      console.warn(`Invalid UUID format for: ${value}, generating new UUID`);
-      return generateUUID();
+      console.error('Job ID is not a valid database id:', id);
+      return null;
     }
 
-    // Helper function to generate a valid UUID v4
-    function generateUUID() {
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0;
-        var v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
-    }
+    // Resolve the current user to their drivers.id.
+    //
+    // auth.users.id and drivers.id are different values. jobs.driver_id and
+    // oil_collections.driver_id both reference drivers.id, so the auth id must
+    // never be used here.
+    async function resolveDriverId(currentUser) {
+      const client = window.supabaseClient || window.supabase
+        || (window.ApexDriverService && window.ApexDriverService.supabase);
+      if (!client || !currentUser || !currentUser.email) return null;
 
-    // Helper function to create a valid job UUID from job data
-    function createJobUUID(jobData) {
-      // Check if the job already has a valid UUID
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      
-      if (jobData.id && uuidRegex.test(jobData.id)) {
-        return jobData.id; // Already valid
+      const { data: driver, error } = await client
+        .from('drivers')
+        .select('id')
+        .eq('email', currentUser.email)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Driver lookup failed:', error);
+        return null;
       }
-      
-      // Generate a new proper UUID for the job
-      console.warn('Job ID was not valid, generating new UUID. Original:', jobData.id);
-      return generateUUID();
+      return driver ? driver.id : null;
     }
 
     // Initialize services
@@ -2486,16 +2488,21 @@
           console.warn('Supabase client not available, will use fallback storage');
         }
         
-        // Prepare data for Supabase with proper UUID formatting
-        const validJobId = createJobUUID({ id: data.jobId, ...data });
-        const validDriverId = ensureValidUUID(currentUser.id, currentUser.email);
-        
+        // Resolve the real database ids. Both must exist or we do not save.
+        const validJobId = resolveJobId({ id: data.jobId });
+        if (!validJobId) {
+          throw new Error('This job has no valid database reference. Please go back to My Jobs, re-open the job, and try again.');
+        }
+
+        const validDriverId = await resolveDriverId(currentUser);
+        if (!validDriverId) {
+          throw new Error(`No driver record found for ${currentUser.email}. Please contact the office to complete your driver registration.`);
+        }
+
         console.log('🔍 ID Preparation:');
-        console.log('  Original job ID:', data.jobId);
-        console.log('  Valid job ID:', validJobId);
-        console.log('  Original driver ID:', currentUser.id);
-        console.log('  Valid driver ID:', validDriverId);
-        console.log('  Current user object:', currentUser);
+        console.log('  Job ID (jobs.id):', validJobId);
+        console.log('  Driver ID (drivers.id):', validDriverId);
+        console.log('  Auth user ID (not used as driver_id):', currentUser.id);
         
         // Check what job data we have
         const acceptedJob = localStorage.getItem('acceptedJob');
@@ -2541,37 +2548,11 @@
         console.log('Saving collection data to Supabase:', collectionData);
         console.log('Service has Supabase client:', !!oilCollectionService.supabase);
         
-        // Save to database using OilCollectionService (directly to oil_collections table)
-        // Handle potential foreign key constraint issues with oil_collection_jobs table
-        let result;
-        try {
-          result = await oilCollectionService.saveCollection(collectionData);
-          console.log('Collection saved successfully:', result);
-          console.log('✅ Saved with job_id:', validJobId, 'and driver_id:', validDriverId);
-        } catch (constraintError) {
-          // Check if this is the oil_collection_jobs foreign key constraint error
-          if (constraintError.message && constraintError.message.includes('oil_collection_jobs') && constraintError.message.includes('foreign key constraint')) {
-            console.warn('Foreign key constraint detected, saving without problematic job_id reference:', constraintError.message);
-            
-            // Save without the job_id that has foreign key constraint, use a different field
-            const collectionDataNoFK = {
-              ...collectionData,
-              job_reference: collectionData.jobId, // Store job ID as reference instead
-              source_job_id: collectionData.jobId, // Alternative field name
-              jobId: undefined // Remove the problematic field
-            };
-            
-            delete collectionDataNoFK.jobId; // Ensure it's completely removed
-            
-            console.log('Retrying save without foreign key constraint field:', collectionDataNoFK);
-            result = await oilCollectionService.saveCollection(collectionDataNoFK);
-            console.log('Collection saved successfully without FK constraint:', result);
-            console.log('✅ Saved with job_reference:', collectionDataNoFK.job_reference, 'and driver_id:', validDriverId);
-          } else {
-            // Re-throw other errors
-            throw constraintError;
-          }
-        }
+        // Save to the oil_collections table. A failure here must reach the driver:
+        // the previous code retried without job_id, which saved a record that no
+        // screen could ever find and paid the driver nothing.
+        const result = await oilCollectionService.saveCollection(collectionData);
+        console.log('✅ Collection saved with job_id:', validJobId, 'driver_id:', validDriverId);
         
         // Verify the data was actually saved to oil_collections table
         if (result && result.id) {
@@ -2581,32 +2562,29 @@
           console.warn('⚠️ Save result unclear - please verify database entry');
         }
         
-        // Update job status to completed in regular jobs table
-        if (validJobId && oilCollectionService.supabase) {
-          try {
-            // Update the regular jobs table status
-            const { error: jobError } = await oilCollectionService.supabase
-              .from('jobs')
-              .update({ 
-                status: 'completed',
-                completed_at: new Date().toISOString()
-              })
-              .eq('id', validJobId);
-              
-            if (jobError) {
-              console.warn('Failed to update job status:', jobError);
-            } else {
-              console.log('✅ Job status updated to completed in jobs table');
-            }
-            
-            // Also try ApexDriverService if available as fallback
-            if (window.ApexDriverService) {
-              await window.ApexDriverService.updateJobStatus(validJobId, 'completed');
-              console.log('✅ Job status also updated via ApexDriverService');
-            }
-          } catch (jobError) {
-            console.warn('Failed to update job status:', jobError);
-            // Don't fail the whole operation for this
+        // Close the job out. driver_id is stamped here as well, so a job the office
+        // sees as completed always shows who completed it, even if the earlier
+        // acceptance was cleared.
+        if (oilCollectionService.supabase) {
+          const { data: updatedJob, error: jobError } = await oilCollectionService.supabase
+            .from('jobs')
+            .update({
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              driver_id: validDriverId,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', validJobId)
+            .select('id');
+
+          if (jobError) {
+            console.error('Failed to mark job completed:', jobError);
+            alert('The collection was saved, but the job could not be marked complete. Please tell the office so they can close it manually.');
+          } else if (!updatedJob || updatedJob.length === 0) {
+            console.error('Job status update matched no rows for id:', validJobId);
+            alert('The collection was saved, but the job could not be marked complete. Please tell the office so they can close it manually.');
+          } else {
+            console.log('✅ Job marked completed:', validJobId);
           }
         }
         

@@ -753,13 +753,15 @@
                     throw new Error('Supabase client not available');
                 }
                 
-                // Fetch jobs with status 'in_progress' for current driver
+                // Fetch the driver's live jobs. 'accepted' must be included: that is
+                // the status acceptJob() writes, and a driver who has accepted a job
+                // but not yet started it still needs to see it here.
                 const { data, error } = await client
                     .from('jobs')
                     .select('*')
                     .eq('driver_id', driverId)
-                    .eq('status', 'in_progress')
-                    .order('started_at', { ascending: false });
+                    .in('status', ['accepted', 'in_progress'])
+                    .order('created_at', { ascending: false });
                     
                 if (error) {
                     console.error('Error fetching in-progress jobs:', error);
@@ -790,19 +792,24 @@
         }
 
         function createInProgressJobCard(job) {
-            const startedDate = job.started_at ? new Date(job.started_at).toLocaleDateString() : 'N/A';
-            const startedTime = job.started_at ? new Date(job.started_at).toLocaleTimeString() : 'N/A';
+            // 'accepted' jobs have no started_at yet, so fall back to accepted_at.
+            const stamp = job.started_at || job.accepted_at;
+            const startedDate = stamp ? new Date(stamp).toLocaleDateString() : 'N/A';
+            const startedTime = stamp ? new Date(stamp).toLocaleTimeString() : 'N/A';
             const estimatedDuration = job.estimated_duration || 'N/A';
-            
+            const isAccepted = job.status === 'accepted';
+            const badgeLabel = isAccepted ? 'ACCEPTED' : 'IN PROGRESS';
+            const accentColour = isAccepted ? '#fbbf24' : '#ff5722';
+
             return `
-                <div class="job-card" data-job-type="in_progress" style="border-left: 4px solid #ff5722;">
+                <div class="job-card" data-job-type="${job.status}" style="border-left: 4px solid ${accentColour};">
                     <div class="job-header">
                         <h3 class="job-title">
                             <span class="job-icon">🚀</span>
                             ${job.customer_name || 'Job #' + job.id}
                         </h3>
                         <div class="status-badges">
-                            <span class="job-status in-progress">IN PROGRESS</span>
+                            <span class="job-status in-progress">${badgeLabel}</span>
                         </div>
                     </div>
                     

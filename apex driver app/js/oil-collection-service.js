@@ -21,31 +21,21 @@ class OilCollectionService {
      */
     async validateJobExists(jobId) {
         try {
-            // Check oil_collection_jobs table first
-            const { data: oilJob, error: oilError } = await this.supabase
-                .from('oil_collection_jobs')
-                .select('id')
-                .eq('id', jobId)
-                .single();
-
-            if (oilJob) {
-                console.log('✅ Job found in oil_collection_jobs table:', jobId);
-                return true;
-            }
-
-            // If not found, check regular jobs table as fallback
-            const { data: regularJob, error: regularError } = await this.supabase
+            // oil_collections.job_id references jobs(id), so 'jobs' is the only
+            // table worth checking. Validating against oil_collection_jobs used to
+            // pass here and then fail the foreign key on insert.
+            const { data: job } = await this.supabase
                 .from('jobs')
                 .select('id')
                 .eq('id', jobId)
-                .single();
+                .maybeSingle();
 
-            if (regularJob) {
+            if (job) {
                 console.log('✅ Job found in jobs table:', jobId);
                 return true;
             }
 
-            console.log('❌ Job not found in either jobs or oil_collection_jobs table:', jobId);
+            console.log('❌ Job not found in jobs table:', jobId);
             return false;
         } catch (error) {
             console.error('Error validating job existence:', error);
@@ -340,45 +330,31 @@ class OilCollectionService {
                     payment_method: collectionData.paymentMethod || 'Cash'
                 };
 
-                // Validate and add job_id if it exists in the database
-                if (collectionData.jobId && this.isValidUUID(collectionData.jobId)) {
-                    const jobExists = await this.validateJobExists(collectionData.jobId);
-                    if (jobExists) {
-                        collectionRecord.job_id = collectionData.jobId;
-                        console.log('✅ Including valid job_id:', collectionData.jobId);
-                    } else {
-                        console.warn('❌ Job ID does not exist in database:', collectionData.jobId);
-                        collectionRecord.notes += `\n[Job ID not found in DB: ${collectionData.jobId}]`;
-                    }
-                } else {
-                    console.warn('❌ Invalid or missing job_id:', collectionData.jobId);
+                // job_id and driver_id are mandatory. Without them the collection is
+                // invisible to the driver and to the admin panel, and no earnings are
+                // calculated. Refuse to save rather than write an orphaned record.
+                if (!collectionData.jobId || !this.isValidUUID(collectionData.jobId)) {
+                    throw new Error(`Cannot save collection: missing or malformed job ID (${collectionData.jobId}). Please re-open the job from My Jobs and try again.`);
                 }
+                if (!await this.validateJobExists(collectionData.jobId)) {
+                    throw new Error(`Cannot save collection: job ${collectionData.jobId} no longer exists. It may have been cancelled or reassigned by the office.`);
+                }
+                collectionRecord.job_id = collectionData.jobId;
 
-                // Validate and add driver_id if it exists in the database
-                if (collectionData.driverId && this.isValidUUID(collectionData.driverId)) {
-                    const driverExists = await this.validateDriverExists(collectionData.driverId);
-                    if (driverExists) {
-                        collectionRecord.driver_id = collectionData.driverId;
-                        console.log('✅ Including valid driver_id:', collectionData.driverId);
-                    } else {
-                        // Try to find driver by email as fallback
-                        if (collectionData.driverEmail) {
-                            const foundDriverId = await this.findDriverByEmail(collectionData.driverEmail);
-                            if (foundDriverId) {
-                                collectionRecord.driver_id = foundDriverId;
-                                console.log('✅ Including driver_id found by email:', foundDriverId);
-                            } else {
-                                console.warn('❌ Driver not found by email either:', collectionData.driverEmail);
-                                collectionRecord.notes += `\n[Driver not found - ID: ${collectionData.driverId}, Email: ${collectionData.driverEmail}]`;
-                            }
-                        } else {
-                            console.warn('❌ Driver ID does not exist and no email provided:', collectionData.driverId);
-                            collectionRecord.notes += `\n[Driver ID not found in DB: ${collectionData.driverId}]`;
-                        }
-                    }
-                } else {
-                    console.warn('❌ Invalid or missing driver_id:', collectionData.driverId);
+                // The driver id must be a drivers.id, not an auth user id. Fall back to
+                // an email lookup if the caller passed the wrong one.
+                let driverId = null;
+                if (collectionData.driverId && this.isValidUUID(collectionData.driverId)
+                    && await this.validateDriverExists(collectionData.driverId)) {
+                    driverId = collectionData.driverId;
+                } else if (collectionData.driverEmail) {
+                    driverId = await this.findDriverByEmail(collectionData.driverEmail);
                 }
+                if (!driverId) {
+                    throw new Error(`Cannot save collection: no driver record found for ${collectionData.driverEmail || collectionData.driverId}. Please contact the office to complete your driver registration.`);
+                }
+                collectionRecord.driver_id = driverId;
+                console.log('✅ Saving with job_id:', collectionRecord.job_id, 'driver_id:', driverId);
 
                 // Add bin information if available
                 if (collectionData.binSerialNumbers) {
@@ -392,38 +368,11 @@ class OilCollectionService {
 
                 if (collectionError) {
                     console.error('Error saving collection:', collectionError);
-                    
-                    // If foreign key constraint error, try saving without the foreign keys
-                    if (collectionError.message && collectionError.message.includes('violates foreign key constraint')) {
-                        console.warn('Foreign key constraint violation, retrying without job_id and driver_id');
-                        
-                        // Remove foreign keys and add info to notes
-                        const fallbackRecord = { ...collectionRecord };
-                        const originalJobId = fallbackRecord.job_id;
-                        const originalDriverId = fallbackRecord.driver_id;
-                        
-                        delete fallbackRecord.job_id;
-                        delete fallbackRecord.driver_id;
-                        
-                        fallbackRecord.notes = `${fallbackRecord.notes || ''}\n\n[FALLBACK] Original Job ID: ${originalJobId}\nOriginal Driver ID: ${originalDriverId}`.trim();
-                        
-                        const { data: fallbackCollection, error: fallbackError } = await this.supabase
-                            .from('oil_collections')
-                            .insert([fallbackRecord])
-                            .select();
-                        
-                        if (fallbackError) {
-                            console.error('Fallback save also failed:', fallbackError);
-                            throw fallbackError;
-                        }
-                        
-                        console.log('Collection saved with fallback method (foreign keys in notes)');
-                        const collectionId = fallbackCollection[0].id;
-                        console.log('Saved collection (fallback):', fallbackCollection[0]);
-                        return this.completeSaveProcess(collectionId, collectionData, fallbackCollection[0]);
-                    } else {
-                        throw collectionError;
-                    }
+                    // Never save a collection without its job_id and driver_id. An
+                    // orphaned row is invisible to the driver's My Jobs screen and to
+                    // the admin panel, earns the driver nothing, and looks like a
+                    // successful save. Surface the failure instead.
+                    throw collectionError;
                 }
 
                 const collectionId = collection[0].id;
