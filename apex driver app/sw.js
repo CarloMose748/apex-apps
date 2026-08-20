@@ -12,7 +12,7 @@
 //     deploys take effect on the very next page load, no hard refresh
 //     required.
 
-const CACHE_NAME = 'apex-driver-v4';
+const CACHE_NAME = 'apex-driver-v5';
 const ASSETS = [
   '/',
   '/auth.html',

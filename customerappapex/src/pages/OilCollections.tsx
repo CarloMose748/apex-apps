@@ -6,13 +6,14 @@ import { Input } from '../components/UI/Input';
 import { StatusPill } from '../components/UI/StatusPill';
 import { FiSearch, FiRefreshCw } from 'react-icons/fi';
 import { formatDate } from '../lib/format';
-import { formatKilograms } from '../lib/units';
+import { formatKilograms, litresToKilograms } from '../lib/units';
 import type { TableColumn } from '../lib/types';
 
 interface OilCollection {
   id: string;
   collection_date: string;
   collected_volume: number;
+  net_mass_kg?: number | null;
   oil_type: string;
   oil_condition: string;
   status: string;
@@ -127,6 +128,7 @@ export function OilCollections() {
           id,
           collection_date,
           collected_volume,
+          net_mass_kg,
           unit,
           oil_type,
           oil_condition,
@@ -166,7 +168,9 @@ export function OilCollections() {
       })) || []);
       
       // Calculate stats
-      const totalVolume = (data || []).reduce((sum, c) => sum + (c.collected_volume || 0), 0);
+      // Stat tile is labelled kg, so sum the mass figure, not the litres one.
+      const totalVolume = (data || []).reduce(
+        (sum, c) => sum + (c.net_mass_kg ?? litresToKilograms(c.collected_volume || 0)), 0);
       const totalPayments = (data || []).reduce((sum, c) => sum + (c.cost_collection_fee || 0), 0);
       const verifiedCollections = (data || []).filter(c => c.verified_by).length;
       
@@ -210,7 +214,11 @@ export function OilCollections() {
     {
       key: 'collected_volume',
       label: 'Recovered Mass',
-      render: (_, collection) => formatKilograms(collection.collected_volume || 0)
+      // collected_volume is litres. Prefer the stored kilogram figure and only
+      // convert when it is absent, matching the admin panel.
+      render: (_, collection) => formatKilograms(
+        collection.net_mass_kg ?? litresToKilograms(collection.collected_volume || 0)
+      )
     },
     {
       key: 'oil_type',

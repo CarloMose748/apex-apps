@@ -406,6 +406,53 @@
       gap: 10px;
     }
 
+    .condition-selector {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .unit-conversion {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .payment-amount-input {
+      width: 100%;
+      padding: 16px 18px;
+      border: 1px solid #3f3f3f;
+      border-radius: 6px;
+      background: #292524;
+      color: var(--text-primary);
+      font-size: 1.35rem;
+      font-weight: 700;
+      text-align: center;
+      min-height: 56px;
+      -moz-appearance: textfield;
+    }
+
+    .payment-amount-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .payment-amount-input::-webkit-outer-spin-button,
+    .payment-amount-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .payment-amount-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
     .unit-display {
       display: flex;
       align-items: center;
@@ -1320,17 +1367,41 @@
             <div class="quantity-input-group">
               <div class="quantity-controls">
                 <button type="button" class="quantity-btn" id="decreaseBtn" onclick="adjustQuantity(-1)">−</button>
-                <input type="number" class="quantity-input" id="quantityInput" value="0" min="0" step="0.1" onchange="validateQuantity()">
+                <input type="number" class="quantity-input" id="quantityInput" value="0" min="0" step="0.1" onchange="validateQuantity()" oninput="updateUnitConversion()">
                 <button type="button" class="quantity-btn" id="increaseBtn" onclick="adjustQuantity(1)">+</button>
               </div>
               
-              <div class="unit-display">
-                <span class="unit-label">Kilograms (kg)</span>
+              <div class="unit-selector" id="unitSelector">
+                <button type="button" class="unit-option active" id="unitLitres"
+                        onclick="setCollectionUnit('litres')">Litres (L)</button>
+                <button type="button" class="unit-option" id="unitKg"
+                        onclick="setCollectionUnit('kg')">Kilograms (kg)</button>
               </div>
             </div>
-            
+
+            <div class="unit-conversion" id="unitConversion">Enter a quantity above</div>
+
             <div class="validation-message" id="quantityValidation">
               Please enter a valid quantity greater than 0
+            </div>
+          </div>
+
+          <!-- Oil Condition Section -->
+          <div class="form-section">
+            <h2 class="section-title">
+              <span class="icon icon-notes icon-md" aria-hidden="true">🛢️</span>
+              Oil Condition
+            </h2>
+
+            <div class="condition-selector" id="conditionSelector">
+              <button type="button" class="unit-option active" data-condition="Good"
+                      onclick="setOilCondition('Good')">Good</button>
+              <button type="button" class="unit-option" data-condition="Fair"
+                      onclick="setOilCondition('Fair')">Fair</button>
+              <button type="button" class="unit-option" data-condition="Poor"
+                      onclick="setOilCondition('Poor')">Poor</button>
+              <button type="button" class="unit-option" data-condition="Contaminated"
+                      onclick="setOilCondition('Contaminated')">Contaminated</button>
             </div>
           </div>
 
@@ -1575,6 +1646,67 @@
 
     function litresToKilograms(litres) {
       return (Number(litres) || 0) * KG_PER_LITRE;
+    }
+
+    function kilogramsToLitres(kg) {
+      return (Number(kg) || 0) / KG_PER_LITRE;
+    }
+
+    // Rate paid to the customer per kilogram. Used only to pre-fill the payment
+    // box; the driver can overwrite it with what was actually paid.
+    const RATE_PER_KG = 3;
+
+    // What the driver is typing into the quantity box. Most collections are
+    // measured in litres on site, but some customers hand over pre-weighed
+    // drums, so both are supported. Whichever is chosen, we store litres and
+    // kilograms explicitly so no screen has to guess.
+    let collectionUnit = 'litres';
+    let oilCondition = 'Good';
+
+    function setCollectionUnit(unit) {
+      collectionUnit = unit === 'kg' ? 'kg' : 'litres';
+      const litresBtn = document.getElementById('unitLitres');
+      const kgBtn = document.getElementById('unitKg');
+      if (litresBtn) litresBtn.classList.toggle('active', collectionUnit === 'litres');
+      if (kgBtn) kgBtn.classList.toggle('active', collectionUnit === 'kg');
+      updateUnitConversion();
+    }
+
+    function setOilCondition(condition) {
+      oilCondition = condition;
+      document.querySelectorAll('#conditionSelector .unit-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.condition === condition);
+      });
+    }
+
+    function getEnteredQuantity() {
+      const input = document.getElementById('quantityInput');
+      return input ? (parseFloat(input.value) || 0) : 0;
+    }
+
+    // Canonical values for whatever the driver typed, in both units.
+    function getQuantityLitres() {
+      const entered = getEnteredQuantity();
+      return collectionUnit === 'kg' ? kilogramsToLitres(entered) : entered;
+    }
+
+    function getQuantityKg() {
+      const entered = getEnteredQuantity();
+      return collectionUnit === 'kg' ? entered : litresToKilograms(entered);
+    }
+
+    // Show the driver the other unit so a mis-tap on the toggle is obvious.
+    function updateUnitConversion() {
+      const el = document.getElementById('unitConversion');
+      if (!el) return;
+      const entered = getEnteredQuantity();
+      if (!entered || entered <= 0) {
+        el.textContent = 'Enter a quantity above';
+        return;
+      }
+      el.textContent = collectionUnit === 'kg'
+        ? `${entered.toFixed(1)} kg  =  ${kilogramsToLitres(entered).toFixed(1)} L`
+        : `${entered.toFixed(1)} L  =  ${litresToKilograms(entered).toFixed(1)} kg`;
     }
 
     // Initialize page
@@ -1926,9 +2058,12 @@
         `;
       }
       
-      // Clear quantity input
+      // Clear quantity input. Unit selection is deliberately kept between bins —
+      // a driver measuring in litres is measuring every bin in litres.
       document.getElementById('quantityInput').value = '0.0';
       document.getElementById('collectionNotes').value = '';
+      setCollectionUnit(collectionUnit);
+      setOilCondition('Good');
       
       // Update submit button text
       const submitBtn = document.getElementById('submitBtn');
@@ -1984,11 +2119,17 @@
         return;
       }
       
-      // Compile bin collection data (no payment photos per bin)
+      // Compile bin collection data (no payment photos per bin).
+      // quantityLitres / quantityKg are both recorded so downstream screens never
+      // have to infer which unit the driver used.
       const binCollection = {
         ...currentBinData,
-        quantity: parseFloat(document.getElementById('quantityInput').value),
-        unit: 'kg',
+        quantity: getQuantityLitres(),
+        quantityLitres: getQuantityLitres(),
+        quantityKg: getQuantityKg(),
+        enteredQuantity: getEnteredQuantity(),
+        unit: collectionUnit,
+        oilCondition: oilCondition,
         notes: document.getElementById('collectionNotes').value.trim(),
         oilPhotos: oilPhotos.map(photo => ({
           name: photo.name,
@@ -2072,16 +2213,26 @@
         }
       }
       
+      const totalLitres = scannedBins.reduce((sum, bin) => sum + (bin.quantityLitres || 0), 0);
+
       existingInfo.innerHTML = `
         <h4 style="margin: 0 0 10px 0; color: #2e7d32;">💰 Payment Summary</h4>
         <div style="display: grid; gap: 8px; font-size: 14px;">
-          <div><strong>Total Recovered Mass:</strong> ${totalKilograms.toFixed(1)} kg</div>
-          <div><strong>Rate:</strong> R${3}/kg</div>
-          <div style="font-size: 16px; font-weight: bold; color: #2e7d32;"><strong>Expected Payment: R${expectedPayment.toFixed(2)}</strong></div>
+          <div><strong>Total Collected:</strong> ${totalLitres.toFixed(1)} L (${totalKilograms.toFixed(1)} kg)</div>
+          <div><strong>Rate:</strong> R${RATE_PER_KG}/kg</div>
+          <div><strong>Calculated:</strong> R${expectedPayment.toFixed(2)}</div>
         </div>
-        <p style="margin: 10px 0 0 0; font-size: 13px; color: #555;">Please upload proof of payment (slip/receipt) below:</p>
+        <div style="margin-top: 14px;">
+          <label class="payment-amount-label" for="paymentAmountInput">
+            Amount actually paid (R) — edit if different to the calculated figure
+          </label>
+          <input type="number" class="payment-amount-input" id="paymentAmountInput"
+                 min="0" step="0.01" inputmode="decimal"
+                 value="${expectedPayment.toFixed(2)}">
+        </div>
+        <p style="margin: 12px 0 0 0; font-size: 13px; color: #555;">Please upload proof of payment (slip/receipt) below:</p>
       `;
-      
+
       // Update submit button for final submission
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
@@ -2104,12 +2255,26 @@
         alert('Please upload proof of payment before completing the collection.');
         return;
       }
-      
-      // Show confirmation with final details
-      const confirmMessage = `✅ Final Confirmation\n\n📦 Bins Collected: ${scannedBins.length}\n⚖️ Total Recovered Mass: ${totalKilograms.toFixed(1)} kg\n💰 Expected Payment: R${expectedPayment.toFixed(2)}\n📸 Payment Proof: ${paymentPhotos.length} photo(s)\n\nSubmit collection?`;
-      
+
+      // Take the amount the driver actually paid, not the calculated figure.
+      const paymentInput = document.getElementById('paymentAmountInput');
+      const paidAmount = paymentInput ? parseFloat(paymentInput.value) : NaN;
+
+      if (!Number.isFinite(paidAmount) || paidAmount < 0) {
+        alert('Please enter the amount that was paid.');
+        if (paymentInput) paymentInput.focus();
+        return;
+      }
+
+      const totalLitres = scannedBins.reduce((sum, bin) => sum + (bin.quantityLitres || 0), 0);
+      const variance = paidAmount !== expectedPayment
+        ? `\n⚠️ Differs from calculated R${expectedPayment.toFixed(2)}`
+        : '';
+
+      const confirmMessage = `✅ Final Confirmation\n\n📦 Bins Collected: ${scannedBins.length}\n🛢️ Total Collected: ${totalLitres.toFixed(1)} L (${totalKilograms.toFixed(1)} kg)\n💰 Amount Paid: R${paidAmount.toFixed(2)}${variance}\n📸 Payment Proof: ${paymentPhotos.length} photo(s)\n\nSubmit collection?`;
+
       if (confirm(confirmMessage)) {
-        await submitAllCollections();
+        await submitAllCollections(paidAmount);
       }
     }
 
@@ -2121,12 +2286,15 @@
         return;
       }
       
-      const totalKilograms = scannedBins.reduce((sum, bin) => sum + litresToKilograms(bin.quantity), 0);
-      const ratePerKilogram = 3;
-      const expectedPayment = totalKilograms * ratePerKilogram;
-      const binList = scannedBins.map(b => `• ${b.binSerialNumber}: ${litresToKilograms(b.quantity).toFixed(1)} kg`).join('\n');
-      
-      const message = `📦 Collection Summary\n\nTotal Bins: ${scannedBins.length}\nTotal Recovered Mass: ${totalKilograms.toFixed(1)} kg\n\n${binList}\n\n💰 Expected Payment: R${expectedPayment.toFixed(2)}\n(${totalKilograms.toFixed(1)} kg × R${ratePerKilogram}/kg)\n\nProceed to payment collection?`;
+      // Each bin already carries both units, so no conversion guesswork here.
+      const totalKilograms = scannedBins.reduce((sum, bin) => sum + (bin.quantityKg || 0), 0);
+      const totalLitres = scannedBins.reduce((sum, bin) => sum + (bin.quantityLitres || 0), 0);
+      const expectedPayment = totalKilograms * RATE_PER_KG;
+      const binList = scannedBins.map(b =>
+        `• ${b.binSerialNumber}: ${(b.quantityLitres || 0).toFixed(1)} L (${(b.quantityKg || 0).toFixed(1)} kg) — ${b.oilCondition || 'Good'}`
+      ).join('\n');
+
+      const message = `📦 Collection Summary\n\nTotal Bins: ${scannedBins.length}\nTotal Collected: ${totalLitres.toFixed(1)} L (${totalKilograms.toFixed(1)} kg)\n\n${binList}\n\n💰 Calculated Payment: R${expectedPayment.toFixed(2)}\n(${totalKilograms.toFixed(1)} kg × R${RATE_PER_KG}/kg)\n\nProceed to payment collection?`;
       
       if (confirm(message)) {
         showPaymentCollection(totalKilograms, expectedPayment);
@@ -2180,7 +2348,9 @@
       const input = document.getElementById('quantityInput');
       const validation = document.getElementById('quantityValidation');
       const value = parseFloat(input.value) || 0;
-      
+
+      updateUnitConversion();
+
       if (value <= 0) {
         validation.classList.add('show');
         return false;
@@ -2297,7 +2467,7 @@
     }
     
     // Submit all collected bins
-    async function submitAllCollections() {
+    async function submitAllCollections(paidAmount = null) {
       if (scannedBins.length === 0) {
         alert('No bins to submit!');
         return;
@@ -2332,18 +2502,30 @@
 
         console.log('Creating collection data for job:', currentJob);
         
-        // Calculate totals from all collected bins
-        const totalQuantity = scannedBins.reduce((sum, bin) => sum + bin.quantity, 0);
+        // Calculate totals from all collected bins. Litres is the canonical stored
+        // figure; kilograms is stored alongside it so no screen has to convert.
+        const totalLitres = scannedBins.reduce((sum, bin) => sum + (bin.quantityLitres || 0), 0);
+        const totalKg = scannedBins.reduce((sum, bin) => sum + (bin.quantityKg || 0), 0);
         const allOilPhotos = scannedBins.flatMap(bin => bin.oilPhotos || []);
         // Payment photos are now collected once at the end, not per bin
         const allPaymentPhotos = paymentPhotos || []; // Use the global paymentPhotos array
+
+        // Worst condition across the bins represents the load as a whole.
+        const conditionRank = { 'Good': 0, 'Fair': 1, 'Poor': 2, 'Contaminated': 3 };
+        const worstCondition = scannedBins.reduce((worst, bin) => {
+          const c = bin.oilCondition || 'Good';
+          return (conditionRank[c] ?? 0) > (conditionRank[worst] ?? 0) ? c : worst;
+        }, 'Good');
 
         const collectionData = {
           jobId: currentJob.id,
           jobName: currentJob.name,
           jobAddress: currentJob.address,
-          quantity: totalQuantity,
-          unit: 'kg',
+          quantity: totalLitres,
+          quantityLitres: totalLitres,
+          quantityKg: totalKg,
+          paymentAmount: paidAmount,
+          unit: collectionUnit,
           notes: `Multi-bin collection: ${scannedBins.length} bins`,
           scannedBins: scannedBins,
           binCount: scannedBins.length,
@@ -2356,7 +2538,7 @@
           status: 'completed',
           // Oil collection specific fields
           oilType: 'Used Cooking Oil',
-          oilCondition: 'Good',
+          oilCondition: worstCondition,
           collectionMethod: 'Multi-Bin Collection',
           paymentMethod: 'Cash'
         };
@@ -2517,7 +2699,15 @@
           driverId: validDriverId,
           driverEmail: currentUser.email, // Add driver email for fallback lookup
           quantity: parseFloat(data.quantity),
-          unit: data.unit,
+          // Both units travel to the service so it never has to infer one.
+          quantityLitres: data.quantityLitres != null
+            ? parseFloat(data.quantityLitres)
+            : parseFloat(data.quantity),
+          quantityKg: data.quantityKg != null
+            ? parseFloat(data.quantityKg)
+            : litresToKilograms(parseFloat(data.quantity)),
+          unit: data.unit || 'litres',
+          paymentAmount: data.paymentAmount,
           notes: data.notes,
           timestamp: data.timestamp,
           oilPhotos: data.oilPhotos || [],

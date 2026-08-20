@@ -317,9 +317,21 @@ class OilCollectionService {
                 console.log('Saving collection with data:', collectionData);
                 
                 // Prepare the collection record with proper job_id and driver_id
+                // collected_volume is always LITRES — that is what the admin panel
+                // and reporting assume. net_mass_kg carries the kilogram figure so
+                // no screen has to apply the 0.92 conversion itself. `unit` records
+                // which one the driver actually measured in.
+                const litres = collectionData.quantityLitres != null
+                    ? Number(collectionData.quantityLitres)
+                    : Number(collectionData.quantity);
+                const kilograms = collectionData.quantityKg != null
+                    ? Number(collectionData.quantityKg)
+                    : litres * 0.92;
+
                 const collectionRecord = {
-                    collected_volume: collectionData.quantity,
-                    unit: collectionData.unit,
+                    collected_volume: litres,
+                    net_mass_kg: kilograms,
+                    unit: collectionData.unit || 'litres',
                     notes: collectionData.notes || '',
                     collection_date: collectionData.timestamp,
                     collection_address: collectionData.jobAddress,
@@ -329,6 +341,15 @@ class OilCollectionService {
                     collection_method: collectionData.collectionMethod || 'Manual Collection',
                     payment_method: collectionData.paymentMethod || 'Cash'
                 };
+
+                // The amount the driver actually paid the customer. cost_collection_fee
+                // is the column the customer app and admin panel read for this.
+                if (collectionData.paymentAmount != null && collectionData.paymentAmount !== '') {
+                    const paid = Number(collectionData.paymentAmount);
+                    if (Number.isFinite(paid) && paid >= 0) {
+                        collectionRecord.cost_collection_fee = paid;
+                    }
+                }
 
                 // job_id and driver_id are mandatory. Without them the collection is
                 // invisible to the driver and to the admin panel, and no earnings are
